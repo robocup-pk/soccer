@@ -45,6 +45,12 @@ bool vis::GLWindow::Init(int width_px_, int height_px_, const char* window_title
 
   RegisterCallbacks();
 
+  // Vertex Buffer
+  CreateVertexBuffer();
+
+  // Vertex Shader
+  CreateVertexShader();
+
   return true;
 }
 

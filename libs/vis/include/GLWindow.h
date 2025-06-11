@@ -17,11 +17,20 @@ class GLWindow {
   void SetScreenColor();
   bool Update();
 
+  // OpenGL specific stuff
+  void CreateVertexBuffer(const void* vertices);
+  bool CreateVertexShader();
+  bool CreateFragmentShader();
+  bool CreateShaderProgram();
+
   ~GLWindow();
 
  private:
   GLFWwindow* window;
   int width_px, height_px;
+
+  unsigned int fragment_shader_id;
+  unsigned int vertex_shader_id;
 };
 
 }  // namespace vis
