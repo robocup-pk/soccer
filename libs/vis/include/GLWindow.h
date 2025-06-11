@@ -16,15 +16,19 @@ class GLWindow {
   // Logic used in simulation
   void SetScreenColor();
   bool Update();
-
+  
   // OpenGL specific stuff
+  void Draw();
   void CreateVertexBuffer(const void* vertices);
+  void CreateVertexAttributeObject(const float* vertices);
   bool CreateVertexShader();
   bool CreateFragmentShader();
   bool CreateShaderProgram();
 
   ~GLWindow();
-
+  
+  unsigned int shader_program_id;
+  unsigned int vao; // vertex attribute object
  private:
   GLFWwindow* window;
   int width_px, height_px;

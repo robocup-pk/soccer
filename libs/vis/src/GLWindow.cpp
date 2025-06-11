@@ -45,18 +45,22 @@ bool vis::GLWindow::Init(int width_px_, int height_px_, const char* window_title
 
   RegisterCallbacks();
 
-  // Vertex Buffer
-  CreateVertexBuffer();
+  // Shaders
+  if (!CreateVertexShader()) return false;
+  if (!CreateFragmentShader()) return false;
+  if (!CreateShaderProgram()) return false;
 
-  // Vertex Shader
-  CreateVertexShader();
-
+  // Vertex Attribute Object
+  const float vertices[] = {0.5f,  0.5f,  0.0f, 0.5f,  -0.5f, 0.0f,
+                            -0.5f, -0.5f, 0.0f, -0.5f, 0.5f,  0.0f};
+  CreateVertexAttributeObject(vertices);
   return true;
 }
 
 bool vis::GLWindow::Update() {
   // Add the simulation logic here
   SetScreenColor();
+  Draw();
 
   // This is the update logic
   if (glfwWindowShouldClose(window)) return false;

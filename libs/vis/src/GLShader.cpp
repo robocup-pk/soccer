@@ -1,5 +1,10 @@
 #include <string>
 
+#include <filesystem>
+#include <iostream>
+
+namespace fs = std::filesystem;
+
 #include "GLWindow.h"
 #include "Utils.h"
 
@@ -11,12 +16,21 @@ void vis::GLWindow::CreateVertexBuffer(const void* vertices) {
   // stream: position doesn't change, used fixed number of times
   // static: position doesn't change, used a lot
   // dynamic: position changes, used a lot
+  // Copy our vertices array into a buffer
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+  // Vertex Attribute Pointers
+  // location = 0, size of each vertex = 3, FALSE = not normalize, stride = 3, start_offset = 0
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+
+  // Use Shader Program
+  glUseProgram(shader_program_id);
 }
 
 bool vis::GLWindow::CreateVertexShader() {
   // Get the source code from file
-  std::string shader_code = util::ReadFile("../resources/shaders/VertexShader.vs");
+  std::string shader_code = util::ReadFile("libs/vis/resources/shaders/VertexShader.vs");
   const char* vertex_shader_source = shader_code.c_str();
 
   vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
@@ -37,19 +51,19 @@ bool vis::GLWindow::CreateVertexShader() {
 }
 
 bool vis::GLWindow::CreateFragmentShader() {
-  std::string shader_code = util::ReadFile("../resources/shaders/FragmentShader.fs");
+  std::string shader_code = util::ReadFile("libs/vis/resources/shaders/FragmentShader.fs");
   const char* fragment_shader_source = shader_code.c_str();
 
   fragment_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fragment_shader_id, 1, &fragment_shader_source, NULL);
   glCompileShader(fragment_shader_id);
 
-  // Verify if this shader linked successfully
+  // Check for compilation success (was incorrectly using program checks)
   int success;
   char info_log[512];
-  glGetProgramiv(fragment_shader_id, GL_LINK_STATUS, &success);
+  glGetShaderiv(fragment_shader_id, GL_COMPILE_STATUS, &success);
   if (!success) {
-    glGetProgramInfoLog(fragment_shader_id, 512, NULL, info_log);
+    glGetShaderInfoLog(fragment_shader_id, 512, NULL, info_log);
     std::cout << "[vis::GLWindow::CreateFragmentShader] Failed!\n" << info_log << std::endl;
     return false;
   }
@@ -58,7 +72,6 @@ bool vis::GLWindow::CreateFragmentShader() {
 }
 
 bool vis::GLWindow::CreateShaderProgram() {
-  unsigned int shader_program_id;
   shader_program_id = glCreateProgram();
   glAttachShader(shader_program_id, vertex_shader_id);
   glAttachShader(shader_program_id, fragment_shader_id);
@@ -73,8 +86,6 @@ bool vis::GLWindow::CreateShaderProgram() {
     std::cout << "[vis::GLWindow::CreateShaderProgram] Failed!\n" << info_log << std::endl;
     return false;
   }
-
-  glUseProgram(shader_program_id);
 
   glDeleteShader(vertex_shader_id);
   glDeleteShader(fragment_shader_id);
