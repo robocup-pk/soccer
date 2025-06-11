@@ -1,5 +1,10 @@
+#include <iostream>
+
 #include "GLCallback.h"
 #include "GLWindow.h"
+
+float vis::GLCallback::x_offset = 0;
+float vis::GLCallback::y_offset = 0;
 
 // When window is resized (this function is called), we have to resize the viewport
 void vis::GLCallback::FrameBufferCallback(GLFWwindow* window, int width_px, int height_px) {
@@ -9,7 +14,22 @@ void vis::GLCallback::FrameBufferCallback(GLFWwindow* window, int width_px, int 
 // When a key is pressed, this function is called
 void vis::GLCallback::KeyCallback(GLFWwindow* window, int key, int scancode, int action,
                                   int mode) {
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) glfwSetWindowShouldClose(window, GL_TRUE);
+  float move_speed = 0.05f;
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    glfwSetWindowShouldClose(window, GL_TRUE);
+  } else if (key == GLFW_KEY_W) {  // && action == GLFW_PRESS) {
+    std::cout << "[vis::GLCallback] W" << std::endl;
+    vis::GLCallback::y_offset += move_speed;
+  } else if (key == GLFW_KEY_A) {  // && action == GLFW_PRESS) {
+    std::cout << "[vis::GLCallback] A" << std::endl;
+    vis::GLCallback::x_offset -= move_speed;
+  } else if (key == GLFW_KEY_D) {  // && action == GLFW_PRESS) {
+    std::cout << "[vis::GLCallback] D" << std::endl;
+    vis::GLCallback::x_offset += move_speed;
+  } else if (key == GLFW_KEY_X) {  // && action == GLFW_PRESS) {
+    std::cout << "[vis::GLCallback] X" << std::endl;
+    vis::GLCallback::y_offset -= move_speed;
+  }
   // TODO: add support for other keyboard keys to make it interactive
 }
 

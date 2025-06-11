@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "GLCallback.h"
 #include "GLWindow.h"
 
 void vis::GLWindow::CreateVertexAttributeObject(const float* vertices, unsigned int* indices) {
@@ -29,6 +30,11 @@ void vis::GLWindow::CreateVertexAttributeObject(const float* vertices, unsigned 
 
 void vis::GLWindow::Draw() {
   glUseProgram(shader_program_id);
+  int offset_loc = glGetUniformLocation(shader_program_id, "offset");
+  float x = vis::GLCallback::x_offset;
+  float y = vis::GLCallback::y_offset;
+  std::cout << "[vis::GLWindow::Draw] " << x << " " << y << std::endl;
+  glUniform2f(offset_loc, x, y);
   glBindVertexArray(vao);
 
   if (use_ebo) {

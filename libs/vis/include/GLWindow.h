@@ -30,6 +30,9 @@ class GLWindow {
   unsigned int vao;  // vertex attribute object
   unsigned int ebo;
 
+  // float x_offset = 0.0f;
+  // float y_offset = 0.0f;
+
  private:
   GLFWwindow* window;
   int width_px, height_px;
