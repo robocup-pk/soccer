@@ -9,7 +9,7 @@ namespace vis {
 
 class GLWindow {
  public:
-  bool Init(int width_px, int height_px, const char* window_title);
+  bool Init(int width_px, int height_px, const char* window_title, bool use_ebo = false);
   void RegisterCallbacks();
   GLFWwindow* GetRawGLFW() const;
 
@@ -36,6 +36,8 @@ class GLWindow {
 
   unsigned int fragment_shader_id;
   unsigned int vertex_shader_id;
+
+  bool use_ebo;
 };
 
 }  // namespace vis

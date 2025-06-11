@@ -29,11 +29,11 @@ void vis::GLWindow::CreateVertexAttributeObject(const float* vertices, unsigned 
 
 void vis::GLWindow::Draw() {
   glUseProgram(shader_program_id);
-
-  // When using VAO instead of EBO
   glBindVertexArray(vao);
-  // glDrawArrays(GL_TRIANGLES, 0, 3);
 
-  // EBO
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+  if (use_ebo) {
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+  } else {
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+  }
 }

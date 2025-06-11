@@ -4,9 +4,10 @@
 // self libs
 #include "GLWindow.h"
 
-bool vis::GLWindow::Init(int width_px_, int height_px_, const char* window_title) {
+bool vis::GLWindow::Init(int width_px_, int height_px_, const char* window_title, bool use_ebo_) {
   width_px = width_px_;
   height_px = height_px_;
+  use_ebo = use_ebo_;
 
   // Initialize GLFW
   if (!glfwInit()) {
@@ -51,8 +52,13 @@ bool vis::GLWindow::Init(int width_px_, int height_px_, const char* window_title
   if (!CreateShaderProgram()) return false;
 
   float vertices[] = {0.5f, 0.5f, 0.0f, 0.5f, -0.5f, 0.0f, -0.5f, -0.5f, 0.0f, -0.5f, 0.5f, 0.0f};
-  unsigned int indices[] = {0, 1, 3, 1, 2, 3};
-  CreateVertexAttributeObject(vertices, indices);
+
+  if (use_ebo) {
+    unsigned int indices[] = {0, 1, 3, 1, 2, 3};
+    CreateVertexAttributeObject(vertices, indices);
+  } else {
+    CreateVertexAttributeObject(vertices, nullptr);
+  }
 
   return true;
 }

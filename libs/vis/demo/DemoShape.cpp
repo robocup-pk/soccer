@@ -9,7 +9,14 @@ int main(int argc, char* argv[]) {
   constexpr int height_px = 600;
   vis::GLWindow gl_window;
 
-  if (!gl_window.Init(width_px, height_px, "RoboCup Simulator")) {
+  // To draw rectangle: /libs/vis/demo/DemoShape 1
+  // To draw triangle: /libs/vis/demo/DemoShape
+  bool draw_rectangle;
+  if (argc == 2) {
+    draw_rectangle = argv[1];
+  }
+
+  if (!gl_window.Init(width_px, height_px, "RoboCup Simulator", draw_rectangle)) {
     std::cout << "[DemoKeyCallback::main] Error!" << std::endl;
     return 0;
   }
