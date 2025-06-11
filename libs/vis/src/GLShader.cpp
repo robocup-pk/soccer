@@ -8,26 +8,6 @@ namespace fs = std::filesystem;
 #include "GLWindow.h"
 #include "Utils.h"
 
-void vis::GLWindow::CreateVertexBuffer(const void* vertices) {
-  unsigned int vbo;
-  glGenBuffers(1, &vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);  // the array buffer now maps to vbo
-
-  // stream: position doesn't change, used fixed number of times
-  // static: position doesn't change, used a lot
-  // dynamic: position changes, used a lot
-  // Copy our vertices array into a buffer
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-  // Vertex Attribute Pointers
-  // location = 0, size of each vertex = 3, FALSE = not normalize, stride = 3, start_offset = 0
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-  glEnableVertexAttribArray(0);
-
-  // Use Shader Program
-  glUseProgram(shader_program_id);
-}
-
 bool vis::GLWindow::CreateVertexShader() {
   // Get the source code from file
   std::string shader_code = util::ReadFile("libs/vis/resources/shaders/VertexShader.vs");

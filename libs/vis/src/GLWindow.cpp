@@ -50,10 +50,10 @@ bool vis::GLWindow::Init(int width_px_, int height_px_, const char* window_title
   if (!CreateFragmentShader()) return false;
   if (!CreateShaderProgram()) return false;
 
-  // Vertex Attribute Object
-  const float vertices[] = {0.5f,  0.5f,  0.0f, 0.5f,  -0.5f, 0.0f,
-                            -0.5f, -0.5f, 0.0f, -0.5f, 0.5f,  0.0f};
-  CreateVertexAttributeObject(vertices);
+  float vertices[] = {0.5f, 0.5f, 0.0f, 0.5f, -0.5f, 0.0f, -0.5f, -0.5f, 0.0f, -0.5f, 0.5f, 0.0f};
+  unsigned int indices[] = {0, 1, 3, 1, 2, 3};
+  CreateVertexAttributeObject(vertices, indices);
+
   return true;
 }
 
