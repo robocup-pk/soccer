@@ -1,0 +1,11 @@
+**/build/
+*/build/*
+.vscode/*
+!.vscode/settings.json
+**/.DS_Store
+*buildall.bat
+.cache/*
+!CMakeLists.txt
+**/*.out
+*.cmake
+CMakeFiles/*
