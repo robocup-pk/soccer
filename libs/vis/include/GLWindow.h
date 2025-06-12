@@ -14,15 +14,17 @@ class GLWindow {
   GLFWwindow* GetRawGLFW() const;
 
   // Logic used in simulation
+  bool RunSimulationStep();
   void SetScreenColor();
   bool Update();
 
   // OpenGL specific stuff
-  void Draw();
+  void Render();
   void CreateVertexAttributeObject(const float* vertices, unsigned int* indices = nullptr);
   bool CreateVertexShader();
   bool CreateFragmentShader();
   bool CreateShaderProgram();
+  void CreateTexture(int width_px, int height_px);
 
   ~GLWindow();
 
@@ -39,6 +41,7 @@ class GLWindow {
 
   unsigned int fragment_shader_id;
   unsigned int vertex_shader_id;
+  unsigned int texture_id;
 
   bool use_ebo;
 };

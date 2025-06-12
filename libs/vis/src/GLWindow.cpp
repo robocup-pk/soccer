@@ -4,6 +4,11 @@
 // self libs
 #include "GLWindow.h"
 
+bool vis::GLWindow::RunSimulationStep() {
+  Render();
+  return Update();
+}
+
 bool vis::GLWindow::Init(int width_px_, int height_px_, const char* window_title, bool use_ebo_) {
   width_px = width_px_;
   height_px = height_px_;
@@ -40,9 +45,20 @@ bool vis::GLWindow::Init(int width_px_, int height_px_, const char* window_title
     return false;
   }
 
+  // Enable alpha blending for transparency
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
   // Area in GLFW window where OpenGL rendering is performed
   // glfwGetFramebufferSize(window, &width_px, &height_px);
-  glViewport(0, 0, width_px, height_px);
+  // Create a square viewport centered in the window
+  int square_size = std::min(width_px, height_px);  // Use the smaller dimension
+  std::cout << "[vis::GLWindow::Init] Square " << square_size << std::endl;
+  int x_offset = (width_px - square_size) / 2;   // Center horizontally
+  int y_offset = (height_px - square_size) / 2;  // Center vertically
+
+  glViewport(x_offset, y_offset, square_size, square_size);
+  // glViewport(0, 0, width_px, height_px);
 
   RegisterCallbacks();
 
@@ -51,14 +67,48 @@ bool vis::GLWindow::Init(int width_px_, int height_px_, const char* window_title
   if (!CreateFragmentShader()) return false;
   if (!CreateShaderProgram()) return false;
 
-  float vertices[] = {0.5f, 0.5f, 0.0f, 0.5f, -0.5f, 0.0f, -0.5f, -0.5f, 0.0f, -0.5f, 0.5f, 0.0f};
+  // float vertices[] = {0.5f, 0.5f, 0.0f, 0.5f, -0.5f, 0.0f, -0.5f, -0.5f, 0.0f, -0.5f, 0.5f,
+  // 0.0f};
+  // float vertices[] = {
+  //     // positions        // colors           // tex coords
+  //     0.5f,  0.5f,  0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,  // 0: top right
+  //     0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,  // 1: bottom right
+  //     -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,  // 2: bottom left
+  //     -0.5f, 0.5f,  0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f   // 3: top left
+  // };
+
+  // And adjust your vertices:
+  float vertices[] = {
+      // positions        // colors           // tex coords (flipped Y)
+      0.5f,  0.5f,  0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,  // 0: top right
+      0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,  // 1: bottom right
+      -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,  // 2: bottom left
+      -0.5f, 0.5f,  0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f   // 3: top left
+  };
 
   if (use_ebo) {
-    unsigned int indices[] = {0, 1, 3, 1, 2, 3};
+    // unsigned int indices[] = {0, 1, 3, 1, 2, 3};
+    // To:
+    unsigned int indices[] = {
+        0, 1, 2,  // First triangle: top-right, bottom-right, bottom-left
+        0, 2, 3   // Second triangle: top-right, bottom-left, top-left
+    };
+    // unsigned int indices[] = {
+    //     0, 1, 2,  // Triangle 1: top-right, bottom-right, bottom-left
+    //     0, 2, 3   // Triangle 2: top-right, bottom-left, top-left
+    // };
+    std::cout << "=== INDICES ===" << std::endl;
+    std::cout << "Triangle 1: " << indices[0] << ", " << indices[1] << ", " << indices[2]
+              << std::endl;
+    std::cout << "Triangle 2: " << indices[3] << ", " << indices[4] << ", " << indices[5]
+              << std::endl;
+    std::cout << "===============" << std::endl;
     CreateVertexAttributeObject(vertices, indices);
   } else {
     CreateVertexAttributeObject(vertices, nullptr);
   }
+
+  CreateTexture(50, 50);
 
   return true;
 }
@@ -66,7 +116,7 @@ bool vis::GLWindow::Init(int width_px_, int height_px_, const char* window_title
 bool vis::GLWindow::Update() {
   // Add the simulation logic here
   SetScreenColor();
-  Draw();
+  Render();
 
   // This is the update logic
   if (glfwWindowShouldClose(window)) return false;

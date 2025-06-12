@@ -1,7 +1,16 @@
 #version 330 core
-out vec4 frag_color;
-uniform vec4 robot_color;
+out vec4 FragColor;
+
+in vec2 TexCoord;
+uniform sampler2D ourTexture;
 
 void main() {
-  frag_color = robot_color;
+  vec4 texColor = texture(ourTexture, TexCoord);
+
+  // // Discard white/nearly white pixels
+  // if (texColor.r > 0.98 && texColor.g > 0.98 && texColor.b > 0.98) {
+  //     discard;
+  // }
+
+  FragColor = vec4(texColor.r, texColor.g, texColor.b, 1.0);
 }

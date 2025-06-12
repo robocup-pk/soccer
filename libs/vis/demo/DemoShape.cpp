@@ -6,7 +6,7 @@
 
 int main(int argc, char* argv[]) {
   constexpr int width_px = 800;
-  constexpr int height_px = 600;
+  constexpr int height_px = 800;
   vis::GLWindow gl_window;
 
   // To draw rectangle: /libs/vis/demo/DemoShape 1
@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
     return 0;
   }
 
-  while (gl_window.Update()) {
+  while (gl_window.RunSimulationStep()) {
   }
 
   // while(1) {
