@@ -14,22 +14,34 @@ void vis::GLCallback::FrameBufferCallback(GLFWwindow* window, int width_px, int 
 // When a key is pressed, this function is called
 void vis::GLCallback::KeyCallback(GLFWwindow* window, int key, int scancode, int action,
                                   int mode) {
-  float move_speed = 0.05f;
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-    glfwSetWindowShouldClose(window, GL_TRUE);
-  } else if (key == GLFW_KEY_W) {  // && action == GLFW_PRESS) {
-    std::cout << "[vis::GLCallback] W" << std::endl;
-    vis::GLCallback::y_offset += move_speed;
-  } else if (key == GLFW_KEY_A) {  // && action == GLFW_PRESS) {
-    std::cout << "[vis::GLCallback] A" << std::endl;
-    vis::GLCallback::x_offset -= move_speed;
-  } else if (key == GLFW_KEY_D) {  // && action == GLFW_PRESS) {
-    std::cout << "[vis::GLCallback] D" << std::endl;
-    vis::GLCallback::x_offset += move_speed;
-  } else if (key == GLFW_KEY_X) {  // && action == GLFW_PRESS) {
-    std::cout << "[vis::GLCallback] X" << std::endl;
-    vis::GLCallback::y_offset -= move_speed;
+  float move_speed = 0.02f;
+
+  if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+    switch (key) {
+      case GLFW_KEY_ESCAPE:
+        glfwSetWindowShouldClose(window, GL_TRUE);
+        break;
+      case GLFW_KEY_W:
+        std::cout << "[vis::GLCallback] W" << std::endl;
+        vis::GLCallback::y_offset += move_speed;
+        break;
+      case GLFW_KEY_X:
+        std::cout << "[vis::GLCallback] X" << std::endl;
+        vis::GLCallback::y_offset -= move_speed;
+        break;
+      case GLFW_KEY_A:
+        std::cout << "[vis::GLCallback] A" << std::endl;
+        vis::GLCallback::x_offset -= move_speed;
+        break;
+      case GLFW_KEY_D:
+        std::cout << "[vis::GLCallback] D" << std::endl;
+        vis::GLCallback::x_offset += move_speed;
+        break;
+      default:
+        break;
+    }
   }
+
   // TODO: add support for other keyboard keys to make it interactive
 }
 

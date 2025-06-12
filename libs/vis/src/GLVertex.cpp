@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 
 #include "GLCallback.h"
@@ -30,11 +31,20 @@ void vis::GLWindow::CreateVertexAttributeObject(const float* vertices, unsigned 
 
 void vis::GLWindow::Draw() {
   glUseProgram(shader_program_id);
+
+  // Offset
   int offset_loc = glGetUniformLocation(shader_program_id, "offset");
   float x = vis::GLCallback::x_offset;
   float y = vis::GLCallback::y_offset;
   std::cout << "[vis::GLWindow::Draw] " << x << " " << y << std::endl;
   glUniform2f(offset_loc, x, y);
+
+  // Robot Color
+  float current_time = glfwGetTime();
+  float green_value = (std::sin(current_time) / 2.0f) + 0.5f;
+  int robot_color_loc = glGetUniformLocation(shader_program_id, "robot_color");
+  glUniform4f(robot_color_loc, 0.0f, green_value, 0.0f, 1.0f);
+
   glBindVertexArray(vao);
 
   if (use_ebo) {
