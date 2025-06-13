@@ -13,6 +13,7 @@ foreach(test_src ${TEST_SOURCES})
     gtest_main
     glfw
     glad
+    glm
   )
 
   # Register with ctest

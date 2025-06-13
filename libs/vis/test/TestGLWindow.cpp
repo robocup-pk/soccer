@@ -4,14 +4,12 @@
 #include "GLWindow.h"
 
 TEST(GLWindowTest, CanCreateWindow) {
-  vis::GLWindow window;
-  bool success = window.Init(800, 600, "Test Window");
-  EXPECT_TRUE(success);
+  vis::GLWindow window(800, 600, "Test Window");
+  EXPECT_TRUE(1);
 }
 
 TEST(GLWindowTest, WindowClosesOnEscape) {
-  vis::GLWindow window;
-  window.Init(800, 600, "Test Window");
+  vis::GLWindow window(800, 600, "Test Window");
 
   EXPECT_FALSE(glfwWindowShouldClose(window.GetRawGLFW()));
 

@@ -6,6 +6,6 @@ foreach(demo_src ${DEMO_SOURCES})
 
   add_executable(${demo_name} ${demo_src})
   
-  target_link_libraries(${demo_name} PRIVATE vis_lib glfw glad)
+  target_link_libraries(${demo_name} PRIVATE vis_lib glfw glad glm)
   
 endforeach()
