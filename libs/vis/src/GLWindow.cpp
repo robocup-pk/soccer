@@ -80,10 +80,10 @@ bool vis::GLWindow::Init(int width_px_, int height_px_, const char* window_title
   // And adjust your vertices:
   float vertices[] = {
       // positions        // colors           // tex coords (flipped Y)
-      0.5f,  0.5f,  0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,  // 0: top right
-      0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,  // 1: bottom right
-      -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,  // 2: bottom left
-      -0.5f, 0.5f,  0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f   // 3: top left
+      0.10f,  0.10f,  0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,  // 0: top right
+      0.10f,  -0.10f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,  // 1: bottom right
+      -0.10f, -0.10f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,  // 2: bottom left
+      -0.10f, 0.10f,  0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f   // 3: top left
   };
 
   if (use_ebo) {

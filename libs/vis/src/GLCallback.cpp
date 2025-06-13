@@ -36,19 +36,27 @@ void vis::GLCallback::KeyCallback(GLFWwindow* window, int key, int scancode, int
         break;
       case GLFW_KEY_W:
         std::cout << "[vis::GLCallback] W" << std::endl;
-        vis::GLCallback::y_offset += move_speed;
+        if (std::abs(vis::GLCallback::y_offset + move_speed) < 1.0f) {
+          vis::GLCallback::y_offset += move_speed;
+        }
         break;
       case GLFW_KEY_X:
         std::cout << "[vis::GLCallback] X" << std::endl;
-        vis::GLCallback::y_offset -= move_speed;
+        if (std::abs(vis::GLCallback::y_offset - move_speed) < 1.0f) {
+          vis::GLCallback::y_offset -= move_speed;
+        }
         break;
       case GLFW_KEY_A:
         std::cout << "[vis::GLCallback] A" << std::endl;
-        vis::GLCallback::x_offset -= move_speed;
+        if (std::abs(vis::GLCallback::x_offset - move_speed) < 1.0f) {
+          vis::GLCallback::x_offset -= move_speed;
+        }
         break;
       case GLFW_KEY_D:
         std::cout << "[vis::GLCallback] D" << std::endl;
-        vis::GLCallback::x_offset += move_speed;
+        if (std::abs(vis::GLCallback::x_offset + move_speed) < 1.0f) {
+          vis::GLCallback::x_offset += move_speed;
+        }
         break;
       default:
         break;

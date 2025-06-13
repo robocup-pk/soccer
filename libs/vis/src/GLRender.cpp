@@ -43,8 +43,8 @@ void vis::GLWindow::CreateVertexAttributeObject(const float* vertices, unsigned 
 
 void vis::GLWindow::Render() {  // Ensure blending is on (in case it got disabled somewhere)
   glEnable(GL_BLEND);
-  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-  // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  // glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glUseProgram(shader_program_id);
 
   // Position Offset
