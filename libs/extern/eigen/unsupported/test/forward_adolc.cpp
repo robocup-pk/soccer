@@ -96,7 +96,7 @@ void adolc_forward_jacobian(const Func& f) {
 
   j.setZero();
   y.setZero();
-  AdolcForwardJacobian<Func> autoj(f);
+  AdolcForwardMapping<Func> autoj(f);
   autoj(x, &y, &j);
   //     std::cerr << y.transpose() << "\n\n";;
   //     std::cerr << j << "\n\n";;

@@ -2,10 +2,10 @@
 
 #include <iostream>
 
-kin::RobotModel::RobotModel(const RobotDescription robot_description)
+kin::RobotModel::RobotModel(const RobotDescription& robot_description)
     : robot_description(robot_description) {
-  ComputeInverseJacobian();
-  ComputeForwardJacobian();
+  ComputeInverseMapping();
+  ComputeForwardMapping();
 }
 
 Eigen::VectorXd kin::RobotModel::WheelSpeedsToRobotVelocity(
@@ -16,26 +16,26 @@ Eigen::VectorXd kin::RobotModel::WheelSpeedsToRobotVelocity(
     wheel_speeds(i) = wheel_speeds_radps[i];
   }
   // Now use forward kinematics:
-  return forward_jacobian * wheel_speeds;
+  return forward_mapping * wheel_speeds;
 }
 
 Eigen::VectorXd kin::RobotModel::RobotVelocityToWheelSpeeds(
     const Eigen::Vector3d& robot_velocity_mps_radps) {
   // Inverse kinematics
-  return inverse_jacobian * robot_velocity_mps_radps;
+  return inverse_mapping * robot_velocity_mps_radps;
 }
 
-Eigen::MatrixXd kin::RobotModel::InverseJacobian() const { return inverse_jacobian; }
+Eigen::MatrixXd kin::RobotModel::InverseMapping() const { return inverse_mapping; }
 
-Eigen::MatrixXd kin::RobotModel::ForwardJacobian() const { return forward_jacobian; }
+Eigen::MatrixXd kin::RobotModel::ForwardMapping() const { return forward_mapping; }
 
-void kin::RobotModel::ComputeInverseJacobian() {
+void kin::RobotModel::ComputeInverseMapping() {
   size_t num_wheels = robot_description.wheel_positions_m.size();
   double r = robot_description.wheel_radius_m;
 
   // Initialize Jacobian matrix (num_wheels x 3)
   // This will be the complete inverse jacobian: ω = J * v
-  inverse_jacobian = Eigen::MatrixXd(num_wheels, 3);
+  inverse_mapping = Eigen::MatrixXd(num_wheels, 3);
 
   for (size_t i = 0; i < num_wheels; ++i) {
     double x_i = robot_description.wheel_positions_m[i].first;
@@ -44,17 +44,17 @@ void kin::RobotModel::ComputeInverseJacobian() {
 
     // Jacobian row: ω = (1/r) * [geometric_jacobian] * v
     // J_row = (1/r) * [cos(β_i), sin(β_i), x_i*sin(β_i) - y_i*cos(β_i)]
-    inverse_jacobian(i, 0) = (1.0 / r) * std::cos(beta_i);
-    inverse_jacobian(i, 1) = (1.0 / r) * std::sin(beta_i);
-    inverse_jacobian(i, 2) = (1.0 / r) * (x_i * std::sin(beta_i) - y_i * std::cos(beta_i));
+    inverse_mapping(i, 0) = (1.0 / r) * std::cos(beta_i);
+    inverse_mapping(i, 1) = (1.0 / r) * std::sin(beta_i);
+    inverse_mapping(i, 2) = (1.0 / r) * (x_i * std::sin(beta_i) - y_i * std::cos(beta_i));
   }
 }
 
-void kin::RobotModel::ComputeForwardJacobian() {
+void kin::RobotModel::ComputeForwardMapping() {
   // Compute Moore-Penrose pseudoinverse: J+ = (J^T * J)^(-1) * J^T
   // This will give us the complete forward jacobian: v = J+ * ω
-  Eigen::MatrixXd J_transpose = inverse_jacobian.transpose();
-  Eigen::MatrixXd JtJ = J_transpose * inverse_jacobian;
+  Eigen::MatrixXd J_transpose = inverse_mapping.transpose();
+  Eigen::MatrixXd JtJ = J_transpose * inverse_mapping;
 
   // Check if JtJ is invertible
   Eigen::FullPivLU<Eigen::MatrixXd> lu(JtJ);
@@ -62,9 +62,9 @@ void kin::RobotModel::ComputeForwardJacobian() {
     std::cerr << "Warning: Jacobian is not invertible. Singular configuration detected!"
               << std::endl;
     // Use pseudo-inverse with SVD for numerical stability
-    forward_jacobian = inverse_jacobian.completeOrthogonalDecomposition().pseudoInverse();
+    forward_mapping = inverse_mapping.completeOrthogonalDecomposition().pseudoInverse();
   } else {
     // Standard Moore-Penrose pseudoinverse
-    forward_jacobian = JtJ.inverse() * J_transpose;
+    forward_mapping = JtJ.inverse() * J_transpose;
   }
 }

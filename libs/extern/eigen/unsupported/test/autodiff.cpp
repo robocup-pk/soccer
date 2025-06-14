@@ -167,7 +167,7 @@ void forward_jacobian_cpp11(const Func& f) {
 }
 
 template <typename Func>
-void forward_jacobian(const Func& f) {
+void forward_mapping(const Func& f) {
   typename Func::InputType x = Func::InputType::Random(f.inputs());
   typename Func::ValueType y(f.values()), yref(f.values());
   typename Func::JacobianType j(f.values(), f.inputs()), jref(f.values(), f.inputs());
@@ -212,11 +212,11 @@ void test_autodiff_vector() {
 
 template <int>
 void test_autodiff_jacobian() {
-  CALL_SUBTEST((forward_jacobian(TestFunc1<double, 2, 2>())));
-  CALL_SUBTEST((forward_jacobian(TestFunc1<double, 2, 3>())));
-  CALL_SUBTEST((forward_jacobian(TestFunc1<double, 3, 2>())));
-  CALL_SUBTEST((forward_jacobian(TestFunc1<double, 3, 3>())));
-  CALL_SUBTEST((forward_jacobian(TestFunc1<double>(3, 3))));
+  CALL_SUBTEST((forward_mapping(TestFunc1<double, 2, 2>())));
+  CALL_SUBTEST((forward_mapping(TestFunc1<double, 2, 3>())));
+  CALL_SUBTEST((forward_mapping(TestFunc1<double, 3, 2>())));
+  CALL_SUBTEST((forward_mapping(TestFunc1<double, 3, 3>())));
+  CALL_SUBTEST((forward_mapping(TestFunc1<double>(3, 3))));
   CALL_SUBTEST((forward_jacobian_cpp11(integratorFunctor<double>(10))));
 }
 

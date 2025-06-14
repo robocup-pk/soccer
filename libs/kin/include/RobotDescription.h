@@ -9,9 +9,6 @@ namespace kin {
   This struct describes the robot shape relating to kinematics.
 */
 struct RobotDescription {
-  // Ticks per revolution
-  int ticks_per_rev;
-
   // Radius of the wheel
   double wheel_radius_m;
 

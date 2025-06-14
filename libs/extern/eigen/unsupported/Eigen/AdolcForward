@@ -98,20 +98,20 @@ struct NumTraits<adtl::adouble> : NumTraits<double> {
 };
 
 template <typename Functor>
-class AdolcForwardJacobian : public Functor {
+class AdolcForwardMapping : public Functor {
   typedef adtl::adouble ActiveScalar;
 
  public:
-  AdolcForwardJacobian() : Functor() {}
-  AdolcForwardJacobian(const Functor& f) : Functor(f) {}
+  AdolcForwardMapping() : Functor() {}
+  AdolcForwardMapping(const Functor& f) : Functor(f) {}
 
   // forward constructors
   template <typename T0>
-  AdolcForwardJacobian(const T0& a0) : Functor(a0) {}
+  AdolcForwardMapping(const T0& a0) : Functor(a0) {}
   template <typename T0, typename T1>
-  AdolcForwardJacobian(const T0& a0, const T1& a1) : Functor(a0, a1) {}
+  AdolcForwardMapping(const T0& a0, const T1& a1) : Functor(a0, a1) {}
   template <typename T0, typename T1, typename T2>
-  AdolcForwardJacobian(const T0& a0, const T1& a1, const T1& a2) : Functor(a0, a1, a2) {}
+  AdolcForwardMapping(const T0& a0, const T1& a1, const T1& a2) : Functor(a0, a1, a2) {}
 
   typedef typename Functor::InputType InputType;
   typedef typename Functor::ValueType ValueType;

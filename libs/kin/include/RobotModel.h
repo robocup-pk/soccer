@@ -14,7 +14,7 @@ namespace kin {
 */
 class RobotModel {
  public:
-  RobotModel(const RobotDescription robot_description);
+  RobotModel(const RobotDescription& robot_description);
 
   // Compute robot velocity in body frame (x_dot_b, y_dot_b, theta_dot_b) from wheel speeds (for
   // simulating)
@@ -24,20 +24,20 @@ class RobotModel {
   Eigen::VectorXd RobotVelocityToWheelSpeeds(const Eigen::Vector3d& robot_velocity_mps_radps);
 
   // Getters for jacobians
-  Eigen::MatrixXd InverseJacobian() const;  // u = J * v
-  Eigen::MatrixXd ForwardJacobian() const;  // v = J+ * u
+  Eigen::MatrixXd InverseMapping() const;  // u = J * v
+  Eigen::MatrixXd ForwardMapping() const;  // v = J+ * u
 
  private:
-  // Inverse Jacobian: u = J * v
+  // Inverse mapping: u = J * v
   // Converts robot velocity (x_dot, y_dot, w_dot) in body frame to motor speeds (radps)
-  void ComputeInverseJacobian();
+  void ComputeInverseMapping();
 
-  // Forward Jacobian: v = J+ * u
+  // Forward mapping: v = J+ * u
   // Converts motor speeds to robot velocity
-  void ComputeForwardJacobian();
+  void ComputeForwardMapping();
 
-  Eigen::MatrixXd inverse_jacobian;
-  Eigen::MatrixXd forward_jacobian;
+  Eigen::MatrixXd inverse_mapping;
+  Eigen::MatrixXd forward_mapping;
   RobotDescription robot_description;
 };
 
