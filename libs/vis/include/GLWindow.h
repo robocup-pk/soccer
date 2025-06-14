@@ -26,6 +26,7 @@ class GLWindow {
   bool RunSimulationStep(float dt);
   void Render(float dt);
   bool Update();
+  void ProcessInput(float dt);
 
   ~GLWindow();
 

@@ -112,6 +112,7 @@
     "stdio.h": "c",
     "stdlib.h": "c",
     "string.h": "c",
-    "glad.h": "c"
+    "glad.h": "c",
+    "stdfloat": "cpp"
   }
 }

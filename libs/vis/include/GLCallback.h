@@ -17,6 +17,8 @@ class GLCallback {
   static float x_offset_robot1_worldf;
   static float y_offset_robot1_worldf;
 
+  static bool keys[1024];
+
   // Callbacks (static because 'this' ptr is not needed)
   static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
   static void FrameBufferCallback(GLFWwindow* window, int width_px, int height_px);
