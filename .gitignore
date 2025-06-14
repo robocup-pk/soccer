@@ -7,5 +7,4 @@
 .cache/*
 !CMakeLists.txt
 **/*.out
-*.cmake
 CMakeFiles/*
