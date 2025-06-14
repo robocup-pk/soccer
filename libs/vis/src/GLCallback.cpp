@@ -3,17 +3,18 @@
 #include "GLCallback.h"
 #include "GLWindow.h"
 
-float vis::GLCallback::x_offset = 0;
-float vis::GLCallback::y_offset = 0;
+float vis::GLCallback::x_offset_robot0 = 0;
+float vis::GLCallback::y_offset_robot0 = 0;
+float vis::GLCallback::x_offset_robot0_worldf = 0;
+float vis::GLCallback::y_offset_robot0_worldf = 0;
+float vis::GLCallback::x_offset_robot1 = 0;
+float vis::GLCallback::y_offset_robot1 = 0;
+float vis::GLCallback::x_offset_robot1_worldf = 0;
+float vis::GLCallback::y_offset_robot1_worldf = 0;
 
 // When window is resized (this function is called), we have to resize the viewport
 void vis::GLCallback::FrameBufferCallback(GLFWwindow* window, int width_px, int height_px) {
-  // Create square viewport
-  int square_size = std::min(width_px, height_px);
-  int x_offset = (width_px - square_size) / 2;
-  int y_offset = (height_px - square_size) / 2;
-
-  glViewport(x_offset, y_offset, square_size, square_size);
+  glViewport(0, 0, width_px, height_px);
 }
 
 // When a key is pressed, this function is called
@@ -36,32 +37,65 @@ void vis::GLCallback::KeyCallback(GLFWwindow* window, int key, int scancode, int
         break;
       case GLFW_KEY_W:
         std::cout << "[vis::GLCallback] W" << std::endl;
-        if (std::abs(vis::GLCallback::y_offset + move_speed) < 1.0f) {
-          vis::GLCallback::y_offset += move_speed;
+        if (std::abs(vis::GLCallback::y_offset_robot0 - move_speed) < 1.0f) {
+          vis::GLCallback::y_offset_robot0 -= move_speed;
         }
         break;
       case GLFW_KEY_X:
         std::cout << "[vis::GLCallback] X" << std::endl;
-        if (std::abs(vis::GLCallback::y_offset - move_speed) < 1.0f) {
-          vis::GLCallback::y_offset -= move_speed;
+        if (std::abs(vis::GLCallback::y_offset_robot0 + move_speed) < 1.0f) {
+          vis::GLCallback::y_offset_robot0 += move_speed;
         }
         break;
       case GLFW_KEY_A:
         std::cout << "[vis::GLCallback] A" << std::endl;
-        if (std::abs(vis::GLCallback::x_offset - move_speed) < 1.0f) {
-          vis::GLCallback::x_offset -= move_speed;
+        if (std::abs(vis::GLCallback::x_offset_robot0 - move_speed) < 1.0f) {
+          vis::GLCallback::x_offset_robot0 -= move_speed;
         }
         break;
       case GLFW_KEY_D:
         std::cout << "[vis::GLCallback] D" << std::endl;
-        if (std::abs(vis::GLCallback::x_offset + move_speed) < 1.0f) {
-          vis::GLCallback::x_offset += move_speed;
+        if (std::abs(vis::GLCallback::x_offset_robot0 + move_speed) < 1.0f) {
+          vis::GLCallback::x_offset_robot0 += move_speed;
+        }
+        break;
+      case GLFW_KEY_UP:
+        std::cout << "[vis::GLCallback] Up" << std::endl;
+        if (std::abs(vis::GLCallback::y_offset_robot1 - move_speed) < 1.0f) {
+          vis::GLCallback::y_offset_robot1 -= move_speed;
+        }
+        break;
+      case GLFW_KEY_DOWN:
+        std::cout << "[vis::GLCallback] Down" << std::endl;
+        if (std::abs(vis::GLCallback::y_offset_robot1 + move_speed) < 1.0f) {
+          vis::GLCallback::y_offset_robot1 += move_speed;
+        }
+        break;
+      case GLFW_KEY_LEFT:
+        std::cout << "[vis::GLCallback] Left" << std::endl;
+        if (std::abs(vis::GLCallback::x_offset_robot1 - move_speed) < 1.0f) {
+          vis::GLCallback::x_offset_robot1 -= move_speed;
+        }
+        break;
+      case GLFW_KEY_RIGHT:
+        std::cout << "[vis::GLCallback] Right" << std::endl;
+        if (std::abs(vis::GLCallback::x_offset_robot1 + move_speed) < 1.0f) {
+          vis::GLCallback::x_offset_robot1 += move_speed;
         }
         break;
       default:
         break;
     }
   }
+  vis::GLCallback::x_offset_robot0_worldf =
+      vis::GLCallback::x_offset_robot0 * vis::GLConfig::window_width_px;
+  vis::GLCallback::y_offset_robot0_worldf =
+      vis::GLCallback::y_offset_robot0 * vis::GLConfig::window_height_px;
+  vis::GLCallback::x_offset_robot1_worldf =
+      vis::GLCallback::x_offset_robot1 * vis::GLConfig::window_width_px;
+  vis::GLCallback::y_offset_robot1_worldf =
+      vis::GLCallback::y_offset_robot1 * vis::GLConfig::window_height_px;
+
   // TODO: add support for other keyboard keys to make it interactive
 }
 

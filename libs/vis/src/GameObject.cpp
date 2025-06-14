@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "GameObject.h"
 #include "Texture.h"
 
@@ -27,6 +29,13 @@ vis::GameObject::GameObject(std::string name, glm::vec2 pos, double radius, Text
                             glm::vec2 velocity, glm::vec3 color)
     : GameObject(name, pos, glm::vec2(radius * 2, radius * 2), sprite, velocity, color) {}
 
-void vis::GameObject::Draw(SpriteRenderer& renderer) {
-  renderer.DrawSprite(this->Sprite, this->Position, this->Size, this->Rotation, this->Color);
+void vis::GameObject::Draw(SpriteRenderer& renderer, glm::vec2 position_offset_worldf) {
+  glm::vec2 moved_position = glm::vec2(this->Position.x + position_offset_worldf.x,
+                                       this->Position.y + position_offset_worldf.y);
+  renderer.DrawSprite(this->Sprite, moved_position, this->Size, this->Rotation, this->Color);
+}
+
+void vis::GameObject::Move(float dt) {
+  Position = Velocity * dt;
+  // std::cout << "New Position: " << Position.x << " " << Position.y << std::endl;
 }

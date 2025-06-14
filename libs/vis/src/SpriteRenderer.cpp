@@ -7,6 +7,7 @@
 #include "GLWindow.h"
 #include "Shader.h"
 #include "Texture.h"
+#include "GLCallback.h"
 
 void vis::SpriteRenderer::Init(Shader& shader) {
   this->shader = shader;

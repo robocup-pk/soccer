@@ -23,17 +23,11 @@ class GLWindow {
   GLFWwindow* GetRawGLFW() const;
 
   // Logic used in simulation
-  bool RunSimulationStep();
+  bool RunSimulationStep(float dt);
+  void Render(float dt);
   bool Update();
 
-  // OpenGL specific stuff
-  void Render();
-
   ~GLWindow();
-
-  unsigned int shader_program_id;
-  unsigned int vao;  // vertex attribute object
-  unsigned int ebo;
 
  private:
   GLFWwindow* window;
