@@ -17,7 +17,7 @@ struct GLConfig {
   // Ball
   static constexpr double ball_radius_cm = 50;
   static constexpr glm::vec2 init_ball_pos = glm::vec2(-ball_radius_cm, -ball_radius_cm);
-  static constexpr glm::vec2 init_ball_velocity = glm::vec2(500, 200);
+  static constexpr glm::vec2 init_ball_velocity = glm::vec2(100, 100);
 
   // Robots
   static constexpr glm::vec2 robot_size_cm = glm::vec2(100, 100);

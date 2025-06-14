@@ -28,16 +28,13 @@ vis::GameObject::GameObject(std::string name, glm::vec2 pos, double radius, Text
     : GameObject(name, pos, glm::vec2(radius * 2, radius * 2), sprite, velocity, color) {}
 
 void vis::GameObject::Draw(SpriteRenderer& renderer, glm::vec2 position_offset_worldf) {
-  glm::vec2 moved_position = glm::vec2(this->position.x + position_offset_worldf.x,
-                                       this->position.y + position_offset_worldf.y);
+  moved_position = glm::vec2(this->position.x + position_offset_worldf.x,
+                             this->position.y + position_offset_worldf.y);
   renderer.DrawSprite(this->sprite, moved_position, this->size, this->rotation, this->color);
 }
 
 void vis::GameObject::Move(float dt) { position += velocity * dt; }
 
 glm::vec2 vis::GameObject::GetCenterPosition() {
-  std::cout << "size: " << size.x << std::endl;
-  std::cout << "corner: " << position.x << std::endl;
-  std::cout << "center: " << position.x + (size.x / 2) << std::endl;
-  return glm::vec2(position.x + (size.x / 2), position.y + (size.y / 2));
+  return glm::vec2(moved_position.x + (size.x / 2), moved_position.y + (size.y / 2));
 }

@@ -14,6 +14,7 @@ class GameObject {
   bool is_solid;
   Texture2D sprite;
   std::string name;
+  glm::vec2 moved_position;
 
   GameObject();
   GameObject(std::string name, glm::vec2 pos, glm::vec2 size, Texture2D sprite,
