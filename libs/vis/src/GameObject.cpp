@@ -35,6 +35,6 @@ void vis::GameObject::Draw(SpriteRenderer& renderer, glm::vec2 position_offset_w
 
 void vis::GameObject::Move(float dt) { position += velocity * dt; }
 
-glm::vec2 vis::GameObject::GetCenterPosition() {
+glm::vec2 vis::GameObject::GetCenterPosition() const {
   return glm::vec2(moved_position.x + (size.x / 2), moved_position.y + (size.y / 2));
 }

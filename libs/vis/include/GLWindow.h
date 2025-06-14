@@ -2,7 +2,7 @@
 #define GL_WINDOW_H
 
 // std
-#include <vector>
+#include <map>
 
 // extern libs
 #include <glad/glad.h>  // ORDER MATTERS (bw glad and glfw)
@@ -32,7 +32,7 @@ class GLWindow {
 
  private:
   GLFWwindow* window;
-  std::vector<GameObject> game_objects;
+  std::map<std::string, GameObject> game_objects;
   SpriteRenderer renderer;
 };
 

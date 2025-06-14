@@ -68,24 +68,24 @@ void vis::GLWindow::InitGameObjects() {
   ResourceManager::LoadTexture("libs/vis/resources/textures/ball.png", false, "ball");
 
   // Window
-  game_objects.push_back(GameObject(
+  game_objects["background"] = GameObject(
       "background",
       glm::vec2(-vis::GLConfig::window_width_px / 2, -vis::GLConfig::window_height_px / 2),
       glm::vec2(vis::GLConfig::window_width_px, vis::GLConfig::window_height_px),
-      ResourceManager::GetTexture("background")));
+      ResourceManager::GetTexture("background"));
 
   // Robots
   for (int i = 0; i < vis::GLConfig::num_robots; ++i) {
     std::string name = "robot" + std::to_string(i);
-    game_objects.push_back(GameObject(name, glm::vec2(0, 130 + -350 * i),
-                                      vis::GLConfig::robot_size_cm,
-                                      ResourceManager::GetTexture("face")));
+    game_objects[name] =
+        GameObject(name, glm::vec2(0, 130 + -350 * i), vis::GLConfig::robot_size_cm,
+                   ResourceManager::GetTexture("face"));
   }
 
   // Ball
-  game_objects.push_back(
+  game_objects["ball"] =
       GameObject("ball", vis::GLConfig::init_ball_pos, vis::GLConfig::ball_radius_cm,
-                 ResourceManager::GetTexture("ball"), vis::GLConfig::init_ball_velocity));
+                 ResourceManager::GetTexture("ball"), vis::GLConfig::init_ball_velocity);
 }
 
 bool vis::GLWindow::RunSimulationStep(float dt) {
@@ -98,14 +98,14 @@ bool vis::GLWindow::RunSimulationStep(float dt) {
 void vis::GLWindow::Render(float dt) {
   glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
-  for (GameObject& game_object : game_objects) {
-    if (game_object.name == "robot0") {
+  for (auto& [name, game_object] : game_objects) {
+    if (name == "robot0") {
       game_object.Draw(renderer, glm::vec2(vis::GLCallback::x_offset_robot0_worldf,
                                            vis::GLCallback::y_offset_robot0_worldf));
-    } else if (game_object.name == "robot1") {
+    } else if (name == "robot1") {
       game_object.Draw(renderer, glm::vec2(vis::GLCallback::x_offset_robot1_worldf,
                                            vis::GLCallback::y_offset_robot1_worldf));
-    } else if (game_object.name == "ball") {
+    } else if (name == "ball") {
       game_object.Move(dt);
       game_object.Draw(renderer);
     } else {
