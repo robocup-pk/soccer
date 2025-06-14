@@ -1,4 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
+
+set(CMAKE_CXX_STANDARD 17)
+cmake_policy(SET CMP0072 NEW) # Suppress warnings related to opengl
+
 project(robocup-pk)
 
 # Ccache
