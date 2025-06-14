@@ -1,46 +1,38 @@
 #ifndef GL_WINDOW_H
 #define GL_WINDOW_H
 
+// std
+#include <vector>
+
 // extern libs
 #include <glad/glad.h>  // ORDER MATTERS (bw glad and glfw)
 #include <GLFW/glfw3.h>
+
+// self
+#include "GameObject.h"
+#include "GLConfig.h"
 
 namespace vis {
 
 class GLWindow {
  public:
-  bool Init(int width_px, int height_px, const char* window_title, bool use_ebo = false);
+  GLWindow(int width_px = GLConfig::window_width_px, int height_px = GLConfig::window_height_px,
+           const char* window_title = GLConfig::window_title);
   void RegisterCallbacks();
+  void InitGameObjects();
   GLFWwindow* GetRawGLFW() const;
 
   // Logic used in simulation
-  void SetScreenColor();
+  bool RunSimulationStep(float dt);
+  void Render(float dt);
   bool Update();
-
-  // OpenGL specific stuff
-  void Draw();
-  void CreateVertexAttributeObject(const float* vertices, unsigned int* indices = nullptr);
-  bool CreateVertexShader();
-  bool CreateFragmentShader();
-  bool CreateShaderProgram();
 
   ~GLWindow();
 
-  unsigned int shader_program_id;
-  unsigned int vao;  // vertex attribute object
-  unsigned int ebo;
-
-  // float x_offset = 0.0f;
-  // float y_offset = 0.0f;
-
  private:
   GLFWwindow* window;
-  int width_px, height_px;
-
-  unsigned int fragment_shader_id;
-  unsigned int vertex_shader_id;
-
-  bool use_ebo;
+  std::vector<GameObject> game_objects;
+  SpriteRenderer renderer;
 };
 
 }  // namespace vis

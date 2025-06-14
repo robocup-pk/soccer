@@ -1,21 +1,21 @@
 // cpp std libs
 #include <iostream>
+#include <filesystem>
 
 // self libs
+#include "GLConfig.h"
 #include "GLWindow.h"
+#include "ResourceManager.h"
+#include "GLCallback.h"
 
-bool vis::GLWindow::Init(int width_px_, int height_px_, const char* window_title, bool use_ebo_) {
-  width_px = width_px_;
-  height_px = height_px_;
-  use_ebo = use_ebo_;
-
+vis::GLWindow::GLWindow(int width_px, int height_px, const char* window_title) {
   // Initialize GLFW
   if (!glfwInit()) {
     std::cout << "[vis::GLWindow::Init] Couldn’t initialise GLFW\n";
-    return false;
+    return;
   }
 
-  // Configure GLFW (option = GLFW_* and value = int)
+  // Configure GLFW options
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -23,61 +23,97 @@ bool vis::GLWindow::Init(int width_px_, int height_px_, const char* window_title
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);  // required on macOS
 #endif
 
-  window = glfwCreateWindow(width_px, height_px, "RocoCup Simulator", nullptr, nullptr);
-
+  // Create a window
+  window = glfwCreateWindow(width_px, height_px, window_title, nullptr, nullptr);
   if (!window) {
     std::cout << "[vis::GLWindow::Init] Couldn’t create window\n";
     glfwTerminate();
-    return false;
+    return;
   }
-
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);  // enable vsync (optional)
 
   // GLAD (manages function pointers for opengl)
   if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
     std::cout << "[vis::GLWindow::Init] Couldn’t load GL functions\n";
-    return false;
+    return;
   }
 
+  // Enable alpha blending for transparency
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   // Area in GLFW window where OpenGL rendering is performed
-  // glfwGetFramebufferSize(window, &width_px, &height_px);
   glViewport(0, 0, width_px, height_px);
 
   RegisterCallbacks();
+  InitGameObjects();
+}
 
-  // Shaders
-  if (!CreateVertexShader()) return false;
-  if (!CreateFragmentShader()) return false;
-  if (!CreateShaderProgram()) return false;
+void vis::GLWindow::InitGameObjects() {
+  // Load Shaders
+  ResourceManager::LoadShader("libs/vis/resources/shaders/Sprite.vs",
+                              "libs/vis/resources/shaders/Sprite.fs", "sprite");
+  ResourceManager::GetShader("sprite").Use().SetInteger("sprite", 0);
 
-  float vertices[] = {0.5f, 0.5f, 0.0f, 0.5f, -0.5f, 0.0f, -0.5f, -0.5f, 0.0f, -0.5f, 0.5f, 0.0f};
+  // Sprite Renderer
+  Shader shader = ResourceManager::GetShader("sprite");
+  shader.Use();
 
-  if (use_ebo) {
-    unsigned int indices[] = {0, 1, 3, 1, 2, 3};
-    CreateVertexAttributeObject(vertices, indices);
-  } else {
-    CreateVertexAttributeObject(vertices, nullptr);
+  renderer.Init(shader);
+
+  // Load Textures
+  ResourceManager::LoadTexture("libs/vis/resources/textures/happyface.png", false, "face");
+  ResourceManager::LoadTexture("libs/vis/resources/textures/background.jpg", false, "background");
+  ResourceManager::LoadTexture("libs/vis/resources/textures/ball.png", false, "ball");
+
+  // Window
+  game_objects.push_back(
+      GameObject("background", glm::vec2(0, 0),
+                 glm::vec2(vis::GLConfig::window_width_px, vis::GLConfig::window_height_px),
+                 ResourceManager::GetTexture("background")));
+
+  // Robots
+  for (int i = 0; i < vis::GLConfig::num_robots; ++i) {
+    std::string name = "robot" + std::to_string(i);
+    game_objects.push_back(GameObject(name, glm::vec2(0, 300 * i), vis::GLConfig::robot_size_cm,
+                                      ResourceManager::GetTexture("face")));
   }
 
-  return true;
+  // Ball
+  game_objects.push_back(
+      GameObject("ball", vis::GLConfig::init_ball_pos, vis::GLConfig::ball_radius_cm,
+                 ResourceManager::GetTexture("ball"), vis::GLConfig::init_ball_velocity));
+}
+
+bool vis::GLWindow::RunSimulationStep(float dt) {
+  Render(dt);
+  return Update();
+}
+
+void vis::GLWindow::Render(float dt) {
+  glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+  for (GameObject& game_object : game_objects) {
+    if (game_object.Name == "robot0") {
+      game_object.Draw(renderer, glm::vec2(vis::GLCallback::x_offset_robot0_worldf,
+                                           vis::GLCallback::y_offset_robot0_worldf));
+    } else if (game_object.Name == "robot1") {
+      game_object.Draw(renderer, glm::vec2(vis::GLCallback::x_offset_robot1_worldf,
+                                           vis::GLCallback::y_offset_robot1_worldf));
+    } else if (game_object.Name == "ball") {
+      game_object.Move(dt);
+      game_object.Draw(renderer);
+    } else {
+      game_object.Draw(renderer);
+    }
+  }
 }
 
 bool vis::GLWindow::Update() {
-  // Add the simulation logic here
-  SetScreenColor();
-  Draw();
-
-  // This is the update logic
   if (glfwWindowShouldClose(window)) return false;
   glfwSwapBuffers(window);  // Large color buffer for each pixel in glfw window
   glfwPollEvents();         // Checks if any event is triggered. Updates state. Callbacks
   return true;
-}
-
-void vis::GLWindow::SetScreenColor() {
-  glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT);  // We also have depth and stencil buffers (?)
 }
 
 GLFWwindow* vis::GLWindow::GetRawGLFW() const { return window; }

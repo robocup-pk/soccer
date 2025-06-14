@@ -1,38 +1,29 @@
 // cpp std libs
 #include <iostream>
+#include <chrono>
 
 // self libs
 #include "GLWindow.h"
 
 int main(int argc, char* argv[]) {
-  constexpr int width_px = 800;
-  constexpr int height_px = 600;
   vis::GLWindow gl_window;
 
-  // To draw rectangle: /libs/vis/demo/DemoShape 1
-  // To draw triangle: /libs/vis/demo/DemoShape
-  bool draw_rectangle;
-  if (argc == 2) {
-    draw_rectangle = argv[1];
+  auto start_time = std::chrono::high_resolution_clock::now();
+  auto last_time = start_time;
+
+  while (1) {
+    // Calculate delta time
+    auto current_time = std::chrono::high_resolution_clock::now();
+    auto duration = current_time - last_time;
+    float dt = std::chrono::duration<float>(duration).count();
+    last_time = current_time;
+
+    // Other Steps
+    // Simulation Step
+    if (!gl_window.RunSimulationStep(dt)) {
+      std::cout << "[main::RunSimulationStep] Stopped" << std::endl;
+      break;
+    }
   }
-
-  if (!gl_window.Init(width_px, height_px, "RoboCup Simulator", draw_rectangle)) {
-    std::cout << "[DemoKeyCallback::main] Error!" << std::endl;
-    return 0;
-  }
-
-  while (gl_window.Update()) {
-  }
-
-  // while(1) {
-  //   glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-  //   glClear(GL_COLOR_BUFFER_BIT);
-  //   glUseProgram(gl_window.shader_program_id);
-  //   glBindVertexArray(gl_window.vao);
-  //   glDrawArrays(GL_TRIANGLES, 0, 3);
-  //   glfwSwapBuffers(gl_window.GetRawGLFW());
-  //   glfwPollEvents();
-  // }
-
   return 0;
 }
