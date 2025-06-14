@@ -142,44 +142,48 @@ void vis::GLWindow::ProcessInput(float dt) {
 
   // Robot 0 movement (WASD)
   if (GLCallback::keys[GLFW_KEY_W]) {
-    if (std::abs(GLCallback::y_offset_robot0 - move_speed) < 1.0f) {
+    if (game_objects["robot0"].moved_position.y - move_speed > -GLConfig::window_height_px / 2) {
       GLCallback::y_offset_robot0 -= move_speed;
     }
   }
   if (GLCallback::keys[GLFW_KEY_S]) {
-    if (std::abs(GLCallback::y_offset_robot0 + move_speed) < 1.0f) {
+    if (game_objects["robot0"].moved_position.y + game_objects["robot1"].size.y + move_speed <
+        GLConfig::window_height_px / 2) {
       GLCallback::y_offset_robot0 += move_speed;
     }
   }
   if (GLCallback::keys[GLFW_KEY_A]) {
-    if (std::abs(GLCallback::x_offset_robot0 - move_speed) < 1.0f) {
+    if (game_objects["robot0"].moved_position.x - move_speed > -GLConfig::window_width_px / 2) {
       GLCallback::x_offset_robot0 -= move_speed;
     }
   }
   if (GLCallback::keys[GLFW_KEY_D]) {
-    if (std::abs(GLCallback::x_offset_robot0 + move_speed) < 1.0f) {
+    if (game_objects["robot0"].moved_position.x + game_objects["robot1"].size.x + move_speed <
+        GLConfig::window_width_px / 2) {
       GLCallback::x_offset_robot0 += move_speed;
     }
   }
 
   // Robot 1 movement (Arrow keys)
   if (GLCallback::keys[GLFW_KEY_UP]) {
-    if (std::abs(GLCallback::y_offset_robot1 - move_speed) < 1.0f) {
+    if (game_objects["robot1"].moved_position.y - move_speed > -GLConfig::window_height_px / 2) {
       GLCallback::y_offset_robot1 -= move_speed;
     }
   }
   if (GLCallback::keys[GLFW_KEY_DOWN]) {
-    if (std::abs(GLCallback::y_offset_robot1 + move_speed) < 1.0f) {
+    if (game_objects["robot1"].moved_position.y + game_objects["robot1"].size.y + move_speed <
+        GLConfig::window_height_px / 2) {
       GLCallback::y_offset_robot1 += move_speed;
     }
   }
   if (GLCallback::keys[GLFW_KEY_LEFT]) {
-    if (std::abs(GLCallback::x_offset_robot1 - move_speed) < 1.0f) {
+    if (game_objects["robot1"].moved_position.x - move_speed > -GLConfig::window_width_px / 2) {
       GLCallback::x_offset_robot1 -= move_speed;
     }
   }
   if (GLCallback::keys[GLFW_KEY_RIGHT]) {
-    if (std::abs(GLCallback::x_offset_robot1 + move_speed) < 1.0f) {
+    if (game_objects["robot1"].moved_position.x + game_objects["robot1"].size.x + move_speed <
+        GLConfig::window_width_px / 2) {
       GLCallback::x_offset_robot1 += move_speed;
     }
   }

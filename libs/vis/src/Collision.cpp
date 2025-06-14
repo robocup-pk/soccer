@@ -53,7 +53,7 @@ void vis::CheckCollision(std::map<std::string, GameObject>& game_objects) {
       GameObject& obj2 = it2->second;
 
       /*
-        MY OWN IMPLEMENTATION
+        // MY OWN IMPLEMENTATION
         // Positions of both the game objects
         glm::vec2 pos1 = obj1.GetCenterPosition();
         glm::vec2 pos2 = obj2.GetCenterPosition();
@@ -74,6 +74,7 @@ void vis::CheckCollision(std::map<std::string, GameObject>& game_objects) {
       */
 
       if (CheckCircularCollision(obj1, obj2)) {
+        std::cout << it1->first << " and " << it2->first << " collide" << std::endl;
         ResolveCircularCollision(obj1, obj2);
       }
     }
