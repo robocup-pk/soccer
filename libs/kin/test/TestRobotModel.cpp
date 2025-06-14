@@ -59,6 +59,7 @@ TEST_F(RobotModelTest, StraightForward) {
   EXPECT_NEAR(wheel_speeds(0), wheel_speeds(1), tolerance);
   // Front right should equal rear right
   EXPECT_NEAR(wheel_speeds(2), wheel_speeds(3), tolerance);
+  EXPECT_NEAR(wheel_speeds(0), -wheel_speeds(2), tolerance);
   EXPECT_NEAR(std::abs(wheel_speeds(0)), std::abs(wheel_speeds(2)), tolerance);
 
   // Verify forward kinematics gives us back the desired velocity
