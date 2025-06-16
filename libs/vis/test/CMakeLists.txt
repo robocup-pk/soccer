@@ -14,6 +14,7 @@ foreach(test_src ${TEST_SOURCES})
     glfw
     glad
     glm
+    cfg_lib
   )
 
   # Register with ctest

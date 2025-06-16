@@ -36,10 +36,7 @@ TEST(ResolveCircularCollisionTest, SymmetricCollision_EqualMass) {
 
   EXPECT_TRUE(vis::CheckCircularCollision(obj1, obj2));
 
-  int mass1 = 10;
-  int mass2 = 10;
-
-  vis::ResolveCircularCollision(obj1, obj2, mass1, mass2);
+  vis::ResolveCircularCollision(obj1, obj2);
 
   // Because masses are equal, they should swap velocities after collision
   EXPECT_NEAR(obj1.velocity.x, -2.0f, 0.01f);
@@ -51,8 +48,10 @@ TEST(ResolveCircularCollisionTest, SymmetricCollision_EqualMass) {
 }
 
 TEST(ResolveCircularCollisionTest, AsymmetricMasses) {
-  vis::GameObject obj1("light", glm::vec2(0.0f, 0.0f), glm::vec2(4.0f, 4.0f), glm::vec2(5.0f, 0.0f));   // Light (mass 1)
-  vis::GameObject obj2("heavy", glm::vec2(2.0f, 0.0f), glm::vec2(4.0f, 4.0f), glm::vec2(0.0f, 0.0f));   // Heavy (mass 100)
+  vis::GameObject obj1("light", glm::vec2(0.0f, 0.0f), glm::vec2(4.0f, 4.0f),
+                       glm::vec2(5.0f, 0.0f), glm::vec2(0, 0), 1);  // Light (mass 1)
+  vis::GameObject obj2("heavy", glm::vec2(2.0f, 0.0f), glm::vec2(4.0f, 4.0f),
+                       glm::vec2(0.0f, 0.0f), glm::vec2(0, 0), 100);  // Heavy (mass 100)
 
   ASSERT_TRUE(vis::CheckCircularCollision(obj1, obj2));
 

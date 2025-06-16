@@ -16,7 +16,8 @@ namespace vis {
 
 class GLWindow {
  public:
-  GLWindow(int width_px = GLConfig::window_width_px, int height_px = GLConfig::window_height_px,
+  GLWindow(int width_px = cfg::Coordinates::window_width_px,
+           int height_px = cfg::Coordinates::window_height_px,
            const char* window_title = GLConfig::window_title);
   void RegisterCallbacks();
   void InitGameObjects();
