@@ -41,28 +41,28 @@ void vis::ResolveCollisionWithWall(std::map<std::string, GameObject>& game_objec
     float top = g.position.y;
     float bottom = g.position.y + g.size.y;
 
-    float boundary_x = GLConfig::window_width_px / 2.0f;
-    float boundary_y = GLConfig::window_height_px / 2.0f;
+    float boundary_x = cfg::Coordinates::window_width_px / 2.0f;
+    float boundary_y = cfg::Coordinates::window_height_px / 2.0f;
 
     // X-axis collision
     if ((right > boundary_x && g.velocity.x > 0) || (left < -boundary_x && g.velocity.x < 0)) {
       g.position.x = std::clamp(g.position.x, -boundary_x, boundary_x - g.size.x);
       g.velocity.x *= -1;
-      g.velocity.x *= 0.5;
+      g.velocity.x *= cfg::SystemConfig::wall_velocity_damping_factor;
     }
 
     // Y-axis collision
     if ((bottom > boundary_y && g.velocity.y > 0) || (top < -boundary_y && g.velocity.y < 0)) {
       g.position.y = std::clamp(g.position.y, -boundary_y, boundary_y - g.size.y);
       g.velocity.y *= -1;
-      g.velocity.y *= 0.5;
+      g.velocity.y *= cfg::SystemConfig::wall_velocity_damping_factor;
     }
   }
 }
 
 bool vis::IsInsideBoundary(const GameObject& obj) {
-  float half_width = GLConfig::window_width_px / 2;
-  float half_height = GLConfig::window_height_px / 2;
+  float half_width = cfg::Coordinates::window_width_px / 2;
+  float half_height = cfg::Coordinates::window_height_px / 2;
   float left = obj.position.x;
   float right = obj.position.x + obj.size.x;
   float top = obj.position.y;
@@ -75,8 +75,8 @@ bool vis::IsInsideBoundary(const GameObject& obj) {
 void vis::ClampInsideBoundary(GameObject& obj) {
   if (obj.name == "background") return;
   // x direction
-  float half_width = GLConfig::window_width_px / 2;
-  float half_height = GLConfig::window_height_px / 2;
+  float half_width = cfg::Coordinates::window_width_px / 2;
+  float half_height = cfg::Coordinates::window_height_px / 2;
 
   obj.position.x = std::clamp(obj.position.x, -half_width, half_width - obj.size.x);
   obj.position.y = std::clamp(obj.position.y, -half_height, half_height - obj.size.y);
