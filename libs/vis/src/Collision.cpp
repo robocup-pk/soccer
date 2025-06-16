@@ -48,12 +48,14 @@ void vis::ResolveCollisionWithWall(std::map<std::string, GameObject>& game_objec
     if ((right > boundary_x && g.velocity.x > 0) || (left < -boundary_x && g.velocity.x < 0)) {
       g.position.x = std::clamp(g.position.x, -boundary_x, boundary_x - g.size.x);
       g.velocity.x *= -1;
+      g.velocity.x *= 0.5;
     }
 
     // Y-axis collision
     if ((bottom > boundary_y && g.velocity.y > 0) || (top < -boundary_y && g.velocity.y < 0)) {
       g.position.y = std::clamp(g.position.y, -boundary_y, boundary_y - g.size.y);
       g.velocity.y *= -1;
+      g.velocity.y *= 0.5;
     }
   }
 }

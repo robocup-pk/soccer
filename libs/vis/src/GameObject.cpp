@@ -42,21 +42,25 @@ void vis::GameObject::Draw(SpriteRenderer& renderer, glm::vec2 position_offset_w
 
 void vis::GameObject::Move(float dt) {
   // TODO: think of a better way
-  if (acceleration.x * velocity.x > 0) {
-    acceleration.x *= -1;
-  }
-  if (acceleration.y * velocity.y > 0) {
-    acceleration.y *= -1;
-  }
+  // if (acceleration.x * velocity.x > 0) {
+  //   acceleration.x *= -1;
+  // }
+  // if (acceleration.y * velocity.y > 0) {
+  //   acceleration.y *= -1;
+  // }
 
-  glm::vec2 new_velocity = velocity + acceleration * dt;
-  if (new_velocity.x * velocity.x < 0) {
-    new_velocity.x = 0;
-  }
-  if (new_velocity.y * velocity.y < 0) {
-    new_velocity.y = 0;
-  }
-  velocity = new_velocity;
+  // glm::vec2 new_velocity = velocity + acceleration * dt;
+  // if (new_velocity.x * velocity.x < 0) {
+  //   new_velocity.x = 0;
+  // }
+  // if (new_velocity.y * velocity.y < 0) {
+  //   new_velocity.y = 0;
+  // }
+  // velocity = new_velocity;
+  float friction = 1.5f;
+  velocity.x -= velocity.x * friction * dt;
+  velocity.y -= velocity.y * friction * dt;
+
   position += velocity * dt;
 
   if (name == "ball") {
