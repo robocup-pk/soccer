@@ -1,0 +1,68 @@
+# This starter workflow is for a CMake project running on multiple platforms.
+name: CMake on multiple platforms
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    timeout-minutes: 15
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        os: [ubuntu-latest,  macos-latest]
+        build_type: [Release]
+        c_compiler: [gcc, clang]
+        include:
+          - os: ubuntu-latest
+            c_compiler: gcc
+            cpp_compiler: g++
+          - os: macos-latest
+            c_compiler: clang
+            cpp_compiler: clang++
+        exclude:
+          - os: ubuntu-latest
+            c_compiler: clang
+          - os: macos-latest
+            c_compiler: gcc
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set reusable strings
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    # Setup dependencies based on OS
+    - name: Setup dependencies on Ubuntu
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libwayland-dev wayland-protocols libxinerama-dev libegl1-mesa-dev libxkbcommon-dev libxrandr-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev libxcursor-dev libxi-dev libx11-dev
+    - name: Setup dependencies on macOS
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew update
+        brew install cmake
+    # Configure CMake
+    - name: Configure CMake for Ubuntu and macOS
+      run: |
+        cmake -B ${{ steps.strings.outputs.build-output-dir }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DENABLE_TESTS=ON \
+          -S ${{ github.workspace }}
+
+    - name: Build
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+    - name: Test
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: ctest --build-config ${{ matrix.build_type }} --output-on-failure

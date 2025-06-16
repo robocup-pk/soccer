@@ -8,8 +8,8 @@
 namespace vis {
 
 void CheckCollision(std::map<std::string, GameObject>& game_objects);
-bool CheckCircularCollision(const GameObject& obj1, const GameObject& obj2);
-void ResolveCircularCollision(GameObject& obj1, GameObject& obj2);
+bool CheckCircularCollision( GameObject& obj1,  GameObject& obj2);
+void ResolveCircularCollision(GameObject& obj1, GameObject& obj2, int mass1 = 1, int mass2 = 100);
 
 }  // namespace vis
 

@@ -19,7 +19,7 @@ class Texture2D {
   unsigned int Filter_Min;  // filtering mode if texture pixels < screen pixels
   unsigned int Filter_Max;  // filtering mode if texture pixels > screen pixels
   // constructor (sets default texture modes)
-  Texture2D();
+  Texture2D(bool is_texture_required = true);
   // generates texture from image data
   void Generate(unsigned int width, unsigned int height, unsigned char *data);
   // binds the texture as the current active GL_TEXTURE_2D texture object

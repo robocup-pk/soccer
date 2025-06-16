@@ -1,7 +1,7 @@
 #include "Texture.h"
 #include "GLWindow.h"
 
-vis::Texture2D::Texture2D()
+vis::Texture2D::Texture2D(bool is_texture_required)
     : Width(0),
       Height(0),
       Internal_Format(GL_RGB),
@@ -10,7 +10,7 @@ vis::Texture2D::Texture2D()
       Wrap_T(GL_REPEAT),
       Filter_Min(GL_LINEAR),
       Filter_Max(GL_LINEAR) {
-  glGenTextures(1, &this->ID);
+  if (is_texture_required) glGenTextures(1, &this->ID);
 }
 
 void vis::Texture2D::Generate(unsigned int width, unsigned int height, unsigned char* data) {
