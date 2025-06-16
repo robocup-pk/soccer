@@ -9,7 +9,7 @@ namespace vis {
 
 void CheckAndResolveCollisions(std::map<std::string, GameObject>& game_objects);
 bool CheckCircularCollision(GameObject& obj1, GameObject& obj2);
-void ResolveCircularCollision(GameObject& obj1, GameObject& obj2, int mass1 = 1, int mass2 = 5);
+void ResolveCircularCollision(GameObject& obj1, GameObject& obj2);
 
 bool IsInsideBoundary(const GameObject& obj);
 void ClampInsideBoundary(GameObject& obj);

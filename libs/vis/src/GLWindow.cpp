@@ -107,20 +107,20 @@ void vis::GLWindow::InitGameObjects() {
       "background",
       glm::vec2(-cfg::Coordinates::window_width_px / 2, -cfg::Coordinates::window_height_px / 2),
       glm::vec2(cfg::Coordinates::window_width_px, cfg::Coordinates::window_height_px),
-      glm::vec2(0, 0), glm::vec2(0, 0), ResourceManager::GetTexture("background"));
+      glm::vec2(0, 0), glm::vec2(0, 0), 0, ResourceManager::GetTexture("background"));
 
   // Robots
   for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
     std::string name = "robot" + std::to_string(i);
-    game_objects[name] = GameObject(
-        name, glm::vec2(0, 130 + -350 * i), vis::GLConfig::robot_size, glm::vec2(0, 0),
-        vis::GLConfig::init_robot_acceleration, ResourceManager::GetTexture("face"));
+    game_objects[name] = GameObject(name, glm::vec2(0, 130 + -350 * i), vis::GLConfig::robot_size,
+                                    glm::vec2(0, 0), vis::GLConfig::init_robot_acceleration, 5,
+                                    ResourceManager::GetTexture("face"));
   }
 
   // Ball
   game_objects["ball"] =
       GameObject("ball", vis::GLConfig::init_ball_pos, vis::GLConfig::ball_radius,
-                 vis::GLConfig::init_ball_velocity, vis::GLConfig::init_ball_acceleration,
+                 vis::GLConfig::init_ball_velocity, vis::GLConfig::init_ball_acceleration, 1,
                  ResourceManager::GetTexture("ball"));
 }
 

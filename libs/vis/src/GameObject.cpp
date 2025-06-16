@@ -15,20 +15,21 @@ vis::GameObject::GameObject()
       is_solid(false) {}
 
 vis::GameObject::GameObject(std::string name, glm::vec2 pos, glm::vec2 size, glm::vec2 velocity,
-                            glm::vec2 acceleration, Texture2D sprite, glm::vec3 color)
+                            glm::vec2 acceleration, float mass_kg, Texture2D sprite, glm::vec3 color)
     : name(name),
       position(pos),
       size(size),
       velocity(velocity),
       acceleration(acceleration),
+      mass_kg(mass_kg),
       color(color),
       rotation(0.0f),
       sprite(sprite),
       is_solid(false) {}
 
 vis::GameObject::GameObject(std::string name, glm::vec2 pos, double radius, glm::vec2 velocity,
-                            glm::vec2 acceleration, Texture2D sprite, glm::vec3 color)
-    : GameObject(name, pos, glm::vec2(radius * 2, radius * 2), velocity, acceleration, sprite,
+                            glm::vec2 acceleration, float mass_kg, Texture2D sprite, glm::vec3 color)
+    : GameObject(name, pos, glm::vec2(radius * 2, radius * 2), velocity, acceleration, mass_kg, sprite,
                  color) {}
 
 void vis::GameObject::Draw(SpriteRenderer& renderer, glm::vec2 position_offset_worldf) {
@@ -42,21 +43,6 @@ void vis::GameObject::Draw(SpriteRenderer& renderer, glm::vec2 position_offset_w
 
 void vis::GameObject::Move(float dt) {
   // TODO: think of a better way
-  // if (acceleration.x * velocity.x > 0) {
-  //   acceleration.x *= -1;
-  // }
-  // if (acceleration.y * velocity.y > 0) {
-  //   acceleration.y *= -1;
-  // }
-
-  // glm::vec2 new_velocity = velocity + acceleration * dt;
-  // if (new_velocity.x * velocity.x < 0) {
-  //   new_velocity.x = 0;
-  // }
-  // if (new_velocity.y * velocity.y < 0) {
-  //   new_velocity.y = 0;
-  // }
-  // velocity = new_velocity;
   float friction = 1.5f;
   velocity.x -= velocity.x * friction * dt;
   velocity.y -= velocity.y * friction * dt;
