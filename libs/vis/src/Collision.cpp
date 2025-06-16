@@ -81,7 +81,7 @@ void vis::CheckCollision(std::map<std::string, GameObject>& game_objects) {
   }
 }
 
-bool vis::CheckCircularCollision(const vis::GameObject& obj1, const vis::GameObject& obj2) {
+bool vis::CheckCircularCollision( vis::GameObject& obj1,  vis::GameObject& obj2) {
   glm::vec2 pos1 = obj1.GetCenterPosition();
   glm::vec2 pos2 = obj2.GetCenterPosition();
 
@@ -97,7 +97,7 @@ bool vis::CheckCircularCollision(const vis::GameObject& obj1, const vis::GameObj
   return distance <= (radius1 + radius2);
 }
 
-void vis::ResolveCircularCollision(vis::GameObject& obj1, vis::GameObject& obj2) {
+void vis::ResolveCircularCollision(vis::GameObject& obj1, vis::GameObject& obj2, int mass1, int mass2) {
   glm::vec2 pos1 = obj1.GetCenterPosition();
   glm::vec2 pos2 = obj2.GetCenterPosition();
 
@@ -133,8 +133,8 @@ void vis::ResolveCircularCollision(vis::GameObject& obj1, vis::GameObject& obj2)
   float v2t = obj2.velocity.x * tx + obj2.velocity.y * ty;  // obj2 tangential component
 
   // Assume equal mass for simplicity (you can add mass property to GameObject)
-  float m1 = 1;    // obj1.mass;
-  float m2 = 100;  // obj2.mass;
+  float m1 = mass1;    // obj1.mass;
+  float m2 = mass2;  // obj2.mass;
 
   // Calculate new normal velocities (1D elastic collision)
   float v1n_new = (v1n * (m1 - m2) + 2 * m2 * v2n) / (m1 + m2);

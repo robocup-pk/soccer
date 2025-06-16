@@ -3,11 +3,6 @@
 #include "GLCallback.h"
 #include "GLWindow.h"
 
-TEST(GLWindowTest, CanCreateWindow) {
-  vis::GLWindow window(800, 600, "Test Window");
-  EXPECT_TRUE(1);
-}
-
 TEST(GLWindowTest, WindowClosesOnEscape) {
   vis::GLWindow window(800, 600, "Test Window");
 
