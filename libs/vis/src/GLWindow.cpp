@@ -1,6 +1,7 @@
 // cpp std libs
 #include <iostream>
 #include <filesystem>
+#include <algorithm>
 
 // self libs
 #include "Collision.h"
@@ -8,6 +9,40 @@
 #include "GLWindow.h"
 #include "ResourceManager.h"
 #include "GLCallback.h"
+
+bool vis::GLWindow::RunSimulationStep(float dt) {
+  ProcessInput(dt);
+  for (auto& [name, game_object] : game_objects) {
+    if (name == "background") continue;
+    game_object.Move(dt);
+  };
+  CheckAndResolveCollisions(game_objects);
+  Render(dt);
+  return Update();
+}
+
+void vis::GLWindow::Render(float dt) {
+  glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+  for (auto& [name, game_object] : game_objects) {
+    if (name == "robot0") {
+      game_object.Draw(renderer, glm::vec2(vis::GLCallback::x_offset_robot0_worldf,
+                                           vis::GLCallback::y_offset_robot0_worldf));
+    } else if (name == "robot1") {
+      game_object.Draw(renderer, glm::vec2(vis::GLCallback::x_offset_robot1_worldf,
+                                           vis::GLCallback::y_offset_robot1_worldf));
+    } else {
+      game_object.Draw(renderer);
+    }
+  }
+}
+
+bool vis::GLWindow::Update() {
+  if (glfwWindowShouldClose(window)) return false;
+  glfwSwapBuffers(window);  // Large color buffer for each pixel in glfw window
+  glfwPollEvents();         // Checks if any event is triggered. Updates state. Callbacks
+  return true;
+}
 
 vis::GLWindow::GLWindow(int width_px, int height_px, const char* window_title) {
   // Initialize GLFW
@@ -72,131 +107,20 @@ void vis::GLWindow::InitGameObjects() {
       "background",
       glm::vec2(-vis::GLConfig::window_width_px / 2, -vis::GLConfig::window_height_px / 2),
       glm::vec2(vis::GLConfig::window_width_px, vis::GLConfig::window_height_px), glm::vec2(0, 0),
-      ResourceManager::GetTexture("background"));
+      glm::vec2(0,0), ResourceManager::GetTexture("background"));
 
   // Robots
   for (int i = 0; i < vis::GLConfig::num_robots; ++i) {
     std::string name = "robot" + std::to_string(i);
     game_objects[name] =
         GameObject(name, glm::vec2(0, 130 + -350 * i), vis::GLConfig::robot_size_cm,
-                   glm::vec2(0, 0), ResourceManager::GetTexture("face"));
+                   glm::vec2(0, 0), vis::GLConfig::init_robot_acceleration, ResourceManager::GetTexture("face"));
   }
 
   // Ball
   game_objects["ball"] =
       GameObject("ball", vis::GLConfig::init_ball_pos, vis::GLConfig::ball_radius_cm,
-                 vis::GLConfig::init_ball_velocity, ResourceManager::GetTexture("ball"));
-}
-
-bool vis::GLWindow::RunSimulationStep(float dt) {
-  vis::CheckCollision(game_objects);
-  Render(dt);
-  ProcessInput(dt);
-  return Update();
-}
-
-void vis::GLWindow::Render(float dt) {
-  glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT);
-  for (auto& [name, game_object] : game_objects) {
-    if (name == "robot0") {
-      game_object.Draw(renderer, glm::vec2(vis::GLCallback::x_offset_robot0_worldf,
-                                           vis::GLCallback::y_offset_robot0_worldf));
-    } else if (name == "robot1") {
-      game_object.Draw(renderer, glm::vec2(vis::GLCallback::x_offset_robot1_worldf,
-                                           vis::GLCallback::y_offset_robot1_worldf));
-    } else if (name == "ball") {
-      game_object.Move(dt);
-      game_object.Draw(renderer);
-    } else {
-      game_object.Draw(renderer);
-    }
-  }
-}
-
-bool vis::GLWindow::Update() {
-  if (glfwWindowShouldClose(window)) return false;
-  glfwSwapBuffers(window);  // Large color buffer for each pixel in glfw window
-  glfwPollEvents();         // Checks if any event is triggered. Updates state. Callbacks
-  return true;
-}
-
-void vis::GLWindow::ProcessInput(float dt) {
-  // Calculate movement speed (with acceleration for held keys)
-  static float speed_multiplier = 1.0f;
-  float move_speed = 0.005f;
-  static float max_possible_speed = 0.03f;
-
-  // Check if any movement keys are pressed
-  bool any_movement_key = GLCallback::keys[GLFW_KEY_W] || GLCallback::keys[GLFW_KEY_X] ||
-                          GLCallback::keys[GLFW_KEY_A] || GLCallback::keys[GLFW_KEY_D] ||
-                          GLCallback::keys[GLFW_KEY_UP] || GLCallback::keys[GLFW_KEY_DOWN] ||
-                          GLCallback::keys[GLFW_KEY_LEFT] || GLCallback::keys[GLFW_KEY_RIGHT];
-
-  if (any_movement_key) {
-    // Increase speed for held keys (acceleration)
-    move_speed = std::min(max_possible_speed, move_speed + 0.002f);
-  } else {
-    move_speed = 0.005;
-  }
-
-  // Robot 0 movement (WASD)
-  if (GLCallback::keys[GLFW_KEY_W]) {
-    if (game_objects["robot0"].moved_position.y - move_speed > -GLConfig::window_height_px / 2) {
-      GLCallback::y_offset_robot0 -= move_speed;
-    }
-  }
-  if (GLCallback::keys[GLFW_KEY_S]) {
-    if (game_objects["robot0"].moved_position.y + game_objects["robot1"].size.y + move_speed <
-        GLConfig::window_height_px / 2) {
-      GLCallback::y_offset_robot0 += move_speed;
-    }
-  }
-  if (GLCallback::keys[GLFW_KEY_A]) {
-    if (game_objects["robot0"].moved_position.x - move_speed > -GLConfig::window_width_px / 2) {
-      GLCallback::x_offset_robot0 -= move_speed;
-    }
-  }
-  if (GLCallback::keys[GLFW_KEY_D]) {
-    if (game_objects["robot0"].moved_position.x + game_objects["robot1"].size.x + move_speed <
-        GLConfig::window_width_px / 2) {
-      GLCallback::x_offset_robot0 += move_speed;
-    }
-  }
-
-  // Robot 1 movement (Arrow keys)
-  if (GLCallback::keys[GLFW_KEY_UP]) {
-    if (game_objects["robot1"].moved_position.y - move_speed > -GLConfig::window_height_px / 2) {
-      GLCallback::y_offset_robot1 -= move_speed;
-    }
-  }
-  if (GLCallback::keys[GLFW_KEY_DOWN]) {
-    if (game_objects["robot1"].moved_position.y + game_objects["robot1"].size.y + move_speed <
-        GLConfig::window_height_px / 2) {
-      GLCallback::y_offset_robot1 += move_speed;
-    }
-  }
-  if (GLCallback::keys[GLFW_KEY_LEFT]) {
-    if (game_objects["robot1"].moved_position.x - move_speed > -GLConfig::window_width_px / 2) {
-      GLCallback::x_offset_robot1 -= move_speed;
-    }
-  }
-  if (GLCallback::keys[GLFW_KEY_RIGHT]) {
-    if (game_objects["robot1"].moved_position.x + game_objects["robot1"].size.x + move_speed <
-        GLConfig::window_width_px / 2) {
-      GLCallback::x_offset_robot1 += move_speed;
-    }
-  }
-
-  // Update world coordinates
-  GLCallback::x_offset_robot0_worldf =
-      GLCallback::x_offset_robot0 * vis::GLConfig::window_width_px;
-  GLCallback::y_offset_robot0_worldf =
-      GLCallback::y_offset_robot0 * vis::GLConfig::window_height_px;
-  GLCallback::x_offset_robot1_worldf =
-      GLCallback::x_offset_robot1 * vis::GLConfig::window_width_px;
-  GLCallback::y_offset_robot1_worldf =
-      GLCallback::y_offset_robot1 * vis::GLConfig::window_height_px;
+                 vis::GLConfig::init_ball_velocity, vis::GLConfig::init_ball_acceleration, ResourceManager::GetTexture("ball"));
 }
 
 GLFWwindow* vis::GLWindow::GetRawGLFW() const { return window; }

@@ -1,87 +1,86 @@
 #include <iostream>
+#include <algorithm>
 
 #include "GLConfig.h"
 #include "Collision.h"
 
-void vis::CheckCollision(std::map<std::string, GameObject>& game_objects) {
-  // Let's just do collision between ball and wall:
-  for (auto& [name, g] : game_objects) {
-    if (name == "ball") {
-      int ball_x = g.GetCenterPosition().x;
-      int ball_y = g.GetCenterPosition().y;
-
-      // x direction
-      if (ball_x + g.size.x / 2 >= GLConfig::window_width_px / 2) {
-        if (g.velocity.x > 0) {
-          g.velocity.x *= -1;
-        }
-      }
-      if (ball_x - g.size.x / 2 <= -GLConfig::window_width_px / 2) {
-        std::cout << "Collision with left wall" << std::endl;
-        if (g.velocity.x < 0) {
-          g.velocity.x *= -1;
-        }
-      }
-
-      // y direction
-      if (ball_y + g.size.y / 2 >= GLConfig::window_height_px / 2) {
-        if (g.velocity.y > 0) {
-          g.velocity.y *= -1;
-        }
-      }
-      if (ball_y - g.size.y / 2 <= -GLConfig::window_height_px / 2) {
-        if (g.velocity.y < 0) {
-          g.velocity.y *= -1;
-        }
-      }
-
-      break;
-    } else if (name == "robot0") {
-      // std::cout << "robot0: " << g.GetCenterPosition().x << " " << g.GetCenterPosition().y
-      //           << std::endl;
-    }
-  }
-
+void vis::CheckAndResolveCollisions(std::map<std::string, GameObject>& game_objects) {
   for (auto it1 = game_objects.begin(); it1 != game_objects.end(); ++it1) {
     if (it1->second.name == "background") continue;
     auto it2 = it1;
     ++it2;
     for (; it2 != game_objects.end(); ++it2) {
       if (it2->second.name == "background") continue;
-
       GameObject& obj1 = it1->second;
       GameObject& obj2 = it2->second;
 
-      /*
-        // MY OWN IMPLEMENTATION
-        // Positions of both the game objects
-        glm::vec2 pos1 = obj1.GetCenterPosition();
-        glm::vec2 pos2 = obj2.GetCenterPosition();
-
-        // Check if they collide
-        bool collision_x = std::fabs(pos1.x - pos2.x) < (obj1.size.x / 2 + obj2.size.x / 2);
-        bool collision_y = std::fabs(pos1.y - pos2.y) < (obj1.size.y / 2 + obj2.size.y / 2);
-
-        if (collision_x && collision_y) {
-          if (std::fabs(pos1.x - pos2.x) < std::fabs(pos1.y - pos2.y)) {
-            obj1.velocity.y *= -1;
-            obj2.velocity.y *= -1;
-          } else {
-            obj1.velocity.x *= -1;
-            obj2.velocity.x *= -1;
-          }
-        }
-      */
-
       if (CheckCircularCollision(obj1, obj2)) {
-        std::cout << it1->first << " and " << it2->first << " collide" << std::endl;
         ResolveCircularCollision(obj1, obj2);
       }
     }
   }
+
+  // Collision with the wall
+  ResolveCollisionWithWall(game_objects);
+
+  // Stay inside the boundary
+  for (auto& [name, g] : game_objects) {
+    if (!IsInsideBoundary(g)) {
+      ClampInsideBoundary(g);
+    }
+  }
 }
 
-bool vis::CheckCircularCollision( vis::GameObject& obj1,  vis::GameObject& obj2) {
+void vis::ResolveCollisionWithWall(std::map<std::string, GameObject>& game_objects) {
+  for (auto& [name, g] : game_objects) {
+    if (name == "background") continue;
+
+    glm::vec2 center = g.GetCenterPosition();
+    float left = g.position.x;
+    float right = g.position.x + g.size.x;
+    float top = g.position.y;
+    float bottom = g.position.y + g.size.y;
+
+    float boundary_x = GLConfig::window_width_px / 2.0f;
+    float boundary_y = GLConfig::window_height_px / 2.0f;
+
+    // X-axis collision
+    if ((right > boundary_x && g.velocity.x > 0) || (left < -boundary_x && g.velocity.x < 0)) {
+      g.position.x = std::clamp(g.position.x, -boundary_x, boundary_x - g.size.x);
+      g.velocity.x *= -1;
+    }
+
+    // Y-axis collision
+    if ((bottom > boundary_y && g.velocity.y > 0) || (top < -boundary_y && g.velocity.y < 0)) {
+      g.position.y = std::clamp(g.position.y, -boundary_y, boundary_y - g.size.y);
+      g.velocity.y *= -1;
+    }
+  }
+}
+
+bool vis::IsInsideBoundary(const GameObject& obj) {
+  float half_width = GLConfig::window_width_px / 2;
+  float half_height = GLConfig::window_height_px / 2;
+  float left = obj.position.x;
+  float right = obj.position.x + obj.size.x;
+  float top = obj.position.y;
+  float bottom = obj.position.y + obj.size.y;
+
+  return left >= -half_width && right <= half_width && top >= -half_height &&
+         bottom <= half_height;
+}
+
+void vis::ClampInsideBoundary(GameObject& obj) {
+  if (obj.name == "background") return;
+  // x direction
+  float half_width = GLConfig::window_width_px / 2;
+  float half_height = GLConfig::window_height_px / 2;
+
+  obj.position.x = std::clamp(obj.position.x, -half_width, half_width - obj.size.x);
+  obj.position.y = std::clamp(obj.position.y, -half_height, half_height - obj.size.y);
+}
+
+bool vis::CheckCircularCollision(vis::GameObject& obj1, vis::GameObject& obj2) {
   glm::vec2 pos1 = obj1.GetCenterPosition();
   glm::vec2 pos2 = obj2.GetCenterPosition();
 
@@ -97,7 +96,8 @@ bool vis::CheckCircularCollision( vis::GameObject& obj1,  vis::GameObject& obj2)
   return distance <= (radius1 + radius2);
 }
 
-void vis::ResolveCircularCollision(vis::GameObject& obj1, vis::GameObject& obj2, int mass1, int mass2) {
+void vis::ResolveCircularCollision(vis::GameObject& obj1, vis::GameObject& obj2, int mass1,
+                                   int mass2) {
   glm::vec2 pos1 = obj1.GetCenterPosition();
   glm::vec2 pos2 = obj2.GetCenterPosition();
 
@@ -133,7 +133,7 @@ void vis::ResolveCircularCollision(vis::GameObject& obj1, vis::GameObject& obj2,
   float v2t = obj2.velocity.x * tx + obj2.velocity.y * ty;  // obj2 tangential component
 
   // Assume equal mass for simplicity (you can add mass property to GameObject)
-  float m1 = mass1;    // obj1.mass;
+  float m1 = mass1;  // obj1.mass;
   float m2 = mass2;  // obj2.mass;
 
   // Calculate new normal velocities (1D elastic collision)
