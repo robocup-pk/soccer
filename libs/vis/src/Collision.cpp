@@ -6,11 +6,11 @@
 
 void vis::CheckAndResolveCollisions(std::map<std::string, GameObject>& game_objects) {
   for (auto it1 = game_objects.begin(); it1 != game_objects.end(); ++it1) {
-    if (it1->second.name == "background") continue;
+    if (it1->second.name == "background" || it1->second.name == "axis") continue;
     auto it2 = it1;
     ++it2;
     for (; it2 != game_objects.end(); ++it2) {
-      if (it2->second.name == "background") continue;
+      if (it2->second.name == "background" || it2->second.name == "axis") continue;
       GameObject& obj1 = it1->second;
       GameObject& obj2 = it2->second;
 
@@ -33,7 +33,7 @@ void vis::CheckAndResolveCollisions(std::map<std::string, GameObject>& game_obje
 
 void vis::ResolveCollisionWithWall(std::map<std::string, GameObject>& game_objects) {
   for (auto& [name, g] : game_objects) {
-    if (name == "background") continue;
+    if (name == "background" || name == "axis") continue;
 
     glm::vec2 center = g.GetCenterPosition();
     float left = g.position.x;
@@ -68,12 +68,11 @@ bool vis::IsInsideBoundary(const GameObject& obj) {
   float top = obj.position.y;
   float bottom = obj.position.y + obj.size.y;
 
-  return left >= -half_width && right <= half_width && top >= -half_height &&
-         bottom <= half_height;
+  return left >= -half_width && right <= half_width && top >= -half_height && bottom <= half_height;
 }
 
 void vis::ClampInsideBoundary(GameObject& obj) {
-  if (obj.name == "background") return;
+  if (obj.name == "background" || obj.name == "axis") return;
   // x direction
   float half_width = cfg::Coordinates::window_width_px / 2;
   float half_height = cfg::Coordinates::window_height_px / 2;
