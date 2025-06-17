@@ -1,11 +1,19 @@
 #ifndef RRT_H
 #define RRT_H
 
+#include "Waypoint.h"
+
 namespace algos {
 
-void FindSinglePath()
+struct Node {
+  state::Waypoint wp;
+  state::Waypoint* parent;
 
+  Node(state::Waypoint& wp, state::Waypoint* parent) : wp(wp), parent(parent) {}
+};
 
-}
+state::Path FindSinglePath(const state::Waypoint& start, const state::Waypoint& goal);
 
-#endif // RRT_H
+}  // namespace algos
+
+#endif  // RRT_H
