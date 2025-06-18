@@ -5,7 +5,6 @@ foreach(demo_src ${DEMO_SOURCES})
   get_filename_component(demo_name ${demo_src} NAME_WE)
 
   add_executable(${demo_name} ${demo_src})
-  
-  target_link_libraries(${demo_name} PRIVATE vis_lib cfg_lib)
-  
+
+  target_link_libraries(${demo_name} PRIVATE algos_lib state_lib vis_lib)
 endforeach()

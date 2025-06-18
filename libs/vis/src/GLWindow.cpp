@@ -25,15 +25,7 @@ void vis::GLWindow::Render(float dt) {
   glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
   for (auto& [name, game_object] : game_objects) {
-    if (name == "robot0") {
-      game_object.Draw(renderer, glm::vec2(vis::GLCallback::x_offset_robot0_worldf,
-                                           vis::GLCallback::y_offset_robot0_worldf));
-    } else if (name == "robot1") {
-      game_object.Draw(renderer, glm::vec2(vis::GLCallback::x_offset_robot1_worldf,
-                                           vis::GLCallback::y_offset_robot1_worldf));
-    } else {
-      game_object.Draw(renderer);
-    }
+    game_object.Draw(renderer);
   }
 }
 
@@ -103,23 +95,28 @@ void vis::GLWindow::InitGameObjects() {
   ResourceManager::LoadTexture("libs/vis/resources/textures/ball.png", false, "ball");
 
   // Window
-  game_objects["background"] = GameObject(
-      "background",
-      glm::vec2(-cfg::Coordinates::window_width_px / 2, -cfg::Coordinates::window_height_px / 2),
-      glm::vec2(cfg::Coordinates::window_width_px, cfg::Coordinates::window_height_px),
-      glm::vec2(0, 0), glm::vec2(0, 0), 0, ResourceManager::GetTexture("background"));
+  Eigen::Vector3d window_position(-cfg::Coordinates::window_width_px / 2,
+                                  -cfg::Coordinates::window_height_px / 2, 0);
+  Eigen::Vector2d window_size(cfg::Coordinates::window_width_px,
+                              cfg::Coordinates::window_height_px);
+
+  game_objects["background"] =
+      GameObject("background", window_position, window_size, Eigen::Vector3d::Zero(),
+                 Eigen::Vector3d::Zero(), 0, ResourceManager::GetTexture("background"));
 
   // Robots
   for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
     std::string name = "robot" + std::to_string(i);
-    game_objects[name] = GameObject(name, glm::vec2(0, 130 + -350 * i), vis::GLConfig::robot_size,
-                                    glm::vec2(0, 0), vis::GLConfig::init_robot_acceleration, 5,
-                                    ResourceManager::GetTexture("face"));
+    Eigen::Vector3d robot_position(0, 130 - 350 * i, 0);
+    game_objects[name] =
+        GameObject(name, robot_position, vis::GLConfig::GetRobotSize(), Eigen::Vector3d::Zero(),
+                   vis::GLConfig::init_robot_acceleration, 5, ResourceManager::GetTexture("face"));
   }
 
   // Ball
   game_objects["ball"] =
-      GameObject("ball", vis::GLConfig::init_ball_pos, vis::GLConfig::ball_radius,
+      GameObject("ball", vis::GLConfig::init_ball_pos,
+                 Eigen::Vector2d(vis::GLConfig::ball_radius * 2, vis::GLConfig::ball_radius * 2),
                  vis::GLConfig::init_ball_velocity, vis::GLConfig::init_ball_acceleration, 1,
                  ResourceManager::GetTexture("ball"));
 }

@@ -1,5 +1,7 @@
-add_subdirectory(glad)
-add_subdirectory(glfw)
-add_subdirectory(glm)
-add_subdirectory(gtest)
-add_subdirectory(eigen)
+file(GLOB libs RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *)
+
+foreach(lib ${libs})
+  if(IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${lib})
+    add_subdirectory(${lib})
+  endif()
+endforeach()

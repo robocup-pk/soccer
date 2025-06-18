@@ -4,9 +4,11 @@
 #include "GLWindow.h"
 #include "Collision.h"
 
+// Position, Velocity, Acceleration, Size, Mass, Texture
+
 TEST(CollisionTest, NoCollision) {
-  vis::GameObject obj1("obj1", glm::vec2(1, 1), glm::vec2(5, 5));
-  vis::GameObject obj2("obj2", glm::vec2(10, 10), glm::vec2(5, 5));
+  vis::GameObject obj1("obj1", Eigen::Vector3d(1, 1, 0), Eigen::Vector2d(5, 5));
+  vis::GameObject obj2("obj2", Eigen::Vector3d(10, 10, 0), Eigen::Vector2d(5, 5));
   EXPECT_FALSE(CheckCircularCollision(obj1, obj2));
 }
 
@@ -14,25 +16,24 @@ TEST(CollisionTest, JustTouching) {
   // --->x
   // |
   // y
-  vis::GameObject obj1("obj1", glm::vec2(0, 0), glm::vec2(4, 4));
-  vis::GameObject obj2("obj2", glm::vec2(4, 0), glm::vec2(4, 4));
+  vis::GameObject obj1("obj1", Eigen::Vector3d(0, 0, 0), Eigen::Vector2d(4, 4));
+  vis::GameObject obj2("obj2", Eigen::Vector3d(4, 0, 0), Eigen::Vector2d(4, 4));
   // Center distance = 4, radii = 2 + 2
   EXPECT_TRUE(CheckCircularCollision(obj1, obj2));
 }
 
 TEST(CollisionTest, Overlapping) {
-  vis::GameObject obj1("obj1", glm::vec2(0, 0), glm::vec2(4, 4));
-  vis::GameObject obj2("obj2", glm::vec2(2, 0),
-                       glm::vec2(4, 4));  // Center distance = 2, radii = 2 + 2
+  vis::GameObject obj1("obj1", Eigen::Vector3d(0, 0, 0), Eigen::Vector2d(4, 4));
+  vis::GameObject obj2("obj2", Eigen::Vector3d(2, 0, 0), Eigen::Vector2d(4, 4));
   EXPECT_TRUE(CheckCircularCollision(obj1, obj2));
 }
 
 TEST(ResolveCircularCollisionTest, SymmetricCollision_EqualMass) {
   // Two equal-sized objects, moving directly toward each other with equal speed
-  vis::GameObject obj1("obj1", glm::vec2(0.0f, 0.0f), glm::vec2(4.0f, 4.0f),
-                       glm::vec2(2.0f, 0.0f));
-  vis::GameObject obj2("obj2", glm::vec2(3.0f, 0.0f), glm::vec2(4.0f, 4.0f),
-                       glm::vec2(-2.0f, 0.0f));
+  vis::GameObject obj1("obj1", Eigen::Vector3d(0.0f, 0.0f, 0), Eigen::Vector2d(4.0f, 4.0f),
+                       Eigen::Vector3d(2.0f, 0.0f, 0));
+  vis::GameObject obj2("obj2", Eigen::Vector3d(3.0f, 0.0f, 0), Eigen::Vector2d(4.0f, 4.0f),
+                       Eigen::Vector3d(-2.0f, 0.0f, 0));
 
   EXPECT_TRUE(vis::CheckCircularCollision(obj1, obj2));
 
@@ -48,10 +49,12 @@ TEST(ResolveCircularCollisionTest, SymmetricCollision_EqualMass) {
 }
 
 TEST(ResolveCircularCollisionTest, AsymmetricMasses) {
-  vis::GameObject obj1("light", glm::vec2(0.0f, 0.0f), glm::vec2(4.0f, 4.0f),
-                       glm::vec2(5.0f, 0.0f), glm::vec2(0, 0), 1);  // Light (mass 1)
-  vis::GameObject obj2("heavy", glm::vec2(2.0f, 0.0f), glm::vec2(4.0f, 4.0f),
-                       glm::vec2(0.0f, 0.0f), glm::vec2(0, 0), 100);  // Heavy (mass 100)
+  vis::GameObject obj1("light", Eigen::Vector3d(0.0f, 0.0f, 0), Eigen::Vector2d(4.0f, 4.0f),
+                       Eigen::Vector3d(5.0f, 0.0f, 0), Eigen::Vector3d(0, 0),
+                       1);  // Light (mass 1)
+  vis::GameObject obj2("heavy", Eigen::Vector3d(2.0f, 0.0f, 0), Eigen::Vector2d(4.0f, 4.0f),
+                       Eigen::Vector3d(0.0f, 0.0f,0), Eigen::Vector3d(0, 0, 0),
+                       100);  // Heavy (mass 100)
 
   ASSERT_TRUE(vis::CheckCircularCollision(obj1, obj2));
 
@@ -64,8 +67,8 @@ TEST(ResolveCircularCollisionTest, AsymmetricMasses) {
 }
 
 TEST(ResolveCircularCollisionTest, OverlapResolved) {
-  vis::GameObject obj1("obj1", glm::vec2(0.0f, 0.0f), glm::vec2(4.0f, 4.0f));
-  vis::GameObject obj2("obj2", glm::vec2(1.0f, 0.0f), glm::vec2(4.0f, 4.0f));
+  vis::GameObject obj1("obj1", Eigen::Vector3d(0.0f, 0.0f,0), Eigen::Vector2d(4.0f, 4.0f));
+  vis::GameObject obj2("obj2", Eigen::Vector3d(1.0f, 0.0f,0), Eigen::Vector2d(4.0f, 4.0f));
 
   ASSERT_TRUE(vis::CheckCircularCollision(obj1, obj2));
   vis::ResolveCircularCollision(obj1, obj2);

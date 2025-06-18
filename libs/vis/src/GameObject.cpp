@@ -4,59 +4,39 @@
 #include "Texture.h"
 #include "Collision.h"
 
-vis::GameObject::GameObject()
-    : position(0.0f, 0.0f),
-      size(1.0f, 1.0f),
-      velocity(0.0f),
-      acceleration(0.0, 0.0),
-      color(1.0f),
-      rotation(0.0f),
-      sprite(),
-      is_solid(false) {}
+vis::GameObject::GameObject(std::string name_, Eigen::Vector3d position_, Eigen::Vector2d size_,
+                            Eigen::Vector3d velocity_, Eigen::Vector3d acceleration_,
+                            float mass_kg_, Texture2D sprite_, Eigen::Vector3d color_)
+    : name(name_), sprite(sprite_), mass_kg(mass_kg_) {
+  position = ConvertEigenVecToGlm(position_);
+  velocity = ConvertEigenVecToGlm(velocity_);
+  acceleration = ConvertEigenVecToGlm(acceleration_);
+  size = ConvertEigenVecToGlm(size_);
+  color = ConvertEigenVecToGlm(color_);
+  radius = std::min(size.x / 2, size.y / 2);
+}
 
-vis::GameObject::GameObject(std::string name, glm::vec2 pos, glm::vec2 size, glm::vec2 velocity,
-                            glm::vec2 acceleration, float mass_kg, Texture2D sprite, glm::vec3 color)
-    : name(name),
-      position(pos),
-      size(size),
-      velocity(velocity),
-      acceleration(acceleration),
-      mass_kg(mass_kg),
-      color(color),
-      rotation(0.0f),
-      sprite(sprite),
-      is_solid(false) {}
-
-vis::GameObject::GameObject(std::string name, glm::vec2 pos, double radius, glm::vec2 velocity,
-                            glm::vec2 acceleration, float mass_kg, Texture2D sprite, glm::vec3 color)
-    : GameObject(name, pos, glm::vec2(radius * 2, radius * 2), velocity, acceleration, mass_kg, sprite,
-                 color) {}
-
-void vis::GameObject::Draw(SpriteRenderer& renderer, glm::vec2 position_offset_worldf) {
-  position.x += position_offset_worldf.x;
-  position.y += position_offset_worldf.y;
-  if (!IsInsideBoundary(*this)) {
-    ClampInsideBoundary(*this);
-  }
-  renderer.DrawSprite(this->sprite, position, this->size, this->rotation, this->color);
+void vis::GameObject::Draw(SpriteRenderer& renderer) {
+  renderer.DrawSprite(sprite, glm::vec2(position.x, position.y), size, 0, color);
 }
 
 void vis::GameObject::Move(float dt) {
   // TODO: think of a better way
-  float friction = 1.5f;
+  float friction = 0.1f;
   velocity.x -= velocity.x * friction * dt;
   velocity.y -= velocity.y * friction * dt;
 
   position += velocity * dt;
-
-  if (name == "ball") {
-    std::cout << name << " Accelert: " << acceleration.x << " " << acceleration.y << std::endl;
-    std::cout << name << " Velocity: " << velocity.x << " " << velocity.y << std::endl;
-    std::cout << name << " Position: " << position.x << " " << position.y << std::endl;
-    std::cout << "dt: " << dt << std::endl << std::endl;
-  }
 }
 
 glm::vec2 vis::GameObject::GetCenterPosition() {
   return glm::vec2(position.x + (size.x / 2), position.y + (size.y / 2));
+}
+
+glm::vec2 vis::ConvertEigenVecToGlm(const Eigen::Vector2d& vec2d) {
+  return glm::vec2(vec2d[0], vec2d[1]);
+}
+
+glm::vec3 vis::ConvertEigenVecToGlm(const Eigen::Vector3d& vec3d) {
+  return glm::vec3(vec3d[0], vec3d[1], vec3d[2]);
 }
