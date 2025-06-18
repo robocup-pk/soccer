@@ -124,8 +124,8 @@ void vis::GLWindow::InitGameObjects() {
 
   // axis
   game_objects["axis"] = GameObject(
-      "axis", glm::vec2(0, -vis::GLConfig::robot_size.y),  // Position for second quadrant
-      vis::GLConfig::robot_size, glm::vec2(0, 0),          // Same size as robot
+      "axis", glm::vec2(0, 0),  // Position for second quadrant
+      vis::GLConfig::robot_size, glm::vec2(0, 0),         // Same size as robot
       glm::vec2(0, 0), 0, ResourceManager::GetTexture("axis"));
 
   // Robots
