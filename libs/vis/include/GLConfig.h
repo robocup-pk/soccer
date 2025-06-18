@@ -34,6 +34,9 @@ struct GLConfig {
       cfg::SystemConfig::init_robot_acceleration_ftpsps * cfg::Coordinates::px_per_ft *
       cfg::Coordinates::ft_to_px_coords;
 
+  // Robot Rotation Speed
+  static constexpr float init_robot_rotation_speed = 90.0f;
+
   // Movement
 };
 }  // namespace vis
