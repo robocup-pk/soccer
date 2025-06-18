@@ -70,4 +70,26 @@ void vis::GLWindow::ProcessInput(float dt) {
   if (GLCallback::keys[GLFW_KEY_X]) {
     game_objects["robot1"].rotation -= rotation_speed * dt;
   }
+
+  // Handle Kick Input
+  static bool k_key_was_pressed = false;
+  bool k_key_is_pressed = GLCallback::keys[GLFW_KEY_K];
+
+  // Handle K key press (only trigger on key press, not hold)
+  if (k_key_is_pressed && !k_key_was_pressed) {
+    // Check if ball exists
+    if (game_objects.find("ball") != game_objects.end()) {
+      GameObject& ball = game_objects["ball"];
+
+      // Find which robot has the ball attached and kick it
+      for (auto& [name, robot] : game_objects) {
+        if (name.find("robot") != std::string::npos && robot.has_ball_attached) {
+          robot.KickBall(ball);
+          break;  // Only one robot can have the ball at a time
+        }
+      }
+    }
+  }
+
+  k_key_was_pressed = k_key_is_pressed;
 }

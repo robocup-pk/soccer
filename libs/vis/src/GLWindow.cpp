@@ -119,14 +119,14 @@ void vis::GLWindow::InitGameObjects() {
   game_objects["background"] = GameObject(
       "background",
       glm::vec2(-cfg::Coordinates::window_width_px / 2, -cfg::Coordinates::window_height_px / 2),
-      glm::vec2(cfg::Coordinates::window_width_px, cfg::Coordinates::window_height_px), glm::vec2(0, 0),
-      glm::vec2(0, 0), 0, ResourceManager::GetTexture("background"));  // Axis
+      glm::vec2(cfg::Coordinates::window_width_px, cfg::Coordinates::window_height_px),
+      glm::vec2(0, 0), glm::vec2(0, 0), 0, ResourceManager::GetTexture("background"));  // Axis
 
   // axis
-  game_objects["axis"] =
-      GameObject("axis", glm::vec2(0, -vis::GLConfig::robot_size.y),  // Position for second quadrant
-                 vis::GLConfig::robot_size, glm::vec2(0, 0),          // Same size as robot
-                 glm::vec2(0, 0), 0, ResourceManager::GetTexture("axis"));
+  game_objects["axis"] = GameObject(
+      "axis", glm::vec2(0, -vis::GLConfig::robot_size.y),  // Position for second quadrant
+      vis::GLConfig::robot_size, glm::vec2(0, 0),          // Same size as robot
+      glm::vec2(0, 0), 0, ResourceManager::GetTexture("axis"));
 
   // Robots
   for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
@@ -134,6 +134,8 @@ void vis::GLWindow::InitGameObjects() {
     game_objects[name] =
         GameObject(name, glm::vec2(0, 130 + -350 * i), vis::GLConfig::robot_size, glm::vec2(0, 0),
                    vis::GLConfig::init_robot_acceleration, 5, ResourceManager::GetTexture("face"));
+    game_objects[name].has_ball_attached = false;
+    game_objects[name].kick_speed = vis::GLConfig::kick_speed;
   }
 
   // Ball

@@ -15,6 +15,8 @@ bool IsInsideBoundary(const GameObject& obj);
 void ClampInsideBoundary(GameObject& obj);
 void ResolveCollisionWithWall(std::map<std::string, GameObject>& game_objects);
 
+void HandleBallRobotCollision(GameObject& ball, GameObject& robot);
+
 }  // namespace vis
 
 #endif  // COLLISION_H

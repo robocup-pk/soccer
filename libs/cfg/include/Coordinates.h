@@ -33,6 +33,9 @@ struct SystemConfig {
   static constexpr float init_robot_speed_ftps = 3;
   static constexpr float max_robot_speed_ftps = 7.5;
   static constexpr glm::vec2 init_robot_acceleration_ftpsps = glm::vec2(0, 0);
+
+  // Kick Speed: Speed when ball is released
+  static constexpr float kick_speed_ftps = 15.0f;
 };
 
 }  // namespace cfg

@@ -37,6 +37,10 @@ struct GLConfig {
   // Robot Rotation Speed
   static constexpr float init_robot_rotation_speed = 90.0f;
 
+  // Robot kick speed
+  static constexpr float kick_speed =
+      cfg::SystemConfig::kick_speed_ftps * cfg::Coordinates::px_per_ft;
+
   // Movement
 };
 }  // namespace vis

@@ -4,7 +4,43 @@
 #include "GLConfig.h"
 #include "Collision.h"
 
+void vis::HandleBallRobotCollision(GameObject& ball, GameObject& robot) {
+  // Check if ball is already attached to this robot
+  if (robot.has_ball_attached) {
+    // Ball is already stuck - update its position to follow robot
+    ball.position = robot.GetFrontAttachmentPoint() - ball.size * 0.5f;
+    ball.velocity = glm::vec2(0, 0);  // Ball moves with robot, no independent velocity
+    return;
+  }
+
+  // Check for collision
+  if (CheckCircularCollision(ball, robot)) {
+    glm::vec2 ball_center = ball.GetCenterPosition();
+
+    // Check if collision is with front sector
+    if (robot.IsPointInFrontSector(ball_center)) {
+      // Stick ball to robot front
+      robot.has_ball_attached = true;
+      ball.position = robot.GetFrontAttachmentPoint() - ball.size * 0.5f;
+      ball.velocity = glm::vec2(0, 0);
+    } else {
+      // Normal collision with sides/back
+      ResolveCircularCollision(ball, robot);
+    }
+  }
+}
+
 void vis::CheckAndResolveCollisions(std::map<std::string, GameObject>& game_objects) {
+  if (game_objects.find("ball") != game_objects.end()) {
+    GameObject& ball = game_objects["ball"];
+
+    for (auto& [name, robot] : game_objects) {
+      if (name.find("robot") != std::string::npos) {
+        HandleBallRobotCollision(ball, robot);
+      }
+    }
+  }
+
   for (auto it1 = game_objects.begin(); it1 != game_objects.end(); ++it1) {
     if (it1->second.name == "background" || it1->second.name == "axis") continue;
     auto it2 = it1;
@@ -14,7 +50,12 @@ void vis::CheckAndResolveCollisions(std::map<std::string, GameObject>& game_obje
       GameObject& obj1 = it1->second;
       GameObject& obj2 = it2->second;
 
-      if (CheckCircularCollision(obj1, obj2)) {
+      // Skip ball-robot collisions (already handled above)
+      bool is_ball_robot_pair =
+          (obj1.name == "ball" && obj2.name.find("robot") != std::string::npos) ||
+          (obj2.name == "ball" && obj1.name.find("robot") != std::string::npos);
+
+      if (!is_ball_robot_pair && CheckCircularCollision(obj1, obj2)) {
         ResolveCircularCollision(obj1, obj2);
       }
     }
@@ -68,7 +109,8 @@ bool vis::IsInsideBoundary(const GameObject& obj) {
   float top = obj.position.y;
   float bottom = obj.position.y + obj.size.y;
 
-  return left >= -half_width && right <= half_width && top >= -half_height && bottom <= half_height;
+  return left >= -half_width && right <= half_width && top >= -half_height &&
+         bottom <= half_height;
 }
 
 void vis::ClampInsideBoundary(GameObject& obj) {
