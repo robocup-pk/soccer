@@ -1,0 +1,8 @@
+add_executable(TestPathTrajectory TestPathTrajectory.cpp)
+target_link_libraries(TestPathTrajectory algos_lib)
+
+add_executable(TestRRTAccuracy TestRRTAccuracy.cpp)
+target_link_libraries(TestRRTAccuracy algos_lib)
+
+add_executable(TestRRTCollisionDebug TestRRTCollisionDebug.cpp)
+target_link_libraries(TestRRTCollisionDebug algos_lib)

@@ -12,6 +12,14 @@
 
 bool vis::GLWindow::RunSimulationStep(float dt) {
   ProcessInput(dt);
+  
+  // Apply selected intelligent movement system before physics update
+  if (current_movement_mode == RRT_MOVEMENT && intelligent_movement) {
+    intelligent_movement->UpdateMovement(game_objects, dt);
+  } else if (current_movement_mode == INTERCEPT_MOVEMENT && intelligent_movement2) {
+    intelligent_movement2->UpdateMovement(game_objects, dt);
+  }
+  
   for (auto& [name, game_object] : game_objects) {
     if (name == "background") continue;
     game_object.Move(dt);
@@ -47,7 +55,7 @@ bool vis::GLWindow::Update() {
 vis::GLWindow::GLWindow(int width_px, int height_px, const char* window_title) {
   // Initialize GLFW
   if (!glfwInit()) {
-    std::cout << "[vis::GLWindow::Init] Couldn’t initialise GLFW\n";
+    std::cout << "[vis::GLWindow::Init] Couldn't initialise GLFW\n";
     return;
   }
 
@@ -62,7 +70,7 @@ vis::GLWindow::GLWindow(int width_px, int height_px, const char* window_title) {
   // Create a window
   window = glfwCreateWindow(width_px, height_px, window_title, nullptr, nullptr);
   if (!window) {
-    std::cout << "[vis::GLWindow::Init] Couldn’t create window\n";
+    std::cout << "[vis::GLWindow::Init] Couldn't create window\n";
     glfwTerminate();
     return;
   }
@@ -71,7 +79,7 @@ vis::GLWindow::GLWindow(int width_px, int height_px, const char* window_title) {
 
   // GLAD (manages function pointers for opengl)
   if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-    std::cout << "[vis::GLWindow::Init] Couldn’t load GL functions\n";
+    std::cout << "[vis::GLWindow::Init] Couldn't load GL functions\n";
     return;
   }
 
@@ -83,6 +91,16 @@ vis::GLWindow::GLWindow(int width_px, int height_px, const char* window_title) {
 
   RegisterCallbacks();
   InitGameObjects();
+  
+  // Initialize both movement systems
+  intelligent_movement = std::make_unique<IntelligentMovement>();
+  intelligent_movement2 = std::make_unique<IntelligentMovement2>();
+  
+  // Start with IntelligentMovement2 (Ball Intercept) by default
+  current_movement_mode = INTERCEPT_MOVEMENT;
+  
+  // Configure both movement systems for robot0
+  SetupTrajectoryMovement();
 }
 
 void vis::GLWindow::InitGameObjects() {
@@ -112,7 +130,21 @@ void vis::GLWindow::InitGameObjects() {
   // Robots
   for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
     std::string name = "robot" + std::to_string(i);
-    game_objects[name] = GameObject(name, glm::vec2(0, 130 + -350 * i), vis::GLConfig::robot_size,
+    glm::vec2 position;
+    
+    if (i == 0) {
+      // robot0 - controlled player
+      position = glm::vec2(0, 200);  // Move robot0 further up
+    } else if (i == 1) {
+      // robot1 - place it DIRECTLY between robot0 and ball to force collision
+      // Robot0 at (0, 200), ball at (-52.5, 0), place robot1 exactly in the middle
+      position = glm::vec2(-26, 100);  // Directly in the path from robot0 to ball
+    } else {
+      // Other robots far away
+      position = glm::vec2(0, 130 + -350 * i);
+    }
+    
+    game_objects[name] = GameObject(name, position, vis::GLConfig::robot_size,
                                     glm::vec2(0, 0), vis::GLConfig::init_robot_acceleration, 5,
                                     ResourceManager::GetTexture("face"));
   }
@@ -122,6 +154,37 @@ void vis::GLWindow::InitGameObjects() {
       GameObject("ball", vis::GLConfig::init_ball_pos, vis::GLConfig::ball_radius,
                  vis::GLConfig::init_ball_velocity, vis::GLConfig::init_ball_acceleration, 1,
                  ResourceManager::GetTexture("ball"));
+}
+
+void vis::GLWindow::SetupTrajectoryMovement() {
+  // Configure RRT-based movement (IntelligentMovement)
+  if (intelligent_movement) {
+    intelligent_movement->SetPlayerName("robot0");
+    intelligent_movement->SetBallName("ball");
+    intelligent_movement->SetMaxSpeed(90.0);
+    intelligent_movement->SetMaxAcceleration(45.0);
+  }
+  
+  // Configure ball intercept-based movement (IntelligentMovement2)
+  if (intelligent_movement2) {
+    intelligent_movement2->SetPlayerName("robot0");
+    intelligent_movement2->SetOpponentName("robot1");
+    intelligent_movement2->SetBallName("ball");
+    intelligent_movement2->SetMaxSpeed(90.0);
+    intelligent_movement2->SetMaxAcceleration(45.0);
+  }
+  
+  std::cout << "[GLWindow] Dual movement system configured:" << std::endl;
+  std::cout << "  - Source player: robot0" << std::endl;
+  std::cout << "  - Opponent: robot1 (robot0 should avoid collision)" << std::endl;
+  std::cout << "  - Target: ball" << std::endl;
+  std::cout << "  - Robot size: 100x100 pixels each" << std::endl;
+  std::cout << "Controls:" << std::endl;
+  std::cout << "  SPACE - Toggle movement system on/off" << std::endl;
+  std::cout << "  1 - Switch to RRT Movement (obstacle avoidance)" << std::endl;
+  std::cout << "  2 - Switch to Ball Intercept Movement (strategic interception)" << std::endl;
+  std::cout << "Current mode: " << (current_movement_mode == RRT_MOVEMENT ? "RRT Movement" : "Ball Intercept Movement") << std::endl;
+  std::cout << "Active system: " << (current_movement_mode == INTERCEPT_MOVEMENT ? "IntelligentMovement2" : "IntelligentMovement") << std::endl;
 }
 
 GLFWwindow* vis::GLWindow::GetRawGLFW() const { return window; }

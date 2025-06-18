@@ -57,6 +57,6 @@ void vis::GameObject::Move(float dt) {
   }
 }
 
-glm::vec2 vis::GameObject::GetCenterPosition() {
+glm::vec2 vis::GameObject::GetCenterPosition() const {
   return glm::vec2(position.x + (size.x / 2), position.y + (size.y / 2));
 }

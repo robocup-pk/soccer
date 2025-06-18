@@ -11,6 +11,8 @@
 // self
 #include "GameObject.h"
 #include "GLConfig.h"
+#include "IntelligentMovement.h"
+#include "IntelligentMovement2.h"
 
 namespace vis {
 
@@ -21,6 +23,7 @@ class GLWindow {
            const char* window_title = GLConfig::window_title);
   void RegisterCallbacks();
   void InitGameObjects();
+  void SetupTrajectoryMovement();
   GLFWwindow* GetRawGLFW() const;
 
   // Logic used in simulation
@@ -35,6 +38,15 @@ class GLWindow {
   GLFWwindow* window;
   std::map<std::string, GameObject> game_objects;
   SpriteRenderer renderer;
+  std::unique_ptr<IntelligentMovement> intelligent_movement;
+  std::unique_ptr<IntelligentMovement2> intelligent_movement2;
+  
+  // Movement system selection
+  enum MovementMode {
+    RRT_MOVEMENT = 1,      // IntelligentMovement (RRT-based)
+    INTERCEPT_MOVEMENT = 2 // IntelligentMovement2 (Ball intercept-based)
+  };
+  MovementMode current_movement_mode;
 };
 
 }  // namespace vis

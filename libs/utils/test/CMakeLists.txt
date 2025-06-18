@@ -9,6 +9,7 @@ foreach(test_src ${TEST_SOURCES})
 
   target_link_libraries(${test_name}
     utils_lib
+    algos_lib
     gtest
     gtest_main
   )

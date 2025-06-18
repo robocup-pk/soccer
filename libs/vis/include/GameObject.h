@@ -27,7 +27,7 @@ class GameObject {
              glm::vec3 color = glm::vec3(1.0f));
   void Draw(SpriteRenderer &renderer, glm::vec2 position_offset = glm::vec2(0, 0));
   void Move(float dt);
-  glm::vec2 GetCenterPosition();
+  glm::vec2 GetCenterPosition() const;
 };
 }  // namespace vis
 
