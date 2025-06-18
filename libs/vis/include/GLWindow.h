@@ -13,6 +13,9 @@
 #include "GLConfig.h"
 #include "IntelligentMovement.h"
 #include "IntelligentMovement2.h"
+#include "MultiPlayerIntelligentMovement2.h"
+#include "MultiPlayerRRT.h"
+#include "TeamCompetition.h"
 
 namespace vis {
 
@@ -40,11 +43,17 @@ class GLWindow {
   SpriteRenderer renderer;
   std::unique_ptr<IntelligentMovement> intelligent_movement;
   std::unique_ptr<IntelligentMovement2> intelligent_movement2;
+  std::unique_ptr<MultiPlayerIntelligentMovement2> multi_player_movement;
+  std::unique_ptr<MultiPlayerRRT> multi_player_rrt;
+  std::unique_ptr<TeamCompetition> team_competition;
   
   // Movement system selection
   enum MovementMode {
-    RRT_MOVEMENT = 1,      // IntelligentMovement (RRT-based)
-    INTERCEPT_MOVEMENT = 2 // IntelligentMovement2 (Ball intercept-based)
+    RRT_MOVEMENT = 1,           // IntelligentMovement (RRT-based, single player)
+    INTERCEPT_MOVEMENT = 2,     // IntelligentMovement2 (Ball intercept-based, single player)
+    MULTIPLAYER_MOVEMENT = 3,   // MultiPlayerIntelligentMovement2 (Multiple players)
+    MULTIPLAYER_RRT = 4,        // MultiPlayerRRT (Multiple players with RRT)
+    TEAM_COMPETITION = 5        // TeamCompetition (Two teams with different strategies)
   };
   MovementMode current_movement_mode;
 };

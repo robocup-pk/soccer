@@ -1,6 +1,7 @@
 add_subdirectory(extern)
 add_subdirectory(algos)
+add_subdirectory(cfg)
+add_subdirectory(motion)
 add_subdirectory(vis)
 add_subdirectory(utils)
 add_subdirectory(kin)
-add_subdirectory(cfg)

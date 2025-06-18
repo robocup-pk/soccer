@@ -1,5 +1,7 @@
 #include <iostream>
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 
 #include "GLConfig.h"
 #include "Collision.h"
@@ -159,3 +161,4 @@ void vis::ResolveCircularCollision(vis::GameObject& obj1, vis::GameObject& obj2)
     obj2.position.y += separation * ny;
   }
 }
+

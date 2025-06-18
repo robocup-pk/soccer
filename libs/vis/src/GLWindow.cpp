@@ -18,6 +18,12 @@ bool vis::GLWindow::RunSimulationStep(float dt) {
     intelligent_movement->UpdateMovement(game_objects, dt);
   } else if (current_movement_mode == INTERCEPT_MOVEMENT && intelligent_movement2) {
     intelligent_movement2->UpdateMovement(game_objects, dt);
+  } else if (current_movement_mode == MULTIPLAYER_MOVEMENT && multi_player_movement) {
+    multi_player_movement->UpdateMovement(game_objects, dt);
+  } else if (current_movement_mode == MULTIPLAYER_RRT && multi_player_rrt) {
+    multi_player_rrt->UpdateMovement(game_objects, dt);
+  } else if (current_movement_mode == TEAM_COMPETITION && team_competition) {
+    team_competition->UpdateMovement(game_objects, dt);
   }
   
   for (auto& [name, game_object] : game_objects) {
@@ -92,12 +98,15 @@ vis::GLWindow::GLWindow(int width_px, int height_px, const char* window_title) {
   RegisterCallbacks();
   InitGameObjects();
   
-  // Initialize both movement systems
+  // Initialize all movement systems
   intelligent_movement = std::make_unique<IntelligentMovement>();
   intelligent_movement2 = std::make_unique<IntelligentMovement2>();
+  multi_player_movement = std::make_unique<MultiPlayerIntelligentMovement2>();
+  multi_player_rrt = std::make_unique<MultiPlayerRRT>();
+  team_competition = std::make_unique<TeamCompetition>();
   
-  // Start with IntelligentMovement2 (Ball Intercept) by default
-  current_movement_mode = INTERCEPT_MOVEMENT;
+  // Start with Team Competition by default
+  current_movement_mode = TEAM_COMPETITION;
   
   // Configure both movement systems for robot0
   SetupTrajectoryMovement();
@@ -127,21 +136,21 @@ void vis::GLWindow::InitGameObjects() {
       glm::vec2(cfg::Coordinates::window_width_px, cfg::Coordinates::window_height_px),
       glm::vec2(0, 0), glm::vec2(0, 0), 0, ResourceManager::GetTexture("background"));
 
-  // Robots
+  // Robots - Set up for team competition (5v5)
   for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
     std::string name = "robot" + std::to_string(i);
     glm::vec2 position;
     
-    if (i == 0) {
-      // robot0 - controlled player
-      position = glm::vec2(0, 200);  // Move robot0 further up
-    } else if (i == 1) {
-      // robot1 - place it DIRECTLY between robot0 and ball to force collision
-      // Robot0 at (0, 200), ball at (-52.5, 0), place robot1 exactly in the middle
-      position = glm::vec2(-26, 100);  // Directly in the path from robot0 to ball
+    if (i < 5) {
+      // Team A (robots 0-4) - positioned on the left side
+      float x_offset = -200 - (i * 50);  // Spread horizontally
+      float y_offset = 150 + (i % 3 - 1) * 100;  // Slight vertical spread
+      position = glm::vec2(x_offset, y_offset);
     } else {
-      // Other robots far away
-      position = glm::vec2(0, 130 + -350 * i);
+      // Team B (robots 5-9) - positioned on the right side  
+      float x_offset = 200 + ((i-5) * 50);  // Spread horizontally
+      float y_offset = 150 + ((i-5) % 3 - 1) * 100;  // Slight vertical spread
+      position = glm::vec2(x_offset, y_offset);
     }
     
     game_objects[name] = GameObject(name, position, vis::GLConfig::robot_size,
@@ -174,17 +183,71 @@ void vis::GLWindow::SetupTrajectoryMovement() {
     intelligent_movement2->SetMaxAcceleration(45.0);
   }
   
-  std::cout << "[GLWindow] Dual movement system configured:" << std::endl;
-  std::cout << "  - Source player: robot0" << std::endl;
-  std::cout << "  - Opponent: robot1 (robot0 should avoid collision)" << std::endl;
+  // Configure multi-player movement system
+  if (multi_player_movement) {
+    // robot0, robot2, robot3 are controlled by AI
+    // robot1, robot4-robot9 are opponents
+    multi_player_movement->SetBallName("ball");
+    multi_player_movement->SetMaxSpeed(90.0);
+    multi_player_movement->SetMaxAcceleration(45.0);
+  }
+  
+  // Configure multi-player RRT system
+  if (multi_player_rrt) {
+    // robot0, robot2, robot3 are controlled by RRT AI
+    // robot1, robot4-robot9 are opponents/obstacles
+    multi_player_rrt->SetBallName("ball");
+    multi_player_rrt->SetMaxSpeed(90.0);
+    multi_player_rrt->SetMaxAcceleration(45.0);
+  }
+  
+  // Configure team competition system
+  if (team_competition) {
+    team_competition->SetBallName("ball");
+    team_competition->SetMaxSpeed(90.0);
+    team_competition->SetMaxAcceleration(45.0);
+  }
+  
+  std::cout << "[GLWindow] Quad movement system configured:" << std::endl;
+  std::cout << "  - AI Players: robot0, robot2, robot3" << std::endl;
+  std::cout << "  - Opponents: robot1, robot4-robot9" << std::endl;
   std::cout << "  - Target: ball" << std::endl;
   std::cout << "  - Robot size: 100x100 pixels each" << std::endl;
   std::cout << "Controls:" << std::endl;
   std::cout << "  SPACE - Toggle movement system on/off" << std::endl;
-  std::cout << "  1 - Switch to RRT Movement (obstacle avoidance)" << std::endl;
-  std::cout << "  2 - Switch to Ball Intercept Movement (strategic interception)" << std::endl;
-  std::cout << "Current mode: " << (current_movement_mode == RRT_MOVEMENT ? "RRT Movement" : "Ball Intercept Movement") << std::endl;
-  std::cout << "Active system: " << (current_movement_mode == INTERCEPT_MOVEMENT ? "IntelligentMovement2" : "IntelligentMovement") << std::endl;
+  std::cout << "  1 - Switch to RRT Movement (robot0 only)" << std::endl;
+  std::cout << "  2 - Switch to Ball Intercept Movement (robot0 only)" << std::endl;
+  std::cout << "  3 - Switch to Multi-Player Ball Intercept (robot0, robot2, robot3)" << std::endl;
+  std::cout << "  4 - Switch to Multi-Player RRT (robot0, robot2, robot3)" << std::endl;
+  std::cout << "  5 - Switch to Team Competition (5v5 with different strategies)" << std::endl;
+  std::string mode_name;
+  std::string system_name;
+  
+  switch (current_movement_mode) {
+    case RRT_MOVEMENT:
+      mode_name = "RRT Movement";
+      system_name = "IntelligentMovement";
+      break;
+    case INTERCEPT_MOVEMENT:
+      mode_name = "Ball Intercept Movement";
+      system_name = "IntelligentMovement2";
+      break;
+    case MULTIPLAYER_MOVEMENT:
+      mode_name = "Multi-Player Movement";
+      system_name = "MultiPlayerIntelligentMovement2";
+      break;
+    case MULTIPLAYER_RRT:
+      mode_name = "Multi-Player RRT";
+      system_name = "MultiPlayerRRT";
+      break;
+    case TEAM_COMPETITION:
+      mode_name = "Team Competition";
+      system_name = "TeamCompetition";
+      break;
+  }
+  
+  std::cout << "Current mode: " << mode_name << std::endl;
+  std::cout << "Active system: " << system_name << std::endl;
 }
 
 GLFWwindow* vis::GLWindow::GetRawGLFW() const { return window; }

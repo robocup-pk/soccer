@@ -2,11 +2,13 @@
 #define COLLISION_H
 
 #include <map>
+#include <vector>
 
 #include "GameObject.h"
 
 namespace vis {
 
+// Basic collision detection functions
 void CheckAndResolveCollisions(std::map<std::string, GameObject>& game_objects);
 bool CheckCircularCollision(GameObject& obj1, GameObject& obj2);
 void ResolveCircularCollision(GameObject& obj1, GameObject& obj2);
