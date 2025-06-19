@@ -4,7 +4,7 @@
 #include <map>
 
 #include "SpriteRenderer.h"
-#include "GLWindow.h"
+#include "GLSimulation.h"
 #include "Shader.h"
 #include "Texture.h"
 #include "GLCallback.h"

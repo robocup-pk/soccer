@@ -3,6 +3,7 @@
 #include "GameObject.h"
 #include "Texture.h"
 #include "Collision.h"
+#include "Coordinates.h"
 
 vis::GameObject::GameObject(std::string name_, Eigen::Vector3d position_, Eigen::Vector2d size_,
                             Eigen::Vector3d velocity_, Eigen::Vector3d acceleration_,
@@ -16,18 +17,46 @@ vis::GameObject::GameObject(std::string name_, Eigen::Vector3d position_, Eigen:
   radius = std::min(size.x / 2, size.y / 2);
 }
 
+/*
+ It converts all the soccer_object stuff from ft to pixel
+ We then draw these game objects
+*/
+vis::GameObject& vis::GameObject::operator=(const state::SoccerObject& soccer_object) {
+  position = ConvertEigenVecToGlm(static_cast<Eigen::Vector3d>(
+                 soccer_object.position.cwiseProduct(cfg::Coordinates::ft_px_coords))) *
+             cfg::Coordinates::px_per_ft;
+
+  velocity = ConvertEigenVecToGlm(static_cast<Eigen::Vector3d>(
+                 soccer_object.velocity.cwiseProduct(cfg::Coordinates::ft_px_coords))) *
+             cfg::Coordinates::px_per_ft;
+
+  acceleration = ConvertEigenVecToGlm(static_cast<Eigen::Vector3d>(
+                     soccer_object.acceleration.cwiseProduct(cfg::Coordinates::ft_px_coords))) *
+                 cfg::Coordinates::px_per_ft;
+
+  size = ConvertEigenVecToGlm(static_cast<Eigen::Vector2d>(soccer_object.size)) *
+         cfg::Coordinates::px_per_ft;
+
+  mass_kg = soccer_object.mass_kg;
+
+  radius = soccer_object.radius_ft * cfg::Coordinates::px_per_ft;
+
+  return *this;
+}
+
 void vis::GameObject::Draw(SpriteRenderer& renderer) {
+  Print();
   renderer.DrawSprite(sprite, glm::vec2(position.x, position.y), size, 0, color);
 }
 
-void vis::GameObject::Move(float dt) {
-  // TODO: think of a better way
-  float friction = 0.1f;
-  velocity.x -= velocity.x * friction * dt;
-  velocity.y -= velocity.y * friction * dt;
+// void vis::GameObject::Move(float dt) {
+//   // TODO: think of a better way
+//   float friction = 0.1f;
+//   velocity.x -= velocity.x * friction * dt;
+//   velocity.y -= velocity.y * friction * dt;
 
-  position += velocity * dt;
-}
+//   position += velocity * dt;
+// }
 
 glm::vec2 vis::GameObject::GetCenterPosition() {
   return glm::vec2(position.x + (size.x / 2), position.y + (size.y / 2));

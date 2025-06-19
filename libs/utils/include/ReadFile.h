@@ -8,6 +8,7 @@
 
 namespace util {
   std::string ReadFile(const std::string& path);
+  std::string GetExecutableDir();
 }
 
 

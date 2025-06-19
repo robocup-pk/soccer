@@ -2,6 +2,7 @@
 #define GAME_OBJECT_H
 
 #include <string>
+#include <iostream>
 
 #include "SpriteRenderer.h"
 #include "SoccerObject.h"
@@ -30,13 +31,19 @@ class GameObject : public state::SoccerObject {
              Texture2D sprite = Texture2D(false),
              Eigen::Vector3d color = Eigen::Vector3d(1.0f, 1.0f, 1.0f));
 
-  GameObject(std::string name, glm::vec2 pos, glm::vec2 size,
-             glm::vec2 velocity = glm::vec2(0.0f, 0.0f),
-             glm::vec2 acceleration = glm::vec2(0.0f, 0.0f), float mass_kg = 1,
-             Texture2D sprite = Texture2D(false), glm::vec3 color = glm::vec3(1.0f));
-  void Draw(SpriteRenderer &renderer);
-  void Move(float dt);
+  GameObject& operator=(const state::SoccerObject& obj);
+
+  inline void SetTexture(const Texture2D& sprite_) { sprite = sprite_; }
+
+  void Draw(SpriteRenderer& renderer);
   glm::vec2 GetCenterPosition();
+
+  void Print() {
+    // std::cout << "Game Object: " << name << ". Pos: " << position.x << " " << position.y
+    //           << std::endl;
+
+    // std::cout << "Size: " << size.x << " " << size.y << std::endl << std::endl;
+  }
 };
 }  // namespace vis
 

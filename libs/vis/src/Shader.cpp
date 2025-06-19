@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "Shader.h"
-#include "GLWindow.h"
+#include "GLSimulation.h"
 
 vis::Shader& vis::Shader::Use() {
   glUseProgram(this->ID);

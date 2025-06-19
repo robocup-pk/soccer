@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "GLCallback.h"
-#include "GLWindow.h"
+#include "GLSimulation.h"
 
 float vis::GLCallback::x_offset_robot0 = 0;
 float vis::GLCallback::y_offset_robot0 = 0;
@@ -41,7 +41,7 @@ void vis::GLCallback::KeyCallback(GLFWwindow* window, int key, int scancode, int
   // TODO: add support for other keyboard keys to make it interactive
 }
 
-void vis::GLWindow::RegisterCallbacks() {
+void vis::GLSimulation::RegisterCallbacks() {
   // Any key pressed
   glfwSetKeyCallback(window, vis::GLCallback::KeyCallback);
 

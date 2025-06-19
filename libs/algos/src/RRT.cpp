@@ -23,7 +23,8 @@ state::Path algos::FindSinglePath(const state::Waypoint& start, const state::Way
     state::Waypoint new_wp = Extend(path[nearest_wp_idx].wp, random_wp);
     path.push_back(Node(new_wp, nearest_wp_idx));
 
-    if ((new_wp - goal) > state::Waypoint(-goal_tolerance.x, -goal_tolerance.y) && (new_wp - goal) < goal_tolerance) {
+    if ((new_wp - goal) > state::Waypoint(-goal_tolerance.x, -goal_tolerance.y) &&
+        (new_wp - goal) < goal_tolerance) {
       std::cout << "Found goal. wp: " << new_wp << ". goal: " << goal << std::endl;
       state::Path sol = ReconstructPath(path.size() - 1, goal, path);
       return sol;
@@ -60,7 +61,8 @@ state::Waypoint algos::Extend(const state::Waypoint& from, const state::Waypoint
   return from + direction_wp * step_size;
 }
 
-int algos::FindNearestWaypointIdx(const state::Waypoint& random_wp, const std::vector<algos::Node>& path) {
+int algos::FindNearestWaypointIdx(const state::Waypoint& random_wp,
+                                  const std::vector<algos::Node>& path) {
   double min_distance = (random_wp - path[0].wp).Norm();
   int nearest_wp_idx = 0;
 

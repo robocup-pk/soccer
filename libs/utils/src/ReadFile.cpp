@@ -8,3 +8,5 @@ std::string util::ReadFile(const std::string& path) {
   buffer << file.rdbuf();
   return buffer.str();
 }
+
+std::string util::GetExecutableDir() { return std::filesystem::current_path().string(); }
