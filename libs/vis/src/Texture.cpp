@@ -1,5 +1,5 @@
 #include "Texture.h"
-#include "GLWindow.h"
+#include "GLSimulation.h"
 
 vis::Texture2D::Texture2D(bool is_texture_required)
     : Width(0),

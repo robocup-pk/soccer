@@ -8,10 +8,10 @@ foreach(test_src ${TEST_SOURCES})
   add_executable(${test_name} ${test_src})
 
   target_link_libraries(${test_name}
-    vis_lib
     gtest
     gtest_main
     cfg_lib
+    state_lib
   )
 
   # Register with ctest

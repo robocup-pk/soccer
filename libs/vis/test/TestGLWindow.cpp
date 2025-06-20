@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 
 #include "GLCallback.h"
-#include "GLWindow.h"
+#include "GLSimulation.h"
 
-TEST(GLWindowTest, WindowClosesOnEscape) {
+TEST(GLSimulationTest, WindowClosesOnEscape) {
   // TODO: do these tests in a better way. I think github has problems showing up the window
-  // vis::GLWindow window(800, 600, "Test Window");
+  // vis::GLSimulation window(800, 600, "Test Window");
 
   // EXPECT_FALSE(glfwWindowShouldClose(window.GetRawGLFW()));
 

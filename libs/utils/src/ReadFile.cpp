@@ -8,3 +8,8 @@ std::string util::ReadFile(const std::string& path) {
   buffer << file.rdbuf();
   return buffer.str();
 }
+
+std::string util::GetExecutableDir() {
+  std::string exec_dir = "/home/duneai/Desktop/robocup/ros_ws/build/soccer_ros/soccer_build/";
+  return exec_dir;  // std::filesystem::current_path().string();
+}

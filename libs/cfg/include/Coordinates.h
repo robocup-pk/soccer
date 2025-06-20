@@ -1,38 +1,44 @@
 #ifndef COORDINATES_H
 #define COORDINATES_H
 
+#include <glm/glm.hpp>
+#include <Eigen/Dense>
+
 namespace cfg {
 
 struct Coordinates {
-  //    |-----> (+x)
-  //    |
-  //    |
-  //    v (+y)
+  // Field size
+  static const float field_width_ft;
+  static const float field_height_ft;
 
-  static constexpr float field_width_ft = 18;
-  static constexpr float field_height_ft = 11;
+  // Window size
+  static const int window_width_px;
+  static const int window_height_px;
 
-  static constexpr int window_width_px = 1200;
-  static constexpr int window_height_px = 733;
+  // Conversion factor
+  static const float px_per_ft;
 
-  static constexpr float px_per_ft = window_width_px / field_width_ft;
-
-  static constexpr glm::vec2 ft_to_px_coords = glm::vec2(1, -1);
+  // Axis-flip conversion (not constexpr because of Eigen)
+  static const Eigen::Vector3d ft_px_coords;
 };
 
 struct SystemConfig {
-  static constexpr int num_robots = 10;
+  static constexpr int num_robots = 2;
 
-  static constexpr float wall_velocity_damping_factor = 0.5;
+  // Wall
+  static const float wall_velocity_damping_factor;
 
-  static constexpr glm::vec2 init_ball_velocity_ftps = glm::vec2(2, 2);
-  static constexpr glm::vec2 init_ball_acceleration_ftpsps = glm::vec2(-7, -7);
-  static constexpr float ball_radius_ft = 0.8;
+  // Ball
+  static const Eigen::Vector3d init_ball_velocity_ftps;
+  static const Eigen::Vector3d init_ball_acceleration_ftpsps;
+  static const float ball_radius_ft;
 
-  static constexpr glm::vec2 robot_size_ft = glm::vec2(1.5, 1.5);
-  static constexpr float init_robot_speed_ftps = 3;
-  static constexpr float max_robot_speed_ftps = 7.5;
-  static constexpr glm::vec2 init_robot_acceleration_ftpsps = glm::vec2(0, 0);
+  // Robots
+  static const Eigen::Vector2d robot_size_ft;
+  static const float init_robot_speed_ftps;
+  static const float max_robot_speed_ftps;
+  static const Eigen::Vector3d init_robot_velocity_ftps;
+  static const Eigen::Vector3d init_robot_acceleration_ftpsps;
 };
 
 }  // namespace cfg

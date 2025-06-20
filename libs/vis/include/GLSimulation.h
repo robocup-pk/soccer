@@ -14,22 +14,26 @@
 
 namespace vis {
 
-class GLWindow {
+class GLSimulation {
  public:
-  GLWindow(int width_px = cfg::Coordinates::window_width_px,
-           int height_px = cfg::Coordinates::window_height_px,
-           const char* window_title = GLConfig::window_title);
+  GLSimulation(int width_px = cfg::Coordinates::window_width_px,
+               int height_px = cfg::Coordinates::window_height_px,
+               const char* window_title = GLConfig::window_title);
   void RegisterCallbacks();
-  void InitGameObjects();
+  void InitGameObjects(std::vector<state::SoccerObject>& soccer_objects);
   GLFWwindow* GetRawGLFW() const;
 
   // Logic used in simulation
-  bool RunSimulationStep(float dt);
+  bool RunSimulationStep(std::vector<state::SoccerObject>& soccer_objects, float dt);
   void Render(float dt);
   bool Update();
   void ProcessInput(float dt);
+  void UpdateGameObject(const state::SoccerObject& soccer_object);
 
-  ~GLWindow();
+  // Outside Access
+  std::map<std::string, GameObject>& GetGameObjects();
+
+  ~GLSimulation();
 
  private:
   GLFWwindow* window;
