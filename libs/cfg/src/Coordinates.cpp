@@ -18,11 +18,11 @@ const float SystemConfig::wall_velocity_damping_factor = 0.9;
 
 // Ball config
 const float SystemConfig::ball_radius_ft = 0.4;
-const Eigen::Vector3d SystemConfig::init_ball_velocity_ftps = Eigen::Vector3d(2, 2, 0);
-const Eigen::Vector3d SystemConfig::init_ball_acceleration_ftpsps = Eigen::Vector3d(-7, -7, 0);
+const Eigen::Vector3d SystemConfig::init_ball_velocity_ftps = Eigen::Vector3d(0, 0, 0);
+const Eigen::Vector3d SystemConfig::init_ball_acceleration_ftpsps = Eigen::Vector3d(0, 0, 0);
 
 // Robot config
-const float SystemConfig::init_robot_speed_ftps = 3;
+const float SystemConfig::init_robot_speed_ftps = 0;
 const float SystemConfig::max_robot_speed_ftps = 7.5;
 const Eigen::Vector2d SystemConfig::robot_size_ft = Eigen::Vector2d(1.5, 1.5);
 const Eigen::Vector3d SystemConfig::init_robot_velocity_ftps =

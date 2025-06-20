@@ -37,13 +37,6 @@ class GameObject : public state::SoccerObject {
 
   void Draw(SpriteRenderer& renderer);
   glm::vec2 GetCenterPosition();
-
-  void Print() {
-    // std::cout << "Game Object: " << name << ". Pos: " << position.x << " " << position.y
-    //           << std::endl;
-
-    // std::cout << "Size: " << size.x << " " << size.y << std::endl << std::endl;
-  }
 };
 }  // namespace vis
 

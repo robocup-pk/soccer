@@ -22,6 +22,9 @@ class SoccerObject {
 
   virtual void Move(float dt) {
     velocity += acceleration * dt;
+    // TODO: think of a better way
+    float friction = 0.1f;
+    velocity -= velocity * friction * dt;
     position += velocity * dt;
   }
 
@@ -46,6 +49,8 @@ class SoccerObject {
 
   std::string name;
 };
+
+void InitSoccerObjects(std::vector<SoccerObject>& soccer_objects);
 
 }  // namespace state
 

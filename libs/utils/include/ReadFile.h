@@ -5,6 +5,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <filesystem>
 
 namespace util {
   std::string ReadFile(const std::string& path);

@@ -4,8 +4,10 @@
 
 namespace algos {
 std::mt19937 rng(std::random_device{}());
-auto x_distribution = std::uniform_real_distribution<double>(0, cfg::Coordinates::field_width_ft);
-auto y_distribution = std::uniform_real_distribution<double>(0, cfg::Coordinates::field_height_ft);
+std::uniform_real_distribution<double> x_distribution =
+    std::uniform_real_distribution<double>(0, cfg::Coordinates::field_width_ft);
+std::uniform_real_distribution<double> y_distribution =
+    std::uniform_real_distribution<double>(0, cfg::Coordinates::field_height_ft);
 double step_size = 1;
 }  // namespace algos
 

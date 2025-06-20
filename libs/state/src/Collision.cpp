@@ -39,10 +39,10 @@ void state::ResolveCollisionWithWall(std::vector<SoccerObject>& soccer_objects) 
     float left = soccer_object.position[0];
     float right = soccer_object.position[0] + soccer_object.size[0];
     float top = soccer_object.position[1];
-    float bottom = soccer_object.position[1] + soccer_object.size[1];
+    float bottom = soccer_object.position[1] - soccer_object.size[1];
 
-    double boundary_x = cfg::Coordinates::window_width_px / 2.0f;
-    double boundary_y = cfg::Coordinates::window_height_px / 2.0f;
+    double boundary_x = cfg::Coordinates::field_width_ft / 2.0f;
+    double boundary_y = cfg::Coordinates::field_height_ft / 2.0f;
 
     // X-axis collision
     if ((right > boundary_x && soccer_object.velocity[0] > 0) ||
@@ -53,10 +53,10 @@ void state::ResolveCollisionWithWall(std::vector<SoccerObject>& soccer_objects) 
     }
 
     // Y-axis collision
-    if ((bottom > boundary_y && soccer_object.velocity[1] > 0) ||
-        (top < -boundary_y && soccer_object.velocity[1] < 0)) {
+    if ((top > boundary_y && soccer_object.velocity[1] > 0) ||
+        (bottom < -boundary_y && soccer_object.velocity[1] < 0)) {
       soccer_object.position[1] =
-          std::clamp(soccer_object.position[1], -boundary_y, boundary_y - soccer_object.size[1]);
+          std::clamp(soccer_object.position[1], -boundary_y + soccer_object.size[1], boundary_y);
       soccer_object.velocity[1] *= -1;
       soccer_object.velocity[1] *= cfg::SystemConfig::wall_velocity_damping_factor;
     }

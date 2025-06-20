@@ -23,7 +23,7 @@ bool vis::GLSimulation::RunSimulationStep(std::vector<state::SoccerObject>& socc
     UpdateGameObject(soccer_object);
   }
 
-  ProcessInput(dt);
+  // ProcessInput(dt);
 
   Render(dt);
   return Update();
@@ -52,8 +52,7 @@ std::map<std::string, vis::GameObject>& vis::GLSimulation::GetGameObjects() {
   return game_objects;
 }
 
-vis::GLSimulation::GLSimulation(std::vector<state::SoccerObject>& soccer_objects, int width_px,
-                                int height_px, const char* window_title) {
+vis::GLSimulation::GLSimulation(int width_px, int height_px, const char* window_title) {
   // Initialize GLFW
   if (!glfwInit()) {
     std::cout << "[vis::GLSimulation::Init] Couldn’t initialise GLFW\n";
@@ -91,7 +90,6 @@ vis::GLSimulation::GLSimulation(std::vector<state::SoccerObject>& soccer_objects
   glViewport(0, 0, width_px, height_px);
 
   RegisterCallbacks();
-  InitGameObjects(soccer_objects);
 }
 
 void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer_objects) {
