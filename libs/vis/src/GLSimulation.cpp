@@ -129,7 +129,7 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
 
   // Load Textures
   std::string robot_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/happyface.png";
+      util::GetExecutableDir() + "/libs/vis/resources/textures/robot.png";
   std::string ball_texture_path =
       util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
 
