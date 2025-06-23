@@ -45,7 +45,7 @@ vis::GameObject& vis::GameObject::operator=(const state::SoccerObject& soccer_ob
 }
 
 void vis::GameObject::Draw(SpriteRenderer& renderer) {
-  renderer.DrawSprite(sprite, glm::vec2(position.x, position.y), size, 0, color);
+  renderer.DrawSprite(sprite, glm::vec2(position.x, position.y), size, glm::degrees(position.z), color);
 }
 
 // void vis::GameObject::Move(float dt) {
