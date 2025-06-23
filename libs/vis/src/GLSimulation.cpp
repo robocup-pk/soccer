@@ -34,8 +34,13 @@ void vis::GLSimulation::UpdateGameObject(const state::SoccerObject& soccer_objec
 }
 
 void vis::GLSimulation::Render(float dt) {
-  glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+  // Render Green Background
+  glClearColor(0.0f, 0.5f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
+
+  // Render field first (background)
+  field.RenderField(this->window);
+
   for (auto& [name, game_object] : game_objects) {
     game_object.Draw(renderer);
   }
@@ -52,7 +57,7 @@ std::map<std::string, vis::GameObject>& vis::GLSimulation::GetGameObjects() {
   return game_objects;
 }
 
-vis::GLSimulation::GLSimulation(int width_px, int height_px, const char* window_title) {
+vis::GLSimulation::GLSimulation() {
   // Initialize GLFW
   if (!glfwInit()) {
     std::cout << "[vis::GLSimulation::Init] Couldn’t initialise GLFW\n";
@@ -68,7 +73,9 @@ vis::GLSimulation::GLSimulation(int width_px, int height_px, const char* window_
 #endif
 
   // Create a window
-  window = glfwCreateWindow(width_px, height_px, window_title, nullptr, nullptr);
+  window = glfwCreateWindow(field.MmToPixels(field.our_field_width_mm),
+                            field.MmToPixels(field.our_field_height_mm), "Soccer Field", nullptr,
+                            nullptr);
   if (!window) {
     std::cout << "[vis::GLSimulation::Init] Couldn’t create window\n";
     glfwTerminate();
@@ -86,8 +93,10 @@ vis::GLSimulation::GLSimulation(int width_px, int height_px, const char* window_
   // Enable alpha blending for transparency
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
   // Area in GLFW window where OpenGL rendering is performed
-  glViewport(0, 0, width_px, height_px);
+  glViewport(0, 0, field.MmToPixels(field.our_field_width_mm),
+             field.MmToPixels(field.our_field_height_mm));
 
   RegisterCallbacks();
 }
@@ -101,6 +110,17 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
   ResourceManager::LoadShader(vertex_shader_path.c_str(), fragment_shader_path.c_str(), "sprite");
   ResourceManager::GetShader("sprite").Use().SetInteger("sprite", 0);
 
+  std::string field_vector_shader_path =
+      util::GetExecutableDir() + "/libs/vis/resources/shaders/field.vs";
+
+  std::string field_fragment_shader_path =
+      util::GetExecutableDir() + "/libs/vis/resources/shaders/field.fs";
+  ResourceManager::LoadShader(field_vector_shader_path.c_str(), field_fragment_shader_path.c_str(),
+                              "field");
+  ResourceManager::GetShader("field").Use().SetInteger("field", 0);
+
+  field.FieldRendererInit();
+
   // sprite Renderer
   Shader shader = ResourceManager::GetShader("sprite");
   shader.Use();
@@ -110,13 +130,10 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
   // Load Textures
   std::string robot_texture_path =
       util::GetExecutableDir() + "/libs/vis/resources/textures/happyface.png";
-  std::string background_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/background.jpg";
   std::string ball_texture_path =
       util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
 
   ResourceManager::LoadTexture(robot_texture_path.c_str(), false, "face");
-  ResourceManager::LoadTexture(background_texture_path.c_str(), false, "background");
   ResourceManager::LoadTexture(ball_texture_path.c_str(), false, "ball");
 
   // Window
@@ -124,10 +141,6 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
                                   -cfg::Coordinates::window_height_px / 2, 0);
   Eigen::Vector2d window_size(cfg::Coordinates::window_width_px,
                               cfg::Coordinates::window_height_px);
-
-  game_objects["background"] =
-      GameObject("background", window_position, window_size, Eigen::Vector3d::Zero(),
-                 Eigen::Vector3d::Zero(), 0, ResourceManager::GetTexture("background"));
 
   // Robots and Ball
   for (const auto& soccer_object : soccer_objects) {
@@ -148,6 +161,9 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
 GLFWwindow* vis::GLSimulation::GetRawGLFW() const { return window; }
 
 vis::GLSimulation::~GLSimulation() {
-  glfwTerminate();  // cleans all the resources taken by glfw
-  // TODO: free the window ptr
+  if (window) {
+    glfwDestroyWindow(window);
+    window = nullptr;
+  }
+  glfwTerminate();
 }

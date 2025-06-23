@@ -12,6 +12,22 @@ if(CCACHE_PROGRAM)
   set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
 endif()
 
+
+# Prevent in-source builds
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+    message(FATAL_ERROR 
+        "In-source builds are not allowed!\n"
+        "Please create a separate build directory and run cmake from there:\n"
+        "  mkdir build\n"
+        "  cd build\n"
+        "  cmake ..\n"
+        "Current source dir: ${CMAKE_SOURCE_DIR}\n"
+        "Current binary dir: ${CMAKE_BINARY_DIR}")
+endif()
+
+# To set the paths relative to build directory
+add_compile_definitions(CMAKE_BUILD_DIR="${CMAKE_CURRENT_BINARY_DIR}")
+
 # Tests
 option(ENABLE_TESTS "Build unit tests" ON)
 if (ENABLE_TESTS)
