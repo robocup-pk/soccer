@@ -9,7 +9,4 @@ std::string util::ReadFile(const std::string& path) {
   return buffer.str();
 }
 
-std::string util::GetExecutableDir() {
-  std::string exec_dir = "/home/duneai/Desktop/robocup/ros_ws/build/soccer_ros/soccer_build/";
-  return exec_dir;  // std::filesystem::current_path().string();
-}
+std::string util::GetExecutableDir() { return CMAKE_BUILD_DIR; }
