@@ -26,6 +26,10 @@ vis::GameObject& vis::GameObject::operator=(const state::SoccerObject& soccer_ob
                  soccer_object.position.cwiseProduct(cfg::Coordinates::ft_px_coords))) *
              cfg::Coordinates::px_per_ft;
 
+  // TODO: The angle is in radians, we do not need to convert it to pixels. Need to add proper for
+  // it later, and also for velocity and acceleration
+  position.z = soccer_object.position[2];  // angle in radians
+
   velocity = ConvertEigenVecToGlm(static_cast<Eigen::Vector3d>(
                  soccer_object.velocity.cwiseProduct(cfg::Coordinates::ft_px_coords))) *
              cfg::Coordinates::px_per_ft;
@@ -45,7 +49,8 @@ vis::GameObject& vis::GameObject::operator=(const state::SoccerObject& soccer_ob
 }
 
 void vis::GameObject::Draw(SpriteRenderer& renderer) {
-  renderer.DrawSprite(sprite, glm::vec2(position.x, position.y), size, glm::degrees(position.z), color);
+  renderer.DrawSprite(sprite, glm::vec2(position.x, position.y), size, glm::degrees(position.z),
+                      color);
 }
 
 // void vis::GameObject::Move(float dt) {
