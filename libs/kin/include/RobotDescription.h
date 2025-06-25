@@ -9,6 +9,7 @@ namespace kin {
   This struct describes the robot shape relating to kinematics.
 */
 struct RobotDescription {
+  static constexpr int num_wheels = 4;
   // Radius of the wheel
   double wheel_radius_m;
 
