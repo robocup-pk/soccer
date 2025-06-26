@@ -8,12 +8,9 @@ void state::CheckAndResolveCollisions(std::vector<SoccerObject>& soccer_objects)
   // Update Ball Attachment
   for (auto& obj : soccer_objects) {
     if (obj.name == "ball" && obj.is_attached) {
-      for (auto& robot : soccer_objects) {
-        if (robot.name == obj.attached_to) {
-          UpdateAttachedBallPosition(robot, obj);
-          break;
-        }
-      }
+      SoccerObject robot = *obj.attached_to;
+      UpdateAttachedBallPosition(robot, obj);
+      break;
     }
   }
 
@@ -197,7 +194,7 @@ bool state::IsBallInFrontOfRobot(SoccerObject& robot, SoccerObject& ball) {
 
 void state::HandleBallSticking(SoccerObject& robot, SoccerObject& ball) {
   ball.is_attached = true;
-  ball.attached_to = robot.name;
+  ball.attached_to = &robot;
 
   UpdateAttachedBallPosition(robot, ball);
 }

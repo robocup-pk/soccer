@@ -26,20 +26,12 @@ bool state::SoccerObject::IsPointInFrontSector(Eigen::Vector2d point) {
   Eigen::Vector3d center = GetCenterPosition();
   Eigen::Vector2d robot_center(center.x(), center.y());
 
-  // std::cout << "Robot center: " << robot_center.transpose() << std::endl;
-  // std::cout << "Point: " << point.transpose() << std::endl;
-
   // Calculate front direction and flip Y to match graphics coordinate system
   float rotation_rad = (position[2] - M_PI / 2.0f);
-  Eigen::Vector2d front_dir(cos(rotation_rad),
-                            -sin(rotation_rad));  // Notice the MINUS sign on sin
+  Eigen::Vector2d front_dir(cos(rotation_rad), -sin(rotation_rad));
 
   Eigen::Vector2d to_point = point - robot_center;
   float forward_component = to_point.dot(front_dir);
-
-  // std::cout << "Robot rotation (degrees): " << position[2] * 180.0f / M_PI << std::endl;
-  // std::cout << "Front direction: " << front_dir.transpose() << std::endl;
-  // std::cout << "Forward component: " << forward_component << std::endl;
 
   if (forward_component <= 0) {
     return false;
@@ -47,9 +39,6 @@ bool state::SoccerObject::IsPointInFrontSector(Eigen::Vector2d point) {
 
   float dot_product = to_point.normalized().dot(front_dir);
   float angle_threshold = cos(M_PI / 6.0f);
-
-  // std::cout << "Dot product: " << dot_product << ", Angle threshold: " << angle_threshold
-  //           << std::endl;
 
   return dot_product > angle_threshold;
 }

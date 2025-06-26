@@ -63,7 +63,7 @@ class SoccerObject {
 
   // Ball Attachment
   bool is_attached = false;
-  std::string attached_to = "";
+  SoccerObject *attached_to;
 };
 
 void InitSoccerObjects(std::vector<SoccerObject>& soccer_objects);
