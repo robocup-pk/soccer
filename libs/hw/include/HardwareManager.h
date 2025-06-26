@@ -12,10 +12,11 @@
 namespace hw {
 class HardwareManager {
  public:
-  HardwareManager(size_t numMotors = 4) : motor_driver_(numMotors) {}
+  HardwareManager(size_t numMotors = 4) : motor_driver_(numMotors) { init(); }
+
   ~HardwareManager() { motor_driver_.stop(); }
 
-  void init(const std::string& port) { motor_driver_.init(port); }
+  void init(const std::string& port = "/dev/ttyAMA0") { motor_driver_.init(port); motor_driver_.start(); }
   void setSpeeds(const std::vector<int>& speeds) {}
 
  private:

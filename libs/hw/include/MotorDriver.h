@@ -1,5 +1,6 @@
 #ifndef HW_MOTOR_DRIVER_H
 #define HW_MOTOR_DRIVER_H
+
 #include <libserial/SerialPort.h>
 #include <vector>
 #include <atomic>
@@ -16,7 +17,7 @@ namespace hw {
 
 class MotorDriver {
  public:
-  MotorDriver(size_t numMotors);
+  MotorDriver(size_t numMotors = 4);
   ~MotorDriver();
 
   void init(const std::string& port = "/dev/ttyAMA0");
@@ -41,4 +42,4 @@ class MotorDriver {
 
 }  // namespace hw
 
-#endif  HW_MOTOR_DRIVER_H
+#endif  // HW_MOTOR_DRIVER_H
