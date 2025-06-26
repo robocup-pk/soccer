@@ -1,44 +1,44 @@
-#ifndef MOTOR_DRIVER_H
-#define MOTOR_DRIVER_H
-
-#include <mutex>
-
+#ifndef HW_MOTOR_DRIVER_H
+#define HW_MOTOR_DRIVER_H
 #include <libserial/SerialPort.h>
-
-#include "MotorModel.h"
+#include <vector>
+#include <atomic>
+#include <thread>
+#include <mutex>
+#include <string>
+#include <iomanip>
+#include <sstream>
+#include <stdexcept>
+#include <iostream>
+#include <chrono>
 
 namespace hw {
 
-enum class MotorType { MODEL, REAL };
-
 class MotorDriver {
  public:
-  MotorDriver(std::shared_ptr<LibSerial::SerialPort> shared_serial_port);
+  MotorDriver(size_t numMotors);
+  ~MotorDriver();
 
-  void SendWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm);
-
-  Eigen::Vector4d GetMotorsRpms();
-
-  bool NewDataAvailable();
-
-  bool VerifyRpms(std::vector<int> rpms);
-
-  bool new_data_available = true;
+  void init(const std::string& port = "/dev/ttyAMA0");
+  void setSpeeds(const std::vector<int>& speeds);
+  void start();
+  void stop();
 
  private:
-#ifdef BUILD_ON_PI
-  MotorType motor_type = MotorType::REAL;
-#else
-  MotorType motor_type = MotorType::MODEL;
-#endif
+  void controlLoop();
+  void senseLoop();
 
-  std::vector<MotorModel> motors;
-  Eigen::Vector4d motors_rpms;
+  size_t num_motors_;
+  LibSerial::SerialPort serial_port_;
+  std::vector<int> desired_speeds_;
+  std::vector<int> sensed_speeds_;
+  std::atomic<bool> running_;
+  std::mutex speed_mutex_;
 
-  std::shared_ptr<LibSerial::SerialPort> shared_serial_port;
-  std::mutex shared_serial_port_mutex;
+  std::thread control_thread_;
+  std::thread sense_thread_;
 };
 
 }  // namespace hw
 
-#endif  // MOTOR_DRIVER_H
+#endif HW_MOTOR_DRIVER_H
