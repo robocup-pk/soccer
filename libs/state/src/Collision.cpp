@@ -230,25 +230,32 @@ void state::DetachBall(SoccerObject& ball, float detach_velocity) {
 
   // Get robot's current orientation for detachment direction
   float robot_rotation = robot->position[2] - M_PI / 2.0f;
+  
+  // Calculate front direction vector (same as in IsPointInFrontSector)
+  Eigen::Vector2d front_dir(cos(robot_rotation), -sin(robot_rotation));
+  
+  // Apply detach velocity in the front direction
+  float detach_vel_x = detach_velocity * front_dir.x();
+  float detach_vel_y = detach_velocity * front_dir.y();
 
-  // Detach with forward velocity relative to robot's orientation
-  float detach_vel_x = detach_velocity * cos(robot_rotation);
-  float detach_vel_y = detach_velocity * (-sin(robot_rotation));
-
-  // Ensure minimum velocity to prevent immediate re-attachment
-  float min_velocity = 1.0f;  
-  if (abs(detach_vel_x) < min_velocity && abs(detach_vel_y) < min_velocity) {
-
-    // If both velocities are too small, use default forward direction
-    detach_vel_x = 0.0f;
-    detach_vel_y = min_velocity;
+  // Debug: Check if velocities make sense
+  float velocity_magnitude = sqrt(detach_vel_x * detach_vel_x + detach_vel_y * detach_vel_y);
+  
+  // If velocity is too small, ensure minimum movement in front direction
+  if (velocity_magnitude < 0.5f) {
+    // Use a minimum velocity in the front direction
+    float min_velocity = 1.0f;
+    detach_vel_x = min_velocity * front_dir.x();
+    detach_vel_y = min_velocity * front_dir.y();
   }
 
   // Move ball slightly away from robot before detaching to prevent immediate re-collision
   Eigen::Vector3d robot_center = robot->GetCenterPosition();
-  float separation_distance = 1.5f; // Reduced separation distance for gentler detachment
-  ball.position[0] = robot_center.x() + separation_distance * cos(robot_rotation) - ball.size[0] / 2.0f;
-  ball.position[1] = robot_center.y() + separation_distance * (-sin(robot_rotation)) + ball.size[1] / 2.0f;
+  float separation_distance = 1.5f;
+  
+  // Position ball in front of robot using the same front direction
+  ball.position[0] = robot_center.x() + separation_distance * front_dir.x() - ball.size[0] / 2.0f;
+  ball.position[1] = robot_center.y() + separation_distance * front_dir.y() + ball.size[1] / 2.0f;
 
   // Set ball velocity for natural detachment
   ball.velocity[0] = detach_vel_x;
