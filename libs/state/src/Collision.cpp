@@ -23,28 +23,25 @@ void state::CheckAndResolveCollisions(std::vector<SoccerObject>& soccer_objects)
       SoccerObject& obj1 = soccer_objects[i];
       SoccerObject& obj2 = soccer_objects[j];
 
-      if (obj1.name == "ball") {
-        if (IsBallInFrontOfRobot(obj2, obj1)) {
-          std::cout << "Ball is in front of " << obj2.name << std::endl;
-          if (obj1.is_attached) continue;  // Skip only this pair
-
-          HandleBallSticking(obj2, obj1);
-          continue;  // Continue to next pair
-        }
-      }
-
-      if (obj2.name == "ball") {
-        if (IsBallInFrontOfRobot(obj1, obj2)) {
-          std::cout << "Ball is in front of " << obj1.name << std::endl;
-          if (obj2.is_attached) continue;  // Skip only this pair
-
-          HandleBallSticking(obj1, obj2);
-          continue;  // Continue to next pair
-        }
-      }
-
       // Normal collision detection continues for all other objects
       if (CheckCircularCollision(obj1, obj2)) {
+        if (obj1.name == "ball") {
+          if (IsBallInFrontOfRobot(obj2, obj1)) {
+            if (obj1.is_attached) continue;  // Skip only this pair
+
+            HandleBallSticking(obj2, obj1);
+            continue;  // Continue to next pair
+          }
+        }
+
+        if (obj2.name == "ball") {
+          if (IsBallInFrontOfRobot(obj1, obj2)) {
+            if (obj2.is_attached) continue;  // Skip only this pair
+
+            HandleBallSticking(obj1, obj2);
+            continue;  // Continue to next pair
+          }
+        }
         ResolveCircularCollision(obj1, obj2);
       }
     }
@@ -195,28 +192,7 @@ void state::ResolveCircularCollision(state::SoccerObject& obj1, state::SoccerObj
 bool state::IsBallInFrontOfRobot(SoccerObject& robot, SoccerObject& ball) {
   Eigen::Vector3d ball_center = ball.GetCenterPosition();
   Eigen::Vector2d ball_point(ball_center.x(), ball_center.y());
-  Eigen::Vector3d robot_center = robot.GetCenterPosition();
-  Eigen::Vector2d robot_center_2d(robot_center.x(), robot_center.y());
-
-  float rotation_rad = (robot.position[2] - M_PI / 2.0f);
-  Eigen::Vector2d front_dir(cos(rotation_rad), -sin(rotation_rad));
-
-  // Get robot radius
-  float robot_radius = std::min(robot.size[0], robot.size[1]) / 2.0f;
-
-  //  Distance between centers
-  float center_to_center_distance = (robot_center_2d - ball_point).norm();
-  float separation = center_to_center_distance - robot_radius;
-  float ball_radius = ball.size[0] / 2.0f;
-
-  if (robot.name == "robot0") {
-    std::cout << "Robot Centre Position: " << robot_center.transpose() << std::endl;
-    std::cout << "Ball Centre Position: " << ball_center.transpose() << std::endl;
-    std::cout << "Center-to-center distance: " << center_to_center_distance << std::endl;
-    std::cout << "Separation (surface-to-surface): " << separation << std::endl;
-    std::cout << "Ball radius: " << ball_radius << std::endl;
-  }
-  return robot.IsPointInFrontSector(ball_point) && separation <= ball_radius;
+  return robot.IsPointInFrontSector(ball_point);
 }
 
 void state::HandleBallSticking(SoccerObject& robot, SoccerObject& ball) {
@@ -230,11 +206,11 @@ void state::UpdateAttachedBallPosition(SoccerObject& robot, SoccerObject& ball) 
   Eigen::Vector3d robot_center = robot.GetCenterPosition();
   float robot_rotation = robot.position[2] - M_PI / 2.0f;
 
-  // MOST EFFICIENT: Use flat surface distance for D-shaped robot
+  // Use flat surface distance for D-shaped robot
   float robot_radius = std::min(robot.size[0], robot.size[1]) / 2.0f;
   float ball_radius = ball.size[0] / 2.0f;
 
-  // Optimal attachment distance for flat surface contact
+  // Attachment distance for flat surface contact
   float attachment_distance = robot_radius * 0.6f + ball_radius * 0.4f;
 
   // Calculate front position using unit vector
