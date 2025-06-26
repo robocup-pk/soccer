@@ -30,14 +30,14 @@ void MotorDriver::setSpeeds(const std::vector<int>& speeds) {
     return;
   }
 
-  std::lock_guard<std::mutex> lock(speed_mutex_);
+  std::unique_lock<std::mutex> lock(speed_mutex_);
   desired_speeds_ = speeds;
 }
 
 void MotorDriver::start() {
   running_ = true;
   control_thread_ = std::thread(&MotorDriver::controlLoop, this);
-  sense_thread_ = std::thread(&MotorDriver::senseLoop, this);
+  // sense_thread_ = std::thread(&MotorDriver::senseLoop, this);
 }
 
 void MotorDriver::stop() {
@@ -57,10 +57,10 @@ void MotorDriver::stop() {
 }
 
 void MotorDriver::controlLoop() {
+  std::vector<int> current_speeds;
   while (running_) {
-    std::vector<int> current_speeds;
     {
-      std::lock_guard<std::mutex> lock(speed_mutex_);
+      std::unique_lock<std::mutex> lock(speed_mutex_);
       current_speeds = desired_speeds_;
     }
 
@@ -76,12 +76,13 @@ void MotorDriver::controlLoop() {
     }
     command += "\n";  // Fix: Change "/n" to "\n"
     try {
+      std::cout << "Sent: " << command << std::endl;
       serial_port_.Write(command);
     } catch (const std::exception& e) {
       std::cerr << "Failed to write to serial port: " << e.what() << std::endl;
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
 }
 
