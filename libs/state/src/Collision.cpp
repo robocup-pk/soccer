@@ -220,3 +220,42 @@ void state::UpdateAttachedBallPosition(SoccerObject& robot, SoccerObject& ball) 
   ball.position[2] = 0;
   ball.velocity = Eigen::Vector3d(0, 0, 0);
 }
+
+void state::DetachBall(SoccerObject& ball, float detach_velocity) {
+  if (!ball.is_attached || !ball.attached_to) {
+    return;  // Ball is not attached
+  }
+
+  SoccerObject* robot = ball.attached_to;
+
+  // Get robot's current orientation for detachment direction
+  float robot_rotation = robot->position[2] - M_PI / 2.0f;
+
+  // Detach with forward velocity relative to robot's orientation
+  float detach_vel_x = detach_velocity * cos(robot_rotation);
+  float detach_vel_y = detach_velocity * (-sin(robot_rotation));
+
+  // Ensure minimum velocity to prevent immediate re-attachment
+  float min_velocity = 1.0f;  
+  if (abs(detach_vel_x) < min_velocity && abs(detach_vel_y) < min_velocity) {
+
+    // If both velocities are too small, use default forward direction
+    detach_vel_x = 0.0f;
+    detach_vel_y = min_velocity;
+  }
+
+  // Move ball slightly away from robot before detaching to prevent immediate re-collision
+  Eigen::Vector3d robot_center = robot->GetCenterPosition();
+  float separation_distance = 1.5f; // Reduced separation distance for gentler detachment
+  ball.position[0] = robot_center.x() + separation_distance * cos(robot_rotation) - ball.size[0] / 2.0f;
+  ball.position[1] = robot_center.y() + separation_distance * (-sin(robot_rotation)) + ball.size[1] / 2.0f;
+
+  // Set ball velocity for natural detachment
+  ball.velocity[0] = detach_vel_x;
+  ball.velocity[1] = detach_vel_y;
+  ball.velocity[2] = 0;
+
+  // Clear attachment state
+  ball.is_attached = false;
+  ball.attached_to = nullptr;
+}
