@@ -114,5 +114,6 @@
     "string.h": "c",
     "glad.h": "c",
     "stdfloat": "cpp"
-  }
+  },
+  "C_Cpp.default.compilerPath": "/usr/bin/gcc"
 }
