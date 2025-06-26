@@ -13,11 +13,15 @@ class Estimator {
   void NewGyroData(double w_radps);
   void NewCameraData(Eigen::Vector3d pose_meas);
 
- private:
+  Eigen::Vector3d GetPose();
+
+  bool initialized_pose;
   kin::RobotDescription robot_desc;
   std::unique_ptr<kin::RobotModel> robot_model;
+ private:
   bool initialized_encoder;
   double t_last_encoder;
+  double t_last_gyro;
 
   Eigen::Vector4d last_ticks;
 
@@ -30,6 +34,13 @@ class Estimator {
   double init_sigma_rad;
   double process_sigma_m;
   double process_sigma_rad;
+
+  double meas_sigma_m;
+  double meas_sigma_rad;
+
+  bool initialized_gyro;
+
+  double angle_random_walk_per_rt_t;
 };
 }  // namespace est
 

@@ -10,4 +10,4 @@ target_include_directories(hw_lib PUBLIC include)
 target_link_libraries(hw_lib PUBLIC Eigen3::Eigen)
 
 # Add test subdirectory
-# add_subdirectory(test)
+add_subdirectory(test)

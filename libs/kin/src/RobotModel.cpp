@@ -25,6 +25,13 @@ Eigen::VectorXd kin::RobotModel::RobotVelocityToWheelSpeeds(
   return inverse_mapping * robot_velocity_mps_radps;
 }
 
+Eigen::VectorXd kin::RobotModel::RobotVelocityToWheelSpeedsRpm(
+    const Eigen::Vector3d& robot_velocity_mps_radps) {
+  Eigen::Vector4d wheel_speeds = RobotVelocityToWheelSpeeds(robot_velocity_mps_radps);
+  Eigen::Vector4d wheel_speeds_radps = wheel_speeds / robot_description.wheel_radius_m;
+  return 60 * wheel_speeds_radps / (2 * M_PI);
+}
+
 Eigen::MatrixXd kin::RobotModel::InverseMapping() const { return inverse_mapping; }
 
 Eigen::MatrixXd kin::RobotModel::ForwardMapping() const { return forward_mapping; }

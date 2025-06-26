@@ -9,16 +9,20 @@
 #endif
 
 est::Estimator::Estimator() {
+  angle_random_walk_per_rt_t = 0.001;
+  initialized_pose = false;
+  initialized_gyro = false;
   initialized_encoder = false;
   // P_init
   init_sigma_m = 1;
   init_sigma_rad = 2 * M_PI;
+
   // Q
-  process_sigma_m = 0.001;
-  process_sigma_rad = 0.1 * M_PI;
+  process_sigma_m = 0.01;
+  process_sigma_rad = 0.2 * M_PI;
 
   // R
-  meas_sigma_m = 0.001;
+  meas_sigma_m = 0.01;
   meas_sigma_rad = 0.1 * M_PI;
 
   state_cov << std::pow(init_sigma_m, 2), 0, 0, 0, std::pow(init_sigma_m, 2), 0, 0, 0,
@@ -53,7 +57,10 @@ est::Estimator::Estimator() {
 }
 
 void est::Estimator::NewEncoderData(Eigen::Vector4d ticks) {
-  if (!initialized_pose) return;
+  if (!initialized_pose) {
+    std::cout << "[est::Estimator::NewEncoderData] Pose uninitialized!" << std::endl;
+    return;
+  }
 
   if (!initialized_encoder) {
     initialized_encoder = true;
@@ -62,15 +69,18 @@ void est::Estimator::NewEncoderData(Eigen::Vector4d ticks) {
     return;
   }
 
-  // Calculate wheel speeds from encoder ticks
   double dt = util::GetCurrentTime() - t_last_encoder;
+  t_last_encoder = util::GetCurrentTime();
+
+  // Calculate wheel speeds from encoder ticks
   Eigen::Vector4d wheel_speeds;
   for (int i = 0; i < robot_desc.num_wheels; i++) {
     double d_ticks = ticks[i] - last_ticks[i];
-    double num_rev = d_ticks / hw::Config::ticks_per_rev;
-    double dst_per_rev = 2 * M_PI * robot_desc.wheel_radius_m;
-    double tot_dst = dst_per_rev * num_rev;
-    wheel_speeds[i] = tot_dst / dt;
+    last_ticks[i] = ticks[i];
+    double d_num_rev = d_ticks / hw::Config::ticks_per_rev;
+    double dist_per_rev = 2 * M_PI * robot_desc.wheel_radius_m;
+    double d_dist = dist_per_rev * d_num_rev;
+    wheel_speeds[i] = d_dist / dt;
   }
 
   // Calculate body velocity from wheel speeds [Vb = J * Vw]
@@ -94,16 +104,17 @@ void est::Estimator::NewEncoderData(Eigen::Vector4d ticks) {
   pose_est[2] = util::WrapAngle(pose_est[2] + velocity_fWorld[2] * dt);
 
   // Predict Covariance
-  state_cov += phi * state_cov * phi.transpose() + process_cov;
-
-  t_last_encoder = util::GetCurrentTime();
+  state_cov = phi * state_cov * phi.transpose() + process_cov;
 }
 
 void est::Estimator::NewGyroData(double w_radps) {
-  if (!initialized_pose) return;
+  if (!initialized_pose) {
+    std::cout << "[est::Estimator::NewGyroData] Pose uninitialized!" << std::endl;
+    return;
+  }
 
   if (!initialized_gyro) {
-    initializd_gyro = true;
+    initialized_gyro = true;
     t_last_gyro = util::GetCurrentTime();
     return;
   }
@@ -127,13 +138,21 @@ void est::Estimator::NewCameraData(Eigen::Vector3d pose_meas) {
   }
 
   Eigen::Vector3d innovation = pose_meas - pose_est;
-  Eigen::Matrix3d jacobian_h = Eigen::Matrix3d::Identity();
-  Eigen::Matrix3d innovation_cov = jacobian_h * state_cov * jacobian_h.transpose() + meas_cov;
-  Eigen::Matrix3d kalman_gain = state_cov * jacobian_h.transpose() * innovation_cov.inverse();
+  Eigen::Matrix3d innovation_cov = state_cov + meas_cov;
+  Eigen::Matrix3d kalman_gain = state_cov * innovation_cov.inverse();
 
   // Pose Update
+  std::cout << "Kalman Gain: " << kalman_gain.transpose() << std::endl;
   pose_est += kalman_gain * innovation;
 
-  // Update P
-  state_cov -= kalman_gain * jacobian_h * state_cov;
+  // Covariance Update
+  state_cov -= kalman_gain * state_cov;  // Prone to floating point errors
+
+  // Covariance Update: Joseph form
+  // Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
+  // Eigen::Matrix3d KH = kalman_gain;
+  // state_cov = (I - KH) * state_cov * (I - KH).transpose() +
+  //             kalman_gain * meas_cov * kalman_gain.transpose();
 }
+
+Eigen::Vector3d est::Estimator::GetPose() { return pose_est; }

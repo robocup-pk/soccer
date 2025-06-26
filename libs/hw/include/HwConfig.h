@@ -1,5 +1,5 @@
-#ifndef HWCONFIG_H
-#define HWCONFIG_H
+#ifndef HW_CONFIG_H
+#define HW_CONFIG_H
 
 namespace hw {
 struct Config {
@@ -7,4 +7,4 @@ struct Config {
 };
 }  // namespace hw
 
-#endif  // HWCONFIG_H
+#endif  // HW_CONFIG_H
