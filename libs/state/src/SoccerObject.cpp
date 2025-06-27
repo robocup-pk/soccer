@@ -14,7 +14,7 @@ void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) 
   // Robots
   for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
     std::string name = "robot" + std::to_string(i);
-    Eigen::Vector3d robot_position_ft(i * 3, 0, 0);
+    Eigen::Vector3d robot_position_ft(0, 0, 0);
     soccer_objects.push_back(
         state::SoccerObject(name, robot_position_ft, cfg::SystemConfig::robot_size_ft,
                             cfg::SystemConfig::init_robot_velocity_ftps,

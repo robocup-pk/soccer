@@ -27,8 +27,9 @@ int main(int argc, char* argv[]) {
   gl_simulation.InitGameObjects(soccer_objects);
 
   est::Estimator estimator;
+  estimator.initialized_pose = true;
   double t_sec = 10;
-  Eigen::Vector3d velocity_fBody(0.5, 0, 0);
+  Eigen::Vector3d velocity_fBody(0.5, 0.5, 0);
   Eigen::Vector3d pose_true = velocity_fBody * t_sec;
 
   // START THE MOTORS
@@ -52,7 +53,13 @@ int main(int argc, char* argv[]) {
     // Position Estimation
     for (int t = 0; t < 4; ++t) ticks[t] = motors[t].GetTicks();
     estimator.NewEncoderData(ticks);
+
+    // ESTIMATED
     soccer_objects[0].position = estimator.GetPose();
+
+    // TRUE POSITION
+    soccer_objects[1].position = 
+
     // state::CheckAndResolveCollisions(soccer_objects);
 
     // Simulation Step
