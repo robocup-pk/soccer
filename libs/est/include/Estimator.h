@@ -2,6 +2,7 @@
 #define ESTIMATOR_H
 
 #include <Eigen/Dense>
+#include <memory>
 
 #include "RobotModel.h"
 

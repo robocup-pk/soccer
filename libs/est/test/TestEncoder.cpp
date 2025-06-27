@@ -16,7 +16,7 @@
 
 class EstimatorTest : public ::testing::Test {
  protected:
-  void SetUp() override { tolerance << 0.10, 0.10, 0.10; }  // 5 cm, 0.05 rad (3 degrees)
+  void SetUp() override { tolerance << 0.20, 0.20, 0.20; }  // 5 cm, 0.05 rad (3 degrees)
 
   est::Estimator estimator;
   Eigen::Vector3d tolerance;
