@@ -22,6 +22,7 @@ class RobotModel {
 
   // Compute wheel speeds (radps) from robot velocity (for actuation)
   Eigen::VectorXd RobotVelocityToWheelSpeeds(const Eigen::Vector3d& robot_velocity_mps_radps);
+  Eigen::VectorXd RobotVelocityToWheelSpeedsRpm(const Eigen::Vector3d& robot_velocity_mps_radps);
 
   // Getters for jacobians
   Eigen::MatrixXd InverseMapping() const;  // u = J * v
