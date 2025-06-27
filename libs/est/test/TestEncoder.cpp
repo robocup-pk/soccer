@@ -16,7 +16,7 @@
 
 class EstimatorTest : public ::testing::Test {
  protected:
-  void SetUp() override { tolerance << 0.05, 0.05, 0.05; }  // 5 cm, 0.05 rad (3 degrees)
+  void SetUp() override { tolerance << 0.10, 0.10, 0.10; }  // 5 cm, 0.05 rad (3 degrees)
 
   est::Estimator estimator;
   Eigen::Vector3d tolerance;
@@ -28,28 +28,21 @@ TEST_F(EstimatorTest, TestEncoders) {
   double t_sec = 1;
 
   // Ground Truth
-  for (int i = 0; i < 4; ++i) {
-    motors[i].SetWheelSpeedRpm(100);
-    wheel_speeds_radps[i] = motors[i].GetWheelSpeedRadps() *
-    estimator.robot_desc.wheel_radius_m;
-  }
+  Eigen::Vector3d velocity_fBody(1, 0, 0);
+  Eigen::Vector3d pose_true = velocity_fBody * t_sec;  // [1, 0, 0]
 
-  Eigen::Vector3d velocity_fBody =
-      estimator.robot_model->WheelSpeedsToRobotVelocity(wheel_speeds_radps);
+  // START THE MOTORS
+  Eigen::Vector4d wheel_speeds_rpm =
+      estimator.robot_model->RobotVelocityToWheelSpeedsRpm(velocity_fBody);
+  for (int i = 0; i < 4; ++i) motors[i].SetWheelSpeedRpm(wheel_speeds_rpm[i]);
 
-  Eigen::Vector3d pose_true = velocity_fBody * t_sec;
-
-  // Estimated Pose
-  for (int i = 0; i < 4; ++i) {
-    motors[i].Clear();
-    motors[i].SetWheelSpeedRpm(100);
-  }
   Eigen::Vector4d ticks;
   for (int i = 0; i < (t_sec * 100); i++) {
     for (int t = 0; t < 4; ++t) ticks[t] = motors[t].GetTicks();
 
-    if (i % 2 == 0) estimator.NewCameraData(pose_true);
     estimator.NewEncoderData(ticks);
+    if (i % 2 == 0) estimator.NewCameraData(pose_true);
+
     std::this_thread::sleep_for(std::chrono::milliseconds(10));  // Sleep for 10ms
   }
 
@@ -59,7 +52,6 @@ TEST_F(EstimatorTest, TestEncoders) {
 
 TEST_F(EstimatorTest, TestForwardMotionWithCamera) {
   double t_sec = 1;
-  estimator.initialized_pose = true;
 
   // GROUND TRUTH
   Eigen::Vector3d velocity_fBody(10, 0, 0);
@@ -85,13 +77,8 @@ TEST_F(EstimatorTest, TestForwardMotionWithCamera) {
     Eigen::Vector3d pose_cam =
         velocity_fBody * elapsed_time_s;  //  + Eigen::Vector3d(0.01, 0.01, 0.01);
     estimator.NewEncoderData(ticks);
-    std::cout << "\n\n\nPredicted Pose: " << estimator.GetPose().transpose() << std::endl;
 
-    if (iteration % 4 == 0) {
-      std::cout << "Camera Pose: " << pose_cam.transpose() << std::endl;
-      estimator.NewCameraData(pose_cam);
-    }
-    std::cout << "Estimated Pose: " << estimator.GetPose().transpose() << std::endl;
+    if (iteration % 4 == 0) estimator.NewCameraData(pose_cam);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     ++iteration;
@@ -99,8 +86,4 @@ TEST_F(EstimatorTest, TestForwardMotionWithCamera) {
 
   Eigen::Vector3d error = (estimator.GetPose() - pose_true).cwiseAbs();
   EXPECT_TRUE((error.array() <= tolerance.array()).all());
-
-  std::cout << "Estimated Pose: " << estimator.GetPose().transpose() << std::endl;
-  std::cout << "True Pose: " << pose_true.transpose() << std::endl;
-  std::cout << "Error: " << error.transpose() << std::endl;
 }

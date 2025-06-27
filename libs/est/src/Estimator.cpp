@@ -142,7 +142,6 @@ void est::Estimator::NewCameraData(Eigen::Vector3d pose_meas) {
   Eigen::Matrix3d kalman_gain = state_cov * innovation_cov.inverse();
 
   // Pose Update
-  std::cout << "Kalman Gain: " << kalman_gain.transpose() << std::endl;
   pose_est += kalman_gain * innovation;
 
   // Covariance Update
