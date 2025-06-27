@@ -5,25 +5,48 @@
 #include "Coordinates.h"
 
 void state::CheckAndResolveCollisions(std::vector<SoccerObject>& soccer_objects) {
+  // Update Ball Attachment
+  for (auto& obj : soccer_objects) {
+    if (obj.name == "ball" && obj.is_attached) {
+      SoccerObject robot = *obj.attached_to;
+      UpdateAttachedBallPosition(robot, obj);
+      break;
+    }
+  }
+
+  // Check Collisions for all Soccer Objects
   for (int i = 0; i < soccer_objects.size(); ++i) {
-    if (soccer_objects[i].name == "background") continue;
-
     for (int j = i + 1; j < soccer_objects.size(); ++j) {
-      if (soccer_objects[j].name == "background") continue;
-
       SoccerObject& obj1 = soccer_objects[i];
       SoccerObject& obj2 = soccer_objects[j];
 
+      // Normal collision detection continues for all other objects
       if (CheckCircularCollision(obj1, obj2)) {
+        if (obj1.name == "ball") {
+          if (IsBallInFrontOfRobot(obj2, obj1)) {
+            if (obj1.is_attached) continue;  // Skip only this pair
+
+            HandleBallSticking(obj2, obj1);
+            continue;  // Continue to next pair
+          }
+        }
+
+        if (obj2.name == "ball") {
+          if (IsBallInFrontOfRobot(obj1, obj2)) {
+            if (obj2.is_attached) continue;  // Skip only this pair
+
+            HandleBallSticking(obj1, obj2);
+            continue;  // Continue to next pair
+          }
+        }
         ResolveCircularCollision(obj1, obj2);
       }
     }
   }
 
-  // Collision with the wall
+  // Wall and boundary collisions still work
   ResolveCollisionWithWall(soccer_objects);
 
-  // Stay inside the boundary
   for (SoccerObject& soccer_object : soccer_objects) {
     if (!IsInsideBoundary(soccer_object)) {
       ClampInsideBoundary(soccer_object);
@@ -161,4 +184,85 @@ void state::ResolveCircularCollision(state::SoccerObject& obj1, state::SoccerObj
     obj2.position[0] += separation * nx;
     obj2.position[1] += separation * ny;
   }
+}
+
+bool state::IsBallInFrontOfRobot(SoccerObject& robot, SoccerObject& ball) {
+  Eigen::Vector3d ball_center = ball.GetCenterPosition();
+  Eigen::Vector2d ball_point(ball_center.x(), ball_center.y());
+  return robot.IsPointInFrontSector(ball_point);
+}
+
+void state::HandleBallSticking(SoccerObject& robot, SoccerObject& ball) {
+  ball.is_attached = true;
+  ball.attached_to = &robot;
+
+  UpdateAttachedBallPosition(robot, ball);
+}
+
+void state::UpdateAttachedBallPosition(SoccerObject& robot, SoccerObject& ball) {
+  Eigen::Vector3d robot_center = robot.GetCenterPosition();
+  float robot_rotation = robot.position[2] - M_PI / 2.0f;
+
+  // Use flat surface distance for D-shaped robot
+  float robot_radius = std::min(robot.size[0], robot.size[1]) / 2.0f;
+  float ball_radius = ball.size[0] / 2.0f;
+
+  // Attachment distance for flat surface contact
+  float attachment_distance = robot_radius * 0.6f + ball_radius * 0.4f;
+
+  // Calculate front position using unit vector
+  float front_x = robot_center.x() + attachment_distance * cos(robot_rotation);
+  float front_y = robot_center.y() + attachment_distance * (-sin(robot_rotation));
+
+  // Position ball so it appears attached to flat surface
+  ball.position[0] = front_x - ball.size[0] / 2.0f;
+  ball.position[1] = front_y + ball.size[1] / 2.0f;
+  ball.position[2] = 0;
+  ball.velocity = Eigen::Vector3d(0, 0, 0);
+}
+
+void state::DetachBall(SoccerObject& ball, float detach_velocity) {
+  if (!ball.is_attached || !ball.attached_to) {
+    return;  // Ball is not attached
+  }
+
+  SoccerObject* robot = ball.attached_to;
+
+  // Get robot's current orientation for detachment direction
+  float robot_rotation = robot->position[2] - M_PI / 2.0f;
+  
+  // Calculate front direction vector (same as in IsPointInFrontSector)
+  Eigen::Vector2d front_dir(cos(robot_rotation), -sin(robot_rotation));
+  
+  // Apply detach velocity in the front direction
+  float detach_vel_x = detach_velocity * front_dir.x();
+  float detach_vel_y = detach_velocity * front_dir.y();
+
+  // Debug: Check if velocities make sense
+  float velocity_magnitude = sqrt(detach_vel_x * detach_vel_x + detach_vel_y * detach_vel_y);
+  
+  // If velocity is too small, ensure minimum movement in front direction
+  if (velocity_magnitude < 0.5f) {
+    // Use a minimum velocity in the front direction
+    float min_velocity = 1.0f;
+    detach_vel_x = min_velocity * front_dir.x();
+    detach_vel_y = min_velocity * front_dir.y();
+  }
+
+  // Move ball slightly away from robot before detaching to prevent immediate re-collision
+  Eigen::Vector3d robot_center = robot->GetCenterPosition();
+  float separation_distance = 1.5f;
+  
+  // Position ball in front of robot using the same front direction
+  ball.position[0] = robot_center.x() + separation_distance * front_dir.x() - ball.size[0] / 2.0f;
+  ball.position[1] = robot_center.y() + separation_distance * front_dir.y() + ball.size[1] / 2.0f;
+
+  // Set ball velocity for natural detachment
+  ball.velocity[0] = detach_vel_x;
+  ball.velocity[1] = detach_vel_y;
+  ball.velocity[2] = 0;
+
+  // Clear attachment state
+  ball.is_attached = false;
+  ball.attached_to = nullptr;
 }

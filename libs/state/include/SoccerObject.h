@@ -21,11 +21,21 @@ class SoccerObject {
         mass_kg(mass_kg_) {}
 
   virtual void Move(float dt) {
+    if (name == "ball" && is_attached) return;
+
     velocity += acceleration * dt;
     // TODO: think of a better way
     float friction = 0.1f;
     velocity -= velocity * friction * dt;
     position += velocity * dt;
+
+    position[2] = fmod(position[2], 2 * M_PI);
+
+    if (position[2] > M_PI) {
+      position[2] -= 2 * M_PI;
+    } else if (position[2] < -M_PI) {
+      position[2] += 2 * M_PI;
+    }
   }
 
   inline std::string GetName() const { return name; }
@@ -39,6 +49,8 @@ class SoccerObject {
     return Eigen::Vector3d(position[0] + size[0] / 2, position[1] - size[1] / 2, position[2]);
   }
 
+  bool IsPointInFrontSector(Eigen::Vector2d point);
+
   Eigen::Vector3d acceleration;  // vx, vy, angular_acc
   Eigen::Vector3d velocity;      // vx, vy, angular_vel
   Eigen::Vector3d position;      // x, y, angle_rad
@@ -48,6 +60,10 @@ class SoccerObject {
   float mass_kg;
 
   std::string name;
+
+  // Ball Attachment
+  bool is_attached = false;
+  SoccerObject *attached_to;
 };
 
 void InitSoccerObjects(std::vector<SoccerObject>& soccer_objects);
