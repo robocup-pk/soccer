@@ -6,7 +6,9 @@
 #include "GLSimulation.h"
 #include "SoccerObject.h"
 #include "Collision.h"
+#include "MotorModel.h"
 #include "Coordinates.h"
+#include "Estimator.h"
 
 void UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects, float dt) {
   for (state::SoccerObject& soccer_object : soccer_objects) {
@@ -24,6 +26,18 @@ int main(int argc, char* argv[]) {
   vis::GLSimulation gl_simulation;
   gl_simulation.InitGameObjects(soccer_objects);
 
+  est::Estimator estimator;
+  double t_sec = 10;
+  Eigen::Vector3d velocity_fBody(0.5, 0, 0);
+  Eigen::Vector3d pose_true = velocity_fBody * t_sec;
+
+  // START THE MOTORS
+  std::vector<hw::MotorModel> motors = std::vector<hw::MotorModel>(4);
+  Eigen::Vector4d wheel_speeds_rpm =
+      estimator.robot_model->RobotVelocityToWheelSpeedsRpm(velocity_fBody);
+  for (int i = 0; i < 4; ++i) motors[i].SetWheelSpeedRpm(wheel_speeds_rpm[i]);
+  Eigen::Vector4d ticks;
+
   while (1) {
     // Calculate dt
     auto current_time = std::chrono::high_resolution_clock::now();
@@ -35,7 +49,11 @@ int main(int argc, char* argv[]) {
     // ...
     // ...
 
-    state::CheckAndResolveCollisions(soccer_objects);
+    // Position Estimation
+    for (int t = 0; t < 4; ++t) ticks[t] = motors[t].GetTicks();
+    estimator.NewEncoderData(ticks);
+    soccer_objects[0].position = estimator.GetPose();
+    // state::CheckAndResolveCollisions(soccer_objects);
 
     // Simulation Step
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
