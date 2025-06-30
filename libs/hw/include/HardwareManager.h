@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <thread>
+#include <optional>
+#include <memory>
 
 #include <Eigen/Dense>
 
