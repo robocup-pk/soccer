@@ -130,7 +130,9 @@
     "numericaldiff": "cpp",
     "openglsupport": "cpp",
     "specialfunctions": "cpp",
-    "splines": "cpp"
+    "splines": "cpp",
+    "threadpool": "cpp",
+    "nonlinearoptimization": "cpp"
   },
   "C_Cpp.default.compilerPath": ""
 }
