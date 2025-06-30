@@ -7,7 +7,7 @@ add_library(hw_lib ${HEADERS} ${SOURCES})
 
 # Specify the include directory for the hw_lib target
 target_include_directories(hw_lib PUBLIC include)
-target_link_libraries(hw_lib PUBLIC Eigen3::Eigen)
+target_link_libraries(hw_lib PUBLIC Eigen3::Eigen kin_lib)
 
 # Add test subdirectory
 add_subdirectory(test)

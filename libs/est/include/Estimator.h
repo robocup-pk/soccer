@@ -9,39 +9,48 @@
 namespace est {
 class Estimator {
  public:
-  Estimator();
+  Estimator(std::shared_ptr<kin::RobotModel> robot_model);
+
   void NewEncoderData(Eigen::Vector4d ticks);
   void NewGyroData(double w_radps);
   void NewCameraData(Eigen::Vector3d pose_meas);
 
   Eigen::Vector3d GetPose();
 
+  ~Estimator();
+
   bool initialized_pose;
-  kin::RobotDescription robot_desc;
-  std::unique_ptr<kin::RobotModel> robot_model;
+
  private:
+  // Encoders
   bool initialized_encoder;
+  Eigen::Vector4d last_ticks;
   double t_last_encoder;
+
+  // Gyro
+  bool initialized_gyro;
+  double angle_random_walk_per_rt_t;
   double t_last_gyro;
 
-  Eigen::Vector4d last_ticks;
-
+  // Pose
+  Eigen::Vector3d pose_init;
   Eigen::Vector3d pose_est;
-  Eigen::Matrix3d state_cov;    // P
-  Eigen::Matrix3d process_cov;  // Q
-  Eigen::Matrix3d meas_cov;     // R
 
+  // Noise
+  // P
   double init_sigma_m;
   double init_sigma_rad;
+  Eigen::Matrix3d state_cov;
+  // Q
   double process_sigma_m;
   double process_sigma_rad;
-
+  Eigen::Matrix3d process_cov;
+  // R
   double meas_sigma_m;
   double meas_sigma_rad;
+  Eigen::Matrix3d meas_cov;
 
-  bool initialized_gyro;
-
-  double angle_random_walk_per_rt_t;
+  std::shared_ptr<kin::RobotModel> robot_model;
 };
 }  // namespace est
 

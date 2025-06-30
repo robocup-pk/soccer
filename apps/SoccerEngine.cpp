@@ -7,20 +7,26 @@
 #include "SoccerObject.h"
 #include "Collision.h"
 #include "Coordinates.h"
-
-void UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects, float dt) {
-  for (state::SoccerObject& soccer_object : soccer_objects) {
-    soccer_object.Move(dt);
-  }
-}
+#include "Utils.h"
+#include "RobotManager.h"
 
 int main(int argc, char* argv[]) {
   auto start_time = std::chrono::high_resolution_clock::now();
   auto last_time = start_time;
 
+  kin::RobotDescription robot_desc;
+  rob::RobotManager robot_manager(std::make_shared<kin::RobotModel>(robot_desc));
+
+  Eigen::Vector3d velocity_fBody(-1, 1, 1);
+  robot_manager.SetBodyVelocity(velocity_fBody);
+  Eigen::Vector4d ticks;
+
+  double est_start_time = util::GetCurrentTime();
+  double elapsed_time_s = 0;
+
+  // START SIMULATION
   std::vector<state::SoccerObject> soccer_objects;
   state::InitSoccerObjects(soccer_objects);
-
   vis::GLSimulation gl_simulation;
   gl_simulation.InitGameObjects(soccer_objects);
 
@@ -31,11 +37,15 @@ int main(int argc, char* argv[]) {
     float dt = std::chrono::duration<float>(duration).count();
     last_time = current_time;
 
-    // Other Steps
-    // ...
-    // ...
+    // ESTIMATED POSITION
+    soccer_objects[0].position = robot_manager.GetPose();
+    std::cout << "pose est: " << soccer_objects[0].position.transpose() << std::endl;
 
-    state::CheckAndResolveCollisions(soccer_objects);
+    // TRUE POSITION
+    elapsed_time_s = util::GetCurrentTime() - est_start_time;
+    soccer_objects[1].position = velocity_fBody * elapsed_time_s;
+
+    // state::CheckAndResolveCollisions(soccer_objects);
 
     // Simulation Step
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
