@@ -130,6 +130,8 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
   // Load Textures
   std::string robot_texture_path =
       util::GetExecutableDir() + "/libs/vis/resources/textures/robot.png";
+  std::string robot_texture_path_2 =
+      util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
   std::string ball_texture_path =
       util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
 
@@ -150,10 +152,17 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
                      soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
                      ResourceManager::GetTexture("ball"), Eigen::Vector3d(1.0, 1.0, 1.0));
     } else if (soccer_object.name.find("robot") != std::string::npos) {
-      game_objects[soccer_object.name] =
-          GameObject(soccer_object.name, soccer_object.position, soccer_object.size,
-                     soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
-                     ResourceManager::GetTexture("face"), Eigen::Vector3d(1.0, 1.0, 1.0));
+      if (soccer_object.name == "robot1") {
+        game_objects[soccer_object.name] =
+            GameObject(soccer_object.name, soccer_object.position, soccer_object.size,
+                       soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
+                       ResourceManager::GetTexture("ball"), Eigen::Vector3d(1.0, 1.0, 1.0));
+      } else {
+        game_objects[soccer_object.name] =
+            GameObject(soccer_object.name, soccer_object.position, soccer_object.size,
+                       soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
+                       ResourceManager::GetTexture("face"), Eigen::Vector3d(1.0, 1.0, 1.0));
+      }
     }
   }
 }
