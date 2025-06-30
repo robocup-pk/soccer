@@ -12,19 +12,27 @@
 
 #include <Eigen/Dense>
 
+#include "HardwareManager.h"
 #include "RobotModel.h"
 
 class EstimatorTest : public ::testing::Test {
  protected:
-  void SetUp() override { tolerance << 0.20, 0.20, 0.20; }  // 5 cm, 0.05 rad (3 degrees)
+  void SetUp() override {
+    tolerance << 0.05, 0.05, 0.05;
+    kin::RobotDescription robot_desc;
+    std::shared_ptr<kin::RobotModel> robot_model = std::make_shared<kin::RobotModel>(robot_desc);
+    estimator = std::make_unique<est::Estimator>(robot_model);
+    hardware_manager = std::make_unique<hw::HardwareManager>(robot_model);
+  }
 
-  est::Estimator estimator;
+  std::unique_ptr<est::Estimator> estimator;
+  std::unique_ptr<hw::HardwareManager> hardware_manager;
   Eigen::Vector3d tolerance;
   std::vector<hw::MotorModel> motors = std::vector<hw::MotorModel>(4);
   std::vector<double> wheel_speeds_radps = std::vector<double>(4);
 };
 
-TEST_F(EstimatorTest, TestEncoders) {
+TEST_F(EstimatorTest, TestForwardMotionWithCamera) {
   double t_sec = 1;
 
   // Ground Truth
@@ -32,58 +40,112 @@ TEST_F(EstimatorTest, TestEncoders) {
   Eigen::Vector3d pose_true = velocity_fBody * t_sec;  // [1, 0, 0]
 
   // START THE MOTORS
-  Eigen::Vector4d wheel_speeds_rpm =
-      estimator.robot_model->RobotVelocityToWheelSpeedsRpm(velocity_fBody);
-  for (int i = 0; i < 4; ++i) motors[i].SetWheelSpeedRpm(wheel_speeds_rpm[i]);
+  hardware_manager->SetBodyVelocity(velocity_fBody);
 
+  double start_time_s = util::GetCurrentTime();
+  double elapsed_time_s = util::GetCurrentTime() - start_time_s;
+  int iteration = 0;
   Eigen::Vector4d ticks;
-  for (int i = 0; i < (t_sec * 100); i++) {
-    for (int t = 0; t < 4; ++t) ticks[t] = motors[t].GetTicks();
 
-    estimator.NewEncoderData(ticks);
-    if (i % 2 == 0) estimator.NewCameraData(pose_true);
+  while (elapsed_time_s < t_sec) {
+    elapsed_time_s = util::GetCurrentTime() - start_time_s;
+    std::optional<Eigen::Vector4d> ticks = hardware_manager->NewEncoderTicks();
+    if (ticks.has_value()) estimator->NewEncoderData(ticks.value());
 
+    if (iteration % 2 == 0) {
+      Eigen::Vector3d pose_cam = velocity_fBody * elapsed_time_s;
+      estimator->NewCameraData(pose_cam);
+    }
+
+    ++iteration;
     std::this_thread::sleep_for(std::chrono::milliseconds(10));  // Sleep for 10ms
   }
 
-  Eigen::Vector3d error = (estimator.GetPose() - pose_true).cwiseAbs();
+  Eigen::Vector3d error = (estimator->GetPose() - pose_true).cwiseAbs();
   EXPECT_TRUE((error.array() <= tolerance.array()).all());
 }
 
-TEST_F(EstimatorTest, TestForwardMotionWithCamera) {
+TEST_F(EstimatorTest, TestForwardMotionWithCameraAgain) {
   double t_sec = 1;
+  estimator->initialized_pose = true;
 
   // GROUND TRUTH
-  Eigen::Vector3d velocity_fBody(10, 0, 0);
+  Eigen::Vector3d velocity_fBody(2, 0, 0);
   Eigen::Vector3d pose_true = velocity_fBody * t_sec;
 
   // START THE MOTORS
-  Eigen::Vector4d wheel_speeds_rpm =
-      estimator.robot_model->RobotVelocityToWheelSpeedsRpm(velocity_fBody);
-  for (int i = 0; i < 4; ++i) motors[i].SetWheelSpeedRpm(wheel_speeds_rpm[i]);
+  hardware_manager->SetBodyVelocity(velocity_fBody);
 
   // NOW PERFORM ESTIMATION. Encoder ticks at 100 Hz
   Eigen::Vector4d ticks;
   double start_time = util::GetCurrentTime();
   double elapsed_time_s = 0;
 
-  std::cout << std::fixed << std::setprecision(3) << std::endl;
-
   int iteration = 0;
-  do {
-    for (int t = 0; t < 4; ++t) ticks[t] = motors[t].GetTicks();
-
+  while (elapsed_time_s < t_sec) {
     elapsed_time_s = util::GetCurrentTime() - start_time;
-    Eigen::Vector3d pose_cam =
-        velocity_fBody * elapsed_time_s;  //  + Eigen::Vector3d(0.01, 0.01, 0.01);
-    estimator.NewEncoderData(ticks);
+    std::optional<Eigen::Vector4d> ticks = hardware_manager->NewEncoderTicks();
+    if (ticks.has_value()) estimator->NewEncoderData(ticks.value());
 
-    if (iteration % 4 == 0) estimator.NewCameraData(pose_cam);
+    if (iteration % 4 == 0) {
+      Eigen::Vector3d pose_cam = velocity_fBody * elapsed_time_s;
+      estimator->NewCameraData(pose_cam);
+    }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     ++iteration;
-  } while (elapsed_time_s < t_sec);
+  }
 
-  Eigen::Vector3d error = (estimator.GetPose() - pose_true).cwiseAbs();
+  Eigen::Vector3d error = (estimator->GetPose() - pose_true).cwiseAbs();
+  EXPECT_TRUE((error.array() <= tolerance.array()).all());
+}
+
+TEST_F(EstimatorTest, TestForwardMotionDeadReckoning) {
+  double t_sec = 1;
+  estimator->initialized_pose = true;
+
+  // GROUND TRUTH
+  Eigen::Vector3d velocity_fBody(1, 0, 0);
+  Eigen::Vector3d pose_true = velocity_fBody * t_sec;
+
+  // ESTIMATION
+  hardware_manager->SetBodyVelocity(velocity_fBody);
+  double start_time = util::GetCurrentTime();
+  double elapsed_time_s = 0;
+  Eigen::Vector4d ticks;
+
+  while (elapsed_time_s < t_sec) {
+    elapsed_time_s = util::GetCurrentTime() - start_time;
+    std::optional<Eigen::Vector4d> ticks = hardware_manager->NewEncoderTicks();
+    if (ticks.has_value()) estimator->NewEncoderData(ticks.value());
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+
+  Eigen::Vector3d error = (estimator->GetPose() - pose_true).cwiseAbs();
+  EXPECT_TRUE((error.array() <= tolerance.array()).all());
+}
+
+TEST_F(EstimatorTest, TestForwardMotionDeadReckoningWithRotation) {
+  double t_sec = 1;
+  estimator->initialized_pose = true;
+
+  // GROUND TRUTH
+  Eigen::Vector3d velocity_fBody(1, -1, 2);
+  Eigen::Vector3d pose_true = velocity_fBody * t_sec;
+
+  // ESTIMATION
+  hardware_manager->SetBodyVelocity(velocity_fBody);
+  double start_time = util::GetCurrentTime();
+  double elapsed_time_s = 0;
+  Eigen::Vector4d ticks;
+
+  while (elapsed_time_s < t_sec) {
+    elapsed_time_s = util::GetCurrentTime() - start_time;
+    std::optional<Eigen::Vector4d> ticks = hardware_manager->NewEncoderTicks();
+    if (ticks.has_value()) estimator->NewEncoderData(ticks.value());
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+
+  Eigen::Vector3d error = (estimator->GetPose() - pose_true).cwiseAbs();
   EXPECT_TRUE((error.array() <= tolerance.array()).all());
 }
