@@ -8,9 +8,6 @@
 class RobotModelTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    // Create a typical omniwheel robot configuration
-    robot_desc.wheel_radius_m = 0.05;  // 5cm wheels
-
     // Square configuration with wheels at corners
     robot_desc.wheel_positions_m = {
         {0.15, 0.15},    // wheel 1: front-left

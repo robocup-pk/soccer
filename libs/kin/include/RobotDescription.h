@@ -10,8 +10,7 @@ namespace kin {
 */
 struct RobotDescription {
   static constexpr int num_wheels = 4;
-  // Radius of the wheel
-  double wheel_radius_m;
+  static constexpr double wheel_radius_m = 0.05;
 
   // Angles between robot frame x-axis and wheel frame x-axis
   std::vector<double> wheel_angles_rad;

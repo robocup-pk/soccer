@@ -3,45 +3,58 @@
 #include <chrono>
 
 // self libs
+#include "HardwareManager.h"
 #include "GLSimulation.h"
 #include "SoccerObject.h"
 #include "Collision.h"
-#include "MotorModel.h"
 #include "Coordinates.h"
 #include "Estimator.h"
 #include "Utils.h"
-
-void UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects, float dt) {
-  for (state::SoccerObject& soccer_object : soccer_objects) {
-    soccer_object.Move(dt);
-  }
-}
 
 int main(int argc, char* argv[]) {
   auto start_time = std::chrono::high_resolution_clock::now();
   auto last_time = start_time;
 
-  std::vector<state::SoccerObject> soccer_objects;
-  state::InitSoccerObjects(soccer_objects);
+  kin::RobotDescription robot_desc;
 
-  vis::GLSimulation gl_simulation;
-  gl_simulation.InitGameObjects(soccer_objects);
+  // Square configuration with wheels at corners
+  robot_desc.wheel_positions_m = {
+      {0.15, 0.15},    // wheel 1: front-left
+      {-0.15, 0.15},   // wheel 2: rear-left
+      {-0.15, -0.15},  // wheel 3: rear-right
+      {0.15, -0.15}    // wheel 4: front-right
+  };
 
-  est::Estimator estimator;
+  // Wheel angles (perpendicular to radial direction for typical omniwheel setup)
+  robot_desc.wheel_angles_rad = {
+      -M_PI / 4,     // -45° (wheel 1)
+      M_PI / 4,      // 45° (wheel 2)
+      3 * M_PI / 4,  // 135° (wheel 3)
+      -3 * M_PI / 4  // -135° (wheel 4)
+  };
+
+  std::shared_ptr<kin::RobotModel> robot_model = std::make_shared<kin::RobotModel>(robot_desc);
+
+  // Start Estimator
+  est::Estimator estimator(robot_model);
   estimator.initialized_pose = true;
   double t_sec = 10;
-  Eigen::Vector3d velocity_fBody(0.1, 0.1, 0); //0.2);
+  Eigen::Vector3d velocity_fBody(-1, 1, 1);
   Eigen::Vector3d pose_true = velocity_fBody * t_sec;
 
-  // START THE MOTORS
-  std::vector<hw::MotorModel> motors = std::vector<hw::MotorModel>(4);
-  Eigen::Vector4d wheel_speeds_rpm =
-      estimator.robot_model->RobotVelocityToWheelSpeedsRpm(velocity_fBody);
-  for (int i = 0; i < 4; ++i) motors[i].SetWheelSpeedRpm(wheel_speeds_rpm[i]);
+  // Start Hardware (Motors, Gyro [later])
+  hw::HardwareManager hardware_manager(robot_model);
+  hardware_manager.SetBodyVelocity(velocity_fBody);
   Eigen::Vector4d ticks;
 
   double est_start_time = util::GetCurrentTime();
   double elapsed_time_s = 0;
+
+  // START SIMULATION
+  std::vector<state::SoccerObject> soccer_objects;
+  state::InitSoccerObjects(soccer_objects);
+  vis::GLSimulation gl_simulation;
+  gl_simulation.InitGameObjects(soccer_objects);
 
   while (1) {
     // Calculate dt
@@ -50,20 +63,10 @@ int main(int argc, char* argv[]) {
     float dt = std::chrono::duration<float>(duration).count();
     last_time = current_time;
 
-    // Other Steps
-    // ...
-    // ...
-
-    // Position Estimation
-    for (int t = 0; t < 4; ++t) ticks[t] = motors[t].GetTicks();
-    std::cout << "Ticks: " << ticks[0] << " " << ticks[1] << " " << ticks[2] << " " << ticks[3]
-              << std::endl;
+    // ESTIMATED POSITION
+    ticks = hardware_manager.GetEncoderTicks();
     estimator.NewEncoderData(ticks);
-
-    // ESTIMATED
     soccer_objects[0].position = estimator.GetPose();
-    std::cout << "Set wheel speeds (rpm): " << wheel_speeds_rpm.transpose()  << std::endl;
-    // std::cout << "Pos: " << soccer_objects[0].position.transpose() << std::endl;
 
     // TRUE POSITION
     elapsed_time_s = util::GetCurrentTime() - est_start_time;

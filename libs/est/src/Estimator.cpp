@@ -8,7 +8,8 @@
 #define M_PI 3.14159265
 #endif
 
-est::Estimator::Estimator() {
+est::Estimator::Estimator(std::shared_ptr<kin::RobotModel> robot_model)
+    : robot_model(robot_model) {
   angle_random_walk_per_rt_t = 0.001;
   initialized_pose = false;
   initialized_gyro = false;
@@ -33,27 +34,6 @@ est::Estimator::Estimator() {
 
   meas_cov << std::pow(meas_sigma_m, 2), 0, 0, 0, std::pow(meas_sigma_m, 2), 0, 0, 0,
       std::pow(meas_sigma_rad, 2);
-
-  // Create a typical omniwheel robot configuration
-  robot_desc.wheel_radius_m = 0.05;  // 5cm wheels
-
-  // Square configuration with wheels at corners
-  robot_desc.wheel_positions_m = {
-      {0.15, 0.15},    // wheel 1: front-left
-      {-0.15, 0.15},   // wheel 2: rear-left
-      {-0.15, -0.15},  // wheel 3: rear-right
-      {0.15, -0.15}    // wheel 4: front-right
-  };
-
-  // Wheel angles (perpendicular to radial direction for typical omniwheel setup)
-  robot_desc.wheel_angles_rad = {
-      -M_PI / 4,     // -45° (wheel 1)
-      M_PI / 4,      // 45° (wheel 2)
-      3 * M_PI / 4,  // 135° (wheel 3)
-      -3 * M_PI / 4  // -135° (wheel 4)
-  };
-
-  robot_model = std::make_unique<kin::RobotModel>(robot_desc);
 }
 
 void est::Estimator::NewEncoderData(Eigen::Vector4d ticks) {
@@ -75,26 +55,21 @@ void est::Estimator::NewEncoderData(Eigen::Vector4d ticks) {
 
   // Calculate wheel speeds from encoder ticks
   Eigen::Vector4d wheel_speeds;
-  for (int i = 0; i < robot_desc.num_wheels; i++) {
+  for (int i = 0; i < kin::RobotDescription::num_wheels; i++) {
     double d_ticks = ticks[i] - last_ticks[i];
     last_ticks[i] = ticks[i];
     double d_num_rev = d_ticks / hw::Config::ticks_per_rev;
-    double dist_per_rev = 2 * M_PI * robot_desc.wheel_radius_m;
+    double dist_per_rev = 2 * M_PI * kin::RobotDescription::wheel_radius_m;
     double d_dist = dist_per_rev * d_num_rev;
-    wheel_speeds[i] = d_dist / dt; // m_persec --> radps --> 60/2pi
+    wheel_speeds[i] = d_dist / dt;  // m_persec --> radps --> 60/2pi
   }
-  std::cout << "Measured wheel speed (rpm): "
-            << (30 / M_PI) * (wheel_speeds[0] / robot_desc.wheel_radius_m) << " "
-            << (30 / M_PI) * wheel_speeds[1] / robot_desc.wheel_radius_m << " "
-            << (30 / M_PI) * wheel_speeds[2] / robot_desc.wheel_radius_m << " "
-            << (30 / M_PI) * wheel_speeds[3] / robot_desc.wheel_radius_m << std::endl;
 
   // Calculate body velocity from wheel speeds [Vb = J * Vw]
   Eigen::Vector3d velocity_fBody = robot_model->WheelSpeedsToRobotVelocity(
       std::vector<double>(wheel_speeds.data(), wheel_speeds.data() + wheel_speeds.size()));
 
   // Transform body velocities to world frame
-  Eigen::Vector3d velocity_fWorld = util::RotateAboutZ(velocity_fBody, pose_est[2]);
+  Eigen::Vector3d velocity_fWorld = util::RotateAboutZ(velocity_fBody, pose_init[2]);
 
   // State Transfer Function
   double dx = -dt * (velocity_fBody[0] * std::sin(pose_est[2]) +
@@ -140,6 +115,9 @@ void est::Estimator::NewCameraData(Eigen::Vector3d pose_meas) {
   if (!initialized_pose) {
     initialized_pose = true;
     pose_est = pose_meas;
+    pose_init = pose_meas;
+    std::cout << "[est::Estimator::NewCameraData] Initialized pose: " << pose_init.transpose()
+              << std::endl;
     return;
   }
 
@@ -161,3 +139,5 @@ void est::Estimator::NewCameraData(Eigen::Vector3d pose_meas) {
 }
 
 Eigen::Vector3d est::Estimator::GetPose() { return pose_est; }
+
+est::Estimator::~Estimator() { robot_model = nullptr; }
