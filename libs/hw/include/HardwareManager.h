@@ -7,7 +7,7 @@
 #include <Eigen/Dense>
 
 #include "RobotModel.h"
-#include "MotorModel.h"
+#include "MotorDriver.h"
 
 namespace hw {
 class HardwareManager {
@@ -15,28 +15,27 @@ class HardwareManager {
   HardwareManager(std::shared_ptr<kin::RobotModel> robot_model);
 
   // Sensing
-  void SenseLoop();
-  Eigen::Vector4d GetEncoderTicks();
-  // double GetGyroAngularVelocity();
+  std::optional<Eigen::Vector4d> NewEncoderTicks();
+  std::optional<double> NewGyroAngularVelocity();
+  std::optional<Eigen::Vector3d> NewCameraData();
 
   // Control
-  void ControlLoop();
   void SetBodyVelocity(Eigen::Vector3d& velocity_fBody);
   void SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm);
 
   ~HardwareManager();
 
  private:
-  std::vector<MotorModel> motors;
-  // GyroModel gyro;
+  std::unique_ptr<MotorDriver> motor_driver;
+  // std::unique_ptr<GyroDriver> gyro_driver;
+  // std::unique_ptr<CameraDriver> camera_driver;
 
-  std::thread sense_thread;
-  std::thread control_thread;
+  std::string motor_driver_port = "/dev/ttyUSB0";
+  std::string gyro_driver_port = "/dev/ttyUSB1";
 
-  Eigen::Vector4d current_wheel_speeds_rpm;
-  Eigen::Vector4d current_encoder_ticks;
-
-  bool hw_manager_running;
+  bool new_encoder_ticks = false;
+  bool new_gyro_data = false;
+  bool new_camera_data = false;
 
   std::shared_ptr<kin::RobotModel> robot_model;
 };

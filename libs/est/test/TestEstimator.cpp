@@ -20,25 +20,7 @@ class EstimatorTest : public ::testing::Test {
   void SetUp() override {
     tolerance << 0.05, 0.05, 0.05;
     kin::RobotDescription robot_desc;
-
-    // Square configuration with wheels at corners
-    robot_desc.wheel_positions_m = {
-        {0.15, 0.15},    // wheel 1: front-left
-        {-0.15, 0.15},   // wheel 2: rear-left
-        {-0.15, -0.15},  // wheel 3: rear-right
-        {0.15, -0.15}    // wheel 4: front-right
-    };
-
-    // Wheel angles (perpendicular to radial direction for typical omniwheel setup)
-    robot_desc.wheel_angles_rad = {
-        -M_PI / 4,     // -45° (wheel 1)
-        M_PI / 4,      // 45° (wheel 2)
-        3 * M_PI / 4,  // 135° (wheel 3)
-        -3 * M_PI / 4  // -135° (wheel 4)
-    };
-
     std::shared_ptr<kin::RobotModel> robot_model = std::make_shared<kin::RobotModel>(robot_desc);
-
     estimator = std::make_unique<est::Estimator>(robot_model);
     hardware_manager = std::make_unique<hw::HardwareManager>(robot_model);
   }
@@ -67,8 +49,8 @@ TEST_F(EstimatorTest, TestForwardMotionWithCamera) {
 
   while (elapsed_time_s < t_sec) {
     elapsed_time_s = util::GetCurrentTime() - start_time_s;
-    ticks = hardware_manager->GetEncoderTicks();
-    estimator->NewEncoderData(ticks);
+    std::optional<Eigen::Vector4d> ticks = hardware_manager->NewEncoderTicks();
+    if (ticks.has_value()) estimator->NewEncoderData(ticks.value());
 
     if (iteration % 2 == 0) {
       Eigen::Vector3d pose_cam = velocity_fBody * elapsed_time_s;
@@ -102,8 +84,8 @@ TEST_F(EstimatorTest, TestForwardMotionWithCameraAgain) {
   int iteration = 0;
   while (elapsed_time_s < t_sec) {
     elapsed_time_s = util::GetCurrentTime() - start_time;
-    ticks = hardware_manager->GetEncoderTicks();
-    estimator->NewEncoderData(ticks);
+    std::optional<Eigen::Vector4d> ticks = hardware_manager->NewEncoderTicks();
+    if (ticks.has_value()) estimator->NewEncoderData(ticks.value());
 
     if (iteration % 4 == 0) {
       Eigen::Vector3d pose_cam = velocity_fBody * elapsed_time_s;
@@ -134,8 +116,8 @@ TEST_F(EstimatorTest, TestForwardMotionDeadReckoning) {
 
   while (elapsed_time_s < t_sec) {
     elapsed_time_s = util::GetCurrentTime() - start_time;
-    ticks = hardware_manager->GetEncoderTicks();
-    estimator->NewEncoderData(ticks);
+    std::optional<Eigen::Vector4d> ticks = hardware_manager->NewEncoderTicks();
+    if (ticks.has_value()) estimator->NewEncoderData(ticks.value());
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
@@ -159,8 +141,8 @@ TEST_F(EstimatorTest, TestForwardMotionDeadReckoningWithRotation) {
 
   while (elapsed_time_s < t_sec) {
     elapsed_time_s = util::GetCurrentTime() - start_time;
-    ticks = hardware_manager->GetEncoderTicks();
-    estimator->NewEncoderData(ticks);
+    std::optional<Eigen::Vector4d> ticks = hardware_manager->NewEncoderTicks();
+    if (ticks.has_value()) estimator->NewEncoderData(ticks.value());
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
