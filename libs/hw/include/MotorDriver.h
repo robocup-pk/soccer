@@ -1,6 +1,8 @@
 #ifndef MOTOR_DRIVER_H
 #define MOTOR_DRIVER_H
 
+#include <libserial/SerialPort.h>
+
 #include "MotorModel.h"
 
 namespace hw {

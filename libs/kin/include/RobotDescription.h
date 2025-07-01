@@ -10,7 +10,7 @@ namespace kin {
 */
 struct RobotDescription {
   static constexpr int num_wheels = 4;
-  static constexpr double wheel_radius_m = 0.05;
+  static constexpr double wheel_radius_m = 0.0325;  // 0.05;
 
   // Angles between robot frame x-axis and wheel frame x-axis
   std::vector<double> wheel_angles_rad;
@@ -20,20 +20,25 @@ struct RobotDescription {
 
   RobotDescription() {
     // Square configuration with wheels at corners
-    wheel_positions_m = {
-        {0.15, 0.15},    // wheel 1: front-left
-        {-0.15, 0.15},   // wheel 2: rear-left
-        {-0.15, -0.15},  // wheel 3: rear-right
-        {0.15, -0.15}    // wheel 4: front-right
-    };
+    // wheel_positions_m = {
+    //     {0.15, 0.15},    // wheel 1: front-left
+    //     {-0.15, 0.15},   // wheel 2: rear-left
+    //     {-0.15, -0.15},  // wheel 3: rear-right
+    //     {0.15, -0.15}    // wheel 4: front-right
+    // };
 
     // Wheel angles (perpendicular to radial direction for typical omniwheel setup)
-    wheel_angles_rad = {
-        -M_PI / 4,     // -45° (wheel 1)
-        M_PI / 4,      // 45° (wheel 2)
-        3 * M_PI / 4,  // 135° (wheel 3)
-        -3 * M_PI / 4  // -135° (wheel 4)
-    };
+    // wheel_angles_rad = {
+    //     -M_PI / 4,     // -45° (wheel 1)
+    //     M_PI / 4,      // 45° (wheel 2)
+    //     3 * M_PI / 4,  // 135° (wheel 3)
+    //     -3 * M_PI / 4  // -135° (wheel 4)
+    // };
+
+    wheel_angles_rad = {-0.5323254, 0.7766715, 2.3649211, -2.6092672};
+
+    wheel_positions_m = {
+        {0.039634, 0.067378}, {-0.055, 0.055722}, {-0.055, -0.055722}, {0.039634, -0.067378}};
   }
 };
 
