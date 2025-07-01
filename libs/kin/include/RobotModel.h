@@ -14,7 +14,7 @@ namespace kin {
 */
 class RobotModel {
  public:
-  RobotModel(const RobotDescription& robot_description);
+  RobotModel();
 
   // Compute robot velocity in body frame (x_dot_b, y_dot_b, theta_dot_b) from wheel speeds (for
   // simulating)

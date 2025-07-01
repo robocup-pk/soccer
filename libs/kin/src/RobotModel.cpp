@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-kin::RobotModel::RobotModel(const RobotDescription& robot_description)
-    : robot_description(robot_description) {
+kin::RobotModel::RobotModel() {
+  robot_description = kin::GetRobotDescription();
   ComputeInverseMapping();
   ComputeForwardMapping();
 }

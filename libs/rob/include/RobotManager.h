@@ -7,7 +7,7 @@
 namespace rob {
 class RobotManager {
  public:
-  RobotManager(std::shared_ptr<kin::RobotModel> robot_model);
+  RobotManager();
 
   void ControlLoop();
   void SenseLoop();

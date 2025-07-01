@@ -53,15 +53,6 @@ void vis::GameObject::Draw(SpriteRenderer& renderer) {
                       color);
 }
 
-// void vis::GameObject::Move(float dt) {
-//   // TODO: think of a better way
-//   float friction = 0.1f;
-//   velocity.x -= velocity.x * friction * dt;
-//   velocity.y -= velocity.y * friction * dt;
-
-//   position += velocity * dt;
-// }
-
 glm::vec2 vis::GameObject::GetCenterPosition() {
   return glm::vec2(position.x + (size.x / 2), position.y + (size.y / 2));
 }

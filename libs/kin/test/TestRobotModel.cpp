@@ -8,24 +8,7 @@
 class RobotModelTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    // Square configuration with wheels at corners
-    robot_desc.wheel_positions_m = {
-        {0.15, 0.15},    // wheel 1: front-left
-        {-0.15, 0.15},   // wheel 2: rear-left
-        {-0.15, -0.15},  // wheel 3: rear-right
-        {0.15, -0.15}    // wheel 4: front-right
-    };
-
-    // Wheel angles (perpendicular to radial direction for typical omniwheel setup)
-    robot_desc.wheel_angles_rad = {
-        -M_PI / 4,     // -45° (wheel 1)
-        M_PI / 4,      // 45° (wheel 2)
-        3 * M_PI / 4,  // 135° (wheel 3)
-        -3 * M_PI / 4  // -135° (wheel 4)
-    };
-
-    robot_model = std::make_unique<kin::RobotModel>(robot_desc);
-
+    robot_model = std::make_unique<kin::RobotModel>();
     // Tolerance for floating point comparisons
     tolerance = 1e-6;
   }

@@ -37,6 +37,12 @@ struct RobotDescription {
   }
 };
 
+// Singleton accessor
+inline const RobotDescription& GetRobotDescription() {
+  static RobotDescription instance;
+  return instance;
+}
+
 }  // namespace kin
 
 #endif  // ROBOT_DESCRIPTION_H

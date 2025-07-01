@@ -8,8 +8,9 @@
 #define M_PI 3.14159265
 #endif
 
-est::Estimator::Estimator(std::shared_ptr<kin::RobotModel> robot_model)
-    : robot_model(robot_model) {
+est::Estimator::Estimator() {
+  std::cout << "[est::Estimator::Estimator]" << std::endl;
+  robot_model = std::make_shared<kin::RobotModel>();
   angle_random_walk_per_rt_t = 0.001;
   initialized_pose = false;
   initialized_gyro = false;

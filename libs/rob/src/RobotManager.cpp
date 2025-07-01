@@ -2,8 +2,7 @@
 
 #include "RobotManager.h"
 
-rob::RobotManager::RobotManager(std::shared_ptr<kin::RobotModel> robot_model)
-    : estimator(robot_model), hardware_manager(robot_model) {
+rob::RobotManager::RobotManager() {
   velocity_fBody << 0, 0, 0;
   rob_manager_running = true;
 
@@ -38,8 +37,6 @@ void rob::RobotManager::ControlLoop() {
 
 void rob::RobotManager::ControlLogic() {
   pose = estimator.GetPose();
-  std::cout << "[rob::RobotManager::ControlLogic] pose: " << pose.transpose() << std::endl;
-
   // More control
 }
 
