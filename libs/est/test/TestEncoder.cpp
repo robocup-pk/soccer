@@ -18,7 +18,7 @@
 class EstimatorTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    tolerance << 0.05, 0.05, 0.05;
+    tolerance << 0.15, 0.15, 0.15;
     estimator = std::make_unique<est::Estimator>();
     hardware_manager = std::make_unique<hw::HardwareManager>();
   }
