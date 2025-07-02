@@ -8,6 +8,12 @@ kin::RobotModel::RobotModel() {
   ComputeForwardMapping();
 }
 
+kin::RobotModel::RobotModel(kin::RobotDescription& robot_dec) {
+  robot_description = robot_dec;
+  ComputeInverseMapping();
+  ComputeForwardMapping();
+}
+
 Eigen::VectorXd kin::RobotModel::WheelSpeedsToRobotVelocity(
     const std::vector<double>& wheel_speeds_radps) {
   // Convert std::vector to Eigen::VectorXd

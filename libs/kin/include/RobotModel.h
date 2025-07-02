@@ -15,6 +15,7 @@ namespace kin {
 class RobotModel {
  public:
   RobotModel();
+  RobotModel(RobotDescription& robot_desc);
 
   // Compute robot velocity in body frame (x_dot_b, y_dot_b, theta_dot_b) from wheel speeds (for
   // simulating)
@@ -28,6 +29,7 @@ class RobotModel {
   Eigen::MatrixXd InverseMapping() const;  // u = J * v
   Eigen::MatrixXd ForwardMapping() const;  // v = J+ * u
 
+  RobotDescription robot_description;
  private:
   // Inverse mapping: u = J * v
   // Converts robot velocity (x_dot, y_dot, w_dot) in body frame to motor speeds (radps)
@@ -39,7 +41,6 @@ class RobotModel {
 
   Eigen::MatrixXd inverse_mapping;
   Eigen::MatrixXd forward_mapping;
-  RobotDescription robot_description;
 };
 
 }  // namespace kin
