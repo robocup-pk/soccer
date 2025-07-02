@@ -22,8 +22,11 @@ void hw::MotorDriver::SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
 
   // Send speeds over serial
   std::vector<int> speeds_rpm(4);
-  std::transform(wheel_speeds_rpm.data(), wheel_speeds_rpm.data() + 4, speeds_rpm.begin(),
-                 [](double val) { return static_cast<int>(std::round(val)); });
+  speeds_rpm.push_back(wheel_speeds_rpm[0]);
+  speeds_rpm.push_back(wheel_speeds_rpm[1]);
+  speeds_rpm.push_back(wheel_speeds_rpm[2]);
+  speeds_rpm.push_back(wheel_speeds_rpm[3]);
+
   std::vector<uint8_t> buffer(17);
   buffer[0] = 'x';  // header
   std::memcpy(&buffer[1], &speeds_rpm[0], sizeof(int32_t));
