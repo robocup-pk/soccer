@@ -25,8 +25,9 @@ void hw::HardwareManager::SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
 }
 
 std::optional<Eigen::Vector4d> hw::HardwareManager::NewEncoderTicks() {
-  if (motor_driver->NewDataAvailable()) return motor_driver->GetEncoderTicks();
-  return std::nullopt;
+  // if (motor_driver->NewDataAvailable()) return motor_driver->GetEncoderTicks();
+  // return std::nullopt;
+  return motor_driver->GetEncoderTicks();
 }
 
 std::optional<double> hw::HardwareManager::NewGyroAngularVelocity() {

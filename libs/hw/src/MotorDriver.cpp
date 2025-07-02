@@ -55,6 +55,29 @@ Eigen::Vector4d hw::MotorDriver::GetEncoderTicks() {
   }
 
   // Get encoder ticks using serial
+
+  // First Byte
+  if (shared_serial_port->GetNumberOfBytesAvailable() < 1) {
+    return Eigen::Vector4d();
+  }
+  // Check if it's header
+  uint8_t header;
+  shared_serial_port->ReadByte(header, 1000);
+  if (header != 'x') return Eigen::Vector4d();
+  // Next 16 bytes
+  std::vector<uint8_t> buffer(16);
+  shared_serial_port->Read(buffer, 16, 1000);
+
+  // Extract the rpms
+  std::vector<int> rpm(4);
+  for (int i = 0; i < 4; ++i) {
+    std::memcpy(&rpm[i], &buffer[i * 4], sizeof(int32_t));
+  }
+
+  std::cout << "RPMS: " << rpm[0] << " " << rpm[1] << " " << rpm[2] << " " << rpm[3] << std::endl;
+
+  // Convert to Eigen
+
   return Eigen::Vector4d();
 }
 
