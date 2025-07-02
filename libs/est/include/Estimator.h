@@ -9,7 +9,7 @@
 namespace est {
 class Estimator {
  public:
-  Estimator(std::shared_ptr<kin::RobotModel> robot_model);
+  Estimator();
 
   void NewEncoderData(Eigen::Vector4d ticks);
   void NewGyroData(double w_radps);

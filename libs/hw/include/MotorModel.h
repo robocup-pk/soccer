@@ -11,11 +11,11 @@ namespace hw {
 class MotorModel {
  public:
   int GetTicks();
-  double GetWheelSpeedRadps();
-
-  void UpdateTicks();
   void SetWheelSpeedRpm(double rpm);
   void Clear();
+
+  double GetWheelSpeedRadps();
+  void UpdateTicks();
 
  private:
   double rpm = 0;

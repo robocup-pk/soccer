@@ -1,6 +1,8 @@
 #ifndef MOTOR_DRIVER_H
 #define MOTOR_DRIVER_H
 
+#include <libserial/SerialPort.h>
+
 #include "MotorModel.h"
 
 namespace hw {
@@ -9,7 +11,7 @@ enum class MotorType { MODEL, REAL };
 
 class MotorDriver {
  public:
-  MotorDriver(std::string port);
+  MotorDriver(std::shared_ptr<LibSerial::SerialPort> shared_serial_port);
 
   void SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm);
 
@@ -18,12 +20,16 @@ class MotorDriver {
   bool NewDataAvailable();
 
  private:
+#ifdef BUILD_ON_PI
+  MotorType motor_type = MotorType::REAL;
+#else
   MotorType motor_type = MotorType::MODEL;
+#endif
 
   std::vector<MotorModel> motors;
   Eigen::Vector4d encoder_ticks;
 
-  std::string serial_port;
+  std::shared_ptr<LibSerial::SerialPort> shared_serial_port;
 
   bool new_data_available = true;
 };

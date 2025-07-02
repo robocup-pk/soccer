@@ -19,10 +19,8 @@ class EstimatorTest : public ::testing::Test {
  protected:
   void SetUp() override {
     tolerance << 0.05, 0.05, 0.05;
-    kin::RobotDescription robot_desc;
-    std::shared_ptr<kin::RobotModel> robot_model = std::make_shared<kin::RobotModel>(robot_desc);
-    estimator = std::make_unique<est::Estimator>(robot_model);
-    hardware_manager = std::make_unique<hw::HardwareManager>(robot_model);
+    estimator = std::make_unique<est::Estimator>();
+    hardware_manager = std::make_unique<hw::HardwareManager>();
   }
 
   std::unique_ptr<est::Estimator> estimator;

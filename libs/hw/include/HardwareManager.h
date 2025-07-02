@@ -7,6 +7,7 @@
 #include <memory>
 
 #include <Eigen/Dense>
+#include <libserial/SerialPort.h>
 
 #include "RobotModel.h"
 #include "MotorDriver.h"
@@ -14,7 +15,7 @@
 namespace hw {
 class HardwareManager {
  public:
-  HardwareManager(std::shared_ptr<kin::RobotModel> robot_model);
+  HardwareManager();
 
   // Sensing
   std::optional<Eigen::Vector4d> NewEncoderTicks();
@@ -24,6 +25,9 @@ class HardwareManager {
   // Control
   void SetBodyVelocity(Eigen::Vector3d& velocity_fBody);
   void SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm);
+
+  // Serial Comms
+  void InitializeSerialPort();
 
   ~HardwareManager();
 
@@ -40,6 +44,9 @@ class HardwareManager {
   bool new_camera_data = false;
 
   std::shared_ptr<kin::RobotModel> robot_model;
+
+  // Serial port
+  std::shared_ptr<LibSerial::SerialPort> shared_serial_port;
 };
 }  // namespace hw
 

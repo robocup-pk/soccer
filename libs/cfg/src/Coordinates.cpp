@@ -24,7 +24,7 @@ const Eigen::Vector3d SystemConfig::init_ball_acceleration_ftpsps = Eigen::Vecto
 // Robot config
 const float SystemConfig::init_robot_speed_ftps = 0;
 const float SystemConfig::max_robot_speed_ftps = 7.5;
-const Eigen::Vector2d SystemConfig::robot_size_ft = Eigen::Vector2d(1.5, 1.5);
+const Eigen::Vector2d SystemConfig::robot_size_ft = Eigen::Vector2d(0.7, 0.7);
 const Eigen::Vector3d SystemConfig::init_robot_velocity_ftps =
     Eigen::Vector3d(init_robot_speed_ftps, 0, 0);
 const Eigen::Vector3d SystemConfig::init_robot_acceleration_ftpsps = Eigen::Vector3d(0, 0, 0);

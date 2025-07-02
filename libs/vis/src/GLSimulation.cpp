@@ -134,9 +134,12 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
       util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
   std::string ball_texture_path =
       util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
+  std::string arrow_texture_path =
+      util::GetExecutableDir() + "/libs/vis/resources/textures/arrow.png";
 
   ResourceManager::LoadTexture(robot_texture_path.c_str(), false, "face");
   ResourceManager::LoadTexture(ball_texture_path.c_str(), false, "ball");
+  ResourceManager::LoadTexture(arrow_texture_path.c_str(), false, "arrow");
 
   // Window
   Eigen::Vector3d window_position(-cfg::Coordinates::window_width_px / 2,

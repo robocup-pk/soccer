@@ -8,6 +8,7 @@
 class RobotModelTest : public ::testing::Test {
  protected:
   void SetUp() override {
+    kin::RobotDescription robot_desc;
     // Square configuration with wheels at corners
     robot_desc.wheel_positions_m = {
         {0.15, 0.15},    // wheel 1: front-left
