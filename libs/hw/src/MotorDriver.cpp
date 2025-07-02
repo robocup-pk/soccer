@@ -1,4 +1,6 @@
 #include <iostream>
+#include <thread>
+#include <chrono>
 
 #include <libserial/SerialPort.h>
 
@@ -19,19 +21,29 @@ void hw::MotorDriver::SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
     }
     return;
   }
-
+  std::cout << "[hw::MotorDriver::SetWheelSpeedsRpm] wheel_speeds_rpm = "
+            << wheel_speeds_rpm.transpose() << std::endl;
   // Send speeds over serial
-  std::vector<int> speeds_rpm(4);
-  std::transform(wheel_speeds_rpm.data(), wheel_speeds_rpm.data() + 4, speeds_rpm.begin(),
-                 [](double val) { return static_cast<int>(std::round(val)); });
+
+  std::vector<int32_t> speeds_rpm = {static_cast<int32_t>(std::round(wheel_speeds_rpm[0])),
+                                     static_cast<int32_t>(std::round(wheel_speeds_rpm[1])),
+                                     static_cast<int32_t>(std::round(wheel_speeds_rpm[2])),
+                                     static_cast<int32_t>(std::round(wheel_speeds_rpm[3]))};
+
   std::vector<uint8_t> buffer(17);
   buffer[0] = 'x';  // header
+  // STM and Raspberry pi both are little-endian
   std::memcpy(&buffer[1], &speeds_rpm[0], sizeof(int32_t));
   std::memcpy(&buffer[5], &speeds_rpm[1], sizeof(int32_t));
   std::memcpy(&buffer[9], &speeds_rpm[2], sizeof(int32_t));
   std::memcpy(&buffer[13], &speeds_rpm[3], sizeof(int32_t));
+
+  std::cout << "[hwff::MotorDriver::SetWheelSpeedsRpm] Sent = " << speeds_rpm[0] << " "
+            << speeds_rpm[1] << " " << speeds_rpm[2] << " " << speeds_rpm[3] << std::endl;
+  std::cout << "Size of buffer: " << buffer.size() << std::endl;
   shared_serial_port->Write(buffer);
   shared_serial_port->DrainWriteBuffer();
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
 }
 
 Eigen::Vector4d hw::MotorDriver::GetEncoderTicks() {

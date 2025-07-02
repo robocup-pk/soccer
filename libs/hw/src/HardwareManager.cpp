@@ -49,4 +49,6 @@ void hw::HardwareManager::InitializeSerialPort() {
   shared_serial_port->SetParity(LibSerial::Parity::PARITY_NONE);
   shared_serial_port->SetStopBits(LibSerial::StopBits::STOP_BITS_1);
   shared_serial_port->SetFlowControl(LibSerial::FlowControl::FLOW_CONTROL_NONE);
+  std::cout << "[hw::HardwareManager::InitializeSerialPort] Opened Serial Port: "
+            << cfg::RobotConstants::shared_serial_port_name << std::endl;
 }
