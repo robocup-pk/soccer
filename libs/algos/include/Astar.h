@@ -7,6 +7,8 @@
 #include <algorithm>
 
 #include "Waypoint.h"
+
+namespace algos {
 struct Node {
   float x, y;
   float g, h;
@@ -17,7 +19,7 @@ struct pair_hash {
     return std::hash<float>()(p.first) ^ (std::hash<float>()(p.second) << 1);
   }
 };
-float heuristic(const Node& a, const Node& b) {
-  return std::sqrt(std::pow(a.x - b.x, 2) + std::pow(a.y - b.y, 2));
-};
+float heuristic(const Node& a, const Node& b);
+
+}
 #endif  // AS_H

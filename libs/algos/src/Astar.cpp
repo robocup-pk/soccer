@@ -11,6 +11,10 @@
 
 namespace algos {
 
+float heuristic(const Node& a, const Node& b) {
+  return std::sqrt(std::pow(a.x - b.x, 2) + std::pow(a.y - b.y, 2));
+};
+
 state::Path Astar(const state::Waypoint& start, const state::Waypoint& goal) {
   auto cmp = [](const Node& a, const Node& b) { return a.g + a.h > b.g + b.h; };
   std::priority_queue<Node, std::vector<Node>, decltype(cmp)> openSet(cmp);
