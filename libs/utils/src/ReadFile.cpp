@@ -1,8 +1,9 @@
 #include <chrono>
-#include <Eigen/Dense>
-
+#include <thread>
 #define _USE_MATH_DEFINES
 #include <cmath>
+
+#include <Eigen/Dense>
 
 #include "ReadFile.h"
 
@@ -41,3 +42,5 @@ double util::WrapAngle(double angle_rad) {
   if (rad < 0) rad += 2 * M_PI;
   return rad - M_PI;
 }
+
+void util::WaitMs(int ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }
