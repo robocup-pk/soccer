@@ -19,7 +19,7 @@ foreach (TEST_SOURCE ${TEST_SOURCES})
   add_executable(${TEST_NAME} ${TEST_SOURCE})
 
   # Link the test executable with Google Test and your library
-  target_link_libraries(${TEST_NAME} PRIVATE gtest gtest_main kin_lib)
+  target_link_libraries(${TEST_NAME} PRIVATE gtest gtest_main kin_lib state_lib)
 
   # Add the test to CMake's test suite
   add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})

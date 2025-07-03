@@ -1,8 +1,10 @@
 #include <iostream>
 
+#include "MotionController.h"
 #include "RobotManager.h"
 
 rob::RobotManager::RobotManager() {
+  robot_state = RobotState::IDLE;
   velocity_fBody << 0, 0, 0;
   rob_manager_running = true;
 
@@ -36,8 +38,22 @@ void rob::RobotManager::ControlLoop() {
 }
 
 void rob::RobotManager::ControlLogic() {
-  pose = estimator.GetPose();
-  // More control
+  switch (robot_state) {
+    case RobotState::IDLE:
+      hardware_manager.SetBodyVelocity(Eigen::Vector3d(0, 0, 0));
+      break;
+    case RobotState::DRIVING_TO_POINT:
+      velocity_fBody = motion_controller.DriveToPoint(pose_fWorld, pose_destination);
+      hardware_manager.SetBodyVelocity(velocity_fBody);
+      if (velocity_fBody.norm() == 0) robot_state = RobotState::IDLE;
+      break;
+    case RobotState::MANUAL_DRIVING:
+      hardware_manager.SetBodyVelocity(velocity_fBody);
+      break;
+    case RobotState::AUTONOMOUS_DRIVING:
+      // TODO
+      break;
+  }
 }
 
 void rob::RobotManager::SenseLogic() {
@@ -48,10 +64,18 @@ void rob::RobotManager::SenseLogic() {
   if (encoder_ticks.has_value()) estimator.NewEncoderData(encoder_ticks.value());
   if (w_radps.has_value()) estimator.NewGyroData(w_radps.value());
   if (pose_from_camera.has_value()) estimator.NewCameraData(pose_from_camera.value());
+
+  pose_fWorld = estimator.GetPose();
 }
 
 void rob::RobotManager::SetBodyVelocity(Eigen::Vector3d& velocity_fBody) {
-  hardware_manager.SetBodyVelocity(velocity_fBody);
+  this->velocity_fBody = velocity_fBody;
+  robot_state = RobotState::MANUAL_DRIVING;
 }
 
-Eigen::Vector3d rob::RobotManager::GetPose() { return pose; }
+Eigen::Vector3d rob::RobotManager::GetPoseInWorldFrame() { return pose_fWorld; }
+
+void rob::RobotManager::StartDrivingToPoint(Eigen::Vector3d pose_dest) {
+  pose_destination = pose_dest;
+  robot_state = RobotState::DRIVING_TO_POINT;
+}

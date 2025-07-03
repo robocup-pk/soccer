@@ -23,7 +23,7 @@ class HardwareManager {
   std::optional<Eigen::Vector3d> NewCameraData();
 
   // Control
-  void SetBodyVelocity(Eigen::Vector3d& velocity_fBody);
+  void SetBodyVelocity(Eigen::Vector3d velocity_fBody);
   void SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm);
 
   // Serial Comms

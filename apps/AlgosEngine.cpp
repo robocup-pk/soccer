@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
 
     UpdateKinematics(soccer_objects, dt);
 
-    state::CheckAndResolveCollisions(soccer_objects);
+    kin::CheckAndResolveCollisions(soccer_objects);
 
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
       std::cout << "[main] Simulation finished" << std::endl;
