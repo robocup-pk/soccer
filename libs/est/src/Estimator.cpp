@@ -103,13 +103,12 @@ void est::Estimator::NewGyroData(double w_radps) {
 
   // Predict Pose
   double dt = util::GetCurrentTime() - t_last_gyro;
+  t_last_gyro = util::GetCurrentTime();
   pose_est[2] = util::WrapAngle(pose_est[2] + w_radps * dt);
 
   // Predict Covariance
   double q = angle_random_walk_per_rt_t * std::sqrt(dt);
   state_cov(2, 2) += q;
-
-  t_last_gyro = util::GetCurrentTime();
 }
 
 void est::Estimator::NewCameraData(Eigen::Vector3d pose_meas) {
