@@ -140,4 +140,6 @@ void est::Estimator::NewCameraData(Eigen::Vector3d pose_meas) {
 
 Eigen::Vector3d est::Estimator::GetPose() { return pose_est; }
 
+Eigen::Vector3d est::Estimator::GetPoseInit() { return pose_init; }
+
 est::Estimator::~Estimator() { robot_model = nullptr; }

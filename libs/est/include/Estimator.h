@@ -16,6 +16,7 @@ class Estimator {
   void NewCameraData(Eigen::Vector3d pose_meas);
 
   Eigen::Vector3d GetPose();
+  Eigen::Vector3d GetPoseInit();
 
   ~Estimator();
 
