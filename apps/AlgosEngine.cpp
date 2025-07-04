@@ -8,18 +8,12 @@
 // self libs
 #include "GLSimulation.h"
 #include "SoccerObject.h"
-#include "Collision.h"
+#include "Kinematics.h"
 #include "Algos.h"
 #include "Coordinates.h"
 #include "Waypoint.h"
 #include "RRT.h"
 #include "Astar.h"
-
-void UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects, float dt) {
-  for (state::SoccerObject& soccer_object : soccer_objects) {
-    soccer_object.Move(dt);
-  }
-}
 
 int main(int argc, char* argv[]) {
   auto start_time = std::chrono::high_resolution_clock::now();
@@ -104,7 +98,7 @@ int main(int argc, char* argv[]) {
       soccer_objects[0].velocity[0] = 0.0;
     }
 
-    UpdateKinematics(soccer_objects, dt);
+    kin::UpdateKinematics(soccer_objects, dt);
 
     kin::CheckAndResolveCollisions(soccer_objects);
 

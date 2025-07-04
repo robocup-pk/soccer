@@ -11,6 +11,13 @@
 #define M_PI 3.14159265
 #endif
 
+float util::PixelsPerMm() {
+  // Calculate pixels per mm based on window size and field dimensions
+  return 0.2f;
+}
+
+float util::MmToPixels(float mm_value) { return mm_value * PixelsPerMm(); }
+
 std::string util::ReadFile(const std::string& path) {
   std::ifstream file(path, std::ios::binary);
   if (!file) throw std::runtime_error("Failed to open file: " + path);

@@ -5,7 +5,7 @@
 // self libs
 #include "GLSimulation.h"
 #include "SoccerObject.h"
-#include "Collision.h"
+#include "Kinematics.h"
 #include "Coordinates.h"
 #include "Utils.h"
 #include "RobotManager.h"
@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
 
   // ROBOT
   rob::RobotManager robot_manager;
-  robot_manager.InitializeHome(Eigen::Vector3d(2, 2, 0));
+  robot_manager.InitializeHome(Eigen::Vector3d(2, 2, 1));
   robot_manager.GoHome();
 
   while (1) {

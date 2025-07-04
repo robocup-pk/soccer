@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "SoccerObject.h"
-#include "Collision.h"
+#include "Kinematics.h"
 
 // Position, Velocity, Acceleration, Size, Mass, Texture
 

@@ -2,7 +2,7 @@
 
 #include "GameObject.h"
 #include "Texture.h"
-#include "Collision.h"
+#include "Kinematics.h"
 #include "Coordinates.h"
 
 vis::GameObject::GameObject(std::string name_, Eigen::Vector3d position_, Eigen::Vector2d size_,

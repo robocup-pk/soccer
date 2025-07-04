@@ -1,8 +1,14 @@
 #include <iostream>
 #include <algorithm>
 
-#include "Collision.h"
+#include "Kinematics.h"
 #include "Coordinates.h"
+
+void kin::UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects, float dt) {
+  for (state::SoccerObject& soccer_object : soccer_objects) {
+    soccer_object.Move(dt);
+  }
+}
 
 void kin::CheckAndResolveCollisions(std::vector<state::SoccerObject>& soccer_objects) {
   // Update Ball Attachment

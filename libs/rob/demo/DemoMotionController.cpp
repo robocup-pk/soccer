@@ -5,7 +5,7 @@
 // self libs
 #include "GLSimulation.h"
 #include "SoccerObject.h"
-#include "Collision.h"
+#include "Kinematics.h"
 #include "Coordinates.h"
 #include "Utils.h"
 #include "RobotManager.h"

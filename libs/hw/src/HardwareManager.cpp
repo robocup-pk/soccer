@@ -12,12 +12,13 @@ hw::HardwareManager::HardwareManager() {
   if (cfg::RobotConstants::shared_serial_port_name != "null") InitializeSerialPort();
 
   motor_driver = std::make_unique<MotorDriver>(shared_serial_port);
-  // gyro_driver = std::make_unique<GyroDriver>(shared_serial_port);
+  gyro_driver = std::make_unique<GyroDriver>(shared_serial_port);
 }
 
 void hw::HardwareManager::SetBodyVelocity(Eigen::Vector3d velocity_fBody) {
   Eigen::Vector4d wheel_speeds_rpm = robot_model->RobotVelocityToWheelSpeedsRpm(velocity_fBody);
   SetWheelSpeedsRpm(wheel_speeds_rpm);
+  gyro_driver->SetAngularVelocityRadps(velocity_fBody[2]);
 }
 
 void hw::HardwareManager::SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
@@ -34,7 +35,11 @@ std::optional<Eigen::Vector4d> hw::HardwareManager::NewMotorsRpms() {
 }
 
 std::optional<double> hw::HardwareManager::NewGyroAngularVelocity() {
-  // if (gyro_driver.NewDataAvailable()) return gyro_driver.GetAngularVelocity();
+  double w_radps = gyro_driver->GetAngularVelocityRadps();
+  if (gyro_driver->NewDataAvailable()) {
+    gyro_driver->new_data_available = false;
+    return w_radps;
+  }
   return std::nullopt;
 }
 

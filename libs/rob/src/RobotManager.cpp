@@ -76,7 +76,6 @@ void rob::RobotManager::ControlLogic() {
   }
 
   if (finished_motion) {
-    std::cout << "State: " << GetRobotState() << std::endl;
     robot_state = RobotState::IDLE;
   }
   hardware_manager.SetBodyVelocity(velocity_fBody_);
@@ -107,11 +106,6 @@ void rob::RobotManager::SetBodyVelocity(Eigen::Vector3d& velocity_fBody) {
 }
 
 Eigen::Vector3d rob::RobotManager::GetPoseInWorldFrame() { return pose_fWorld; }
-
-void rob::RobotManager::StartDrivingToPoint(Eigen::Vector3d pose_dest) {
-  pose_destination = pose_dest;
-  robot_state = RobotState::DRIVING_TO_POINT;
-}
 
 void rob::RobotManager::AddGoal(const Eigen::Vector3d& goal) {
   goal_queue.push(goal);

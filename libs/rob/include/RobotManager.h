@@ -24,7 +24,6 @@ class RobotManager {
   void SenseLogic();
 
   // Used by the outside world
-  void StartDrivingToPoint(Eigen::Vector3d pose_dest);
   void SetBodyVelocity(Eigen::Vector3d& velocity_fBody);
   void AddGoal(const Eigen::Vector3d& goal);
   void GoHome();
