@@ -15,6 +15,7 @@ namespace util {
   Eigen::Vector3d RotateAboutZ(Eigen::Vector3d pose, double angle_rad);
   double WrapAngle(double angle_rad);
   double GetCurrentTime();
+  void WaitMs(int ms);
 }  // namespace util
 
 #endif  // READ_FILE_H

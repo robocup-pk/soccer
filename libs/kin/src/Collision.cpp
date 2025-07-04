@@ -4,11 +4,11 @@
 #include "Collision.h"
 #include "Coordinates.h"
 
-void state::CheckAndResolveCollisions(std::vector<SoccerObject>& soccer_objects) {
+void kin::CheckAndResolveCollisions(std::vector<state::SoccerObject>& soccer_objects) {
   // Update Ball Attachment
   for (auto& obj : soccer_objects) {
     if (obj.name == "ball" && obj.is_attached) {
-      SoccerObject robot = *obj.attached_to;
+      state::SoccerObject robot = *obj.attached_to;
       UpdateAttachedBallPosition(robot, obj);
       break;
     }
@@ -17,8 +17,8 @@ void state::CheckAndResolveCollisions(std::vector<SoccerObject>& soccer_objects)
   // Check Collisions for all Soccer Objects
   for (int i = 0; i < soccer_objects.size(); ++i) {
     for (int j = i + 1; j < soccer_objects.size(); ++j) {
-      SoccerObject& obj1 = soccer_objects[i];
-      SoccerObject& obj2 = soccer_objects[j];
+      state::SoccerObject& obj1 = soccer_objects[i];
+      state::SoccerObject& obj2 = soccer_objects[j];
 
       // Normal collision detection continues for all other objects
       if (CheckCircularCollision(obj1, obj2)) {
@@ -47,15 +47,15 @@ void state::CheckAndResolveCollisions(std::vector<SoccerObject>& soccer_objects)
   // Wall and boundary collisions still work
   ResolveCollisionWithWall(soccer_objects);
 
-  for (SoccerObject& soccer_object : soccer_objects) {
+  for (state::SoccerObject& soccer_object : soccer_objects) {
     if (!IsInsideBoundary(soccer_object)) {
       ClampInsideBoundary(soccer_object);
     }
   }
 }
 
-void state::ResolveCollisionWithWall(std::vector<SoccerObject>& soccer_objects) {
-  for (SoccerObject& soccer_object : soccer_objects) {
+void kin::ResolveCollisionWithWall(std::vector<state::SoccerObject>& soccer_objects) {
+  for (state::SoccerObject& soccer_object : soccer_objects) {
     if (soccer_object.name == "background") continue;
 
     Eigen::Vector3d center = soccer_object.GetCenterPosition();
@@ -86,7 +86,7 @@ void state::ResolveCollisionWithWall(std::vector<SoccerObject>& soccer_objects) 
   }
 }
 
-bool state::IsInsideBoundary(const SoccerObject& obj) {
+bool kin::IsInsideBoundary(const state::SoccerObject& obj) {
   float half_width = cfg::Coordinates::window_width_px / 2;
   float half_height = cfg::Coordinates::window_height_px / 2;
   float left = obj.position[0];
@@ -98,7 +98,7 @@ bool state::IsInsideBoundary(const SoccerObject& obj) {
          bottom <= half_height;
 }
 
-void state::ClampInsideBoundary(SoccerObject& obj) {
+void kin::ClampInsideBoundary(state::SoccerObject& obj) {
   if (obj.name == "background") return;
   // x direction
   double half_width = cfg::Coordinates::window_width_px / 2;
@@ -108,7 +108,7 @@ void state::ClampInsideBoundary(SoccerObject& obj) {
   obj.position[1] = std::clamp(obj.position[1], -half_height, half_height - obj.size[1]);
 }
 
-bool state::CheckCircularCollision(state::SoccerObject& obj1, state::SoccerObject& obj2) {
+bool kin::CheckCircularCollision(state::SoccerObject& obj1, state::SoccerObject& obj2) {
   Eigen::Vector3d pos1 = obj1.GetCenterPosition();
   Eigen::Vector3d pos2 = obj2.GetCenterPosition();
 
@@ -124,7 +124,7 @@ bool state::CheckCircularCollision(state::SoccerObject& obj1, state::SoccerObjec
   return distance <= (radius1 + radius2);
 }
 
-void state::ResolveCircularCollision(state::SoccerObject& obj1, state::SoccerObject& obj2) {
+void kin::ResolveCircularCollision(state::SoccerObject& obj1, state::SoccerObject& obj2) {
   Eigen::Vector3d pos1 = obj1.GetCenterPosition();
   Eigen::Vector3d pos2 = obj2.GetCenterPosition();
 
@@ -159,7 +159,7 @@ void state::ResolveCircularCollision(state::SoccerObject& obj1, state::SoccerObj
   float v2n = obj2.velocity[0] * nx + obj2.velocity[1] * ny;  // obj2 normal component
   float v2t = obj2.velocity[0] * tx + obj2.velocity[1] * ty;  // obj2 tangential component
 
-  // Assume equal mass for simplicity (you can add mass property to SoccerObject)
+  // Assume equal mass for simplicity (you can add mass property to state::SoccerObject)
   float m1 = obj1.mass_kg;
   float m2 = obj2.mass_kg;
 
@@ -186,20 +186,20 @@ void state::ResolveCircularCollision(state::SoccerObject& obj1, state::SoccerObj
   }
 }
 
-bool state::IsBallInFrontOfRobot(SoccerObject& robot, SoccerObject& ball) {
+bool kin::IsBallInFrontOfRobot(state::SoccerObject& robot, state::SoccerObject& ball) {
   Eigen::Vector3d ball_center = ball.GetCenterPosition();
   Eigen::Vector2d ball_point(ball_center.x(), ball_center.y());
   return robot.IsPointInFrontSector(ball_point);
 }
 
-void state::HandleBallSticking(SoccerObject& robot, SoccerObject& ball) {
+void kin::HandleBallSticking(state::SoccerObject& robot, state::SoccerObject& ball) {
   ball.is_attached = true;
   ball.attached_to = &robot;
 
   UpdateAttachedBallPosition(robot, ball);
 }
 
-void state::UpdateAttachedBallPosition(SoccerObject& robot, SoccerObject& ball) {
+void kin::UpdateAttachedBallPosition(state::SoccerObject& robot, state::SoccerObject& ball) {
   Eigen::Vector3d robot_center = robot.GetCenterPosition();
   float robot_rotation = robot.position[2] - M_PI / 2.0f;
 
@@ -221,12 +221,12 @@ void state::UpdateAttachedBallPosition(SoccerObject& robot, SoccerObject& ball) 
   ball.velocity = Eigen::Vector3d(0, 0, 0);
 }
 
-void state::DetachBall(SoccerObject& ball, float detach_velocity) {
+void kin::DetachBall(state::SoccerObject& ball, float detach_velocity) {
   if (!ball.is_attached || !ball.attached_to) {
     return;  // Ball is not attached
   }
 
-  SoccerObject* robot = ball.attached_to;
+  state::SoccerObject* robot = ball.attached_to;
 
   // Get robot's current orientation for detachment direction
   float robot_rotation = robot->position[2] - M_PI / 2.0f;

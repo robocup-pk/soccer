@@ -15,7 +15,7 @@ hw::HardwareManager::HardwareManager() {
   // gyro_driver = std::make_unique<GyroDriver>(shared_serial_port);
 }
 
-void hw::HardwareManager::SetBodyVelocity(Eigen::Vector3d& velocity_fBody) {
+void hw::HardwareManager::SetBodyVelocity(Eigen::Vector3d velocity_fBody) {
   Eigen::Vector4d wheel_speeds_rpm = robot_model->RobotVelocityToWheelSpeedsRpm(velocity_fBody);
   SetWheelSpeedsRpm(wheel_speeds_rpm);
 }

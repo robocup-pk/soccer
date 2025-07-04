@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
     last_time = current_time;
 
     // ESTIMATED POSITION
-    soccer_objects[0].position = robot_manager.GetPose();
+    soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();
     std::cout << "pose est: " << std::fixed << std::setprecision(3)
               << soccer_objects[0].position.transpose() << std::endl;
 
