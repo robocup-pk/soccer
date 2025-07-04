@@ -5,7 +5,7 @@
 
 #include <Eigen/Dense>
 
-#include "ReadFile.h"
+#include "Utils.h"
 
 #ifndef M_PI  // in case it doesnt work on windows
 #define M_PI 3.14159265
@@ -44,3 +44,13 @@ double util::WrapAngle(double angle_rad) {
 }
 
 void util::WaitMs(int ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }
+
+double util::CalculateDt() {
+  static auto start_time = std::chrono::high_resolution_clock::now();
+  static auto last_time = start_time;
+  auto current_time = std::chrono::high_resolution_clock::now();
+  auto duration = current_time - last_time;
+  double dt = std::chrono::duration<double>(duration).count();
+  last_time = current_time;
+  return dt;
+}

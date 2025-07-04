@@ -10,12 +10,14 @@
 #include <Eigen/Dense>
 
 namespace util {
-  std::string ReadFile(const std::string& path);
-  std::string GetExecutableDir();
-  Eigen::Vector3d RotateAboutZ(Eigen::Vector3d pose, double angle_rad);
-  double WrapAngle(double angle_rad);
-  double GetCurrentTime();
-  void WaitMs(int ms);
+std::string ReadFile(const std::string& path);
+std::string GetExecutableDir();
+Eigen::Vector3d RotateAboutZ(Eigen::Vector3d pose, double angle_rad);
+double WrapAngle(double angle_rad);
+double GetCurrentTime();
+void WaitMs(int ms);
+double CalculateDt();  // Relative to the first call of this function. Returns time_sec between
+                       // consecutive calls
 }  // namespace util
 
 #endif  // READ_FILE_H

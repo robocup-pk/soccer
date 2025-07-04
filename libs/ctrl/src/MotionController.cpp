@@ -7,8 +7,8 @@ ctrl::MotionController::MotionController() {
 
 std::pair<bool, Eigen::Vector3d> ctrl::MotionController::DriveToPoint(
     Eigen::Vector3d pose_fWorld, Eigen::Vector3d pose_dest_fWorld) {
-  double Kv = 1;
-  double Kw = 1;
+  double Kv = 2;
+  double Kw = 2;
 
   // Step 1: Compute position error in world frame
   Eigen::Vector2d pose_error_fWorld(pose_dest_fWorld[0] - pose_fWorld[0],
@@ -27,7 +27,7 @@ std::pair<bool, Eigen::Vector3d> ctrl::MotionController::DriveToPoint(
   Eigen::Vector3d velocity_fBody;
   velocity_fBody[0] = Kv * pose_error_fBody[0];
   velocity_fBody[1] = Kv * pose_error_fBody[1];
-  velocity_fBody[2] = Kw * util::WrapAngle(pose_error_fWorld[2]);
+  velocity_fBody[2] = Kw * util::WrapAngle(pose_dest_fWorld[2] - pose_fWorld[2]);
 
   return std::make_pair(false, velocity_fBody);
 }

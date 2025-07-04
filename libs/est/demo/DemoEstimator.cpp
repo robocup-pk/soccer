@@ -11,6 +11,12 @@
 #include "RobotManager.h"
 
 int main(int argc, char* argv[]) {
+  // Need two robots for this demo to run
+  if (cfg::SystemConfig::num_robots != 2) {
+    std::cout << "[DemoEstimator::Main] Set num_robots to 2. Exiting!" << std::endl;
+    return 0;
+  }
+
   auto start_time = std::chrono::high_resolution_clock::now();
   auto last_time = start_time;
 
@@ -18,7 +24,6 @@ int main(int argc, char* argv[]) {
 
   Eigen::Vector3d velocity_fBody(-0.2, 0.2, 1);
   robot_manager.SetBodyVelocity(velocity_fBody);
-  Eigen::Vector4d ticks;
 
   double est_start_time = util::GetCurrentTime();
   double elapsed_time_s = 0;
@@ -46,16 +51,11 @@ int main(int argc, char* argv[]) {
     soccer_objects[1].position = velocity_fBody * elapsed_time_s;
     std::cout << "pose tru: " << soccer_objects[1].position.transpose() << std::endl;
 
-    // state::CheckAndResolveCollisions(soccer_objects);
-
-    // Simulation Step
+    // Simulation
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
       std::cout << "[main] Simulation finished" << std::endl;
       break;
     }
-
-    // Error Checking
-    // ResolveErrors();
   }
 
   return 0;

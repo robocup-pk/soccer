@@ -1,0 +1,5 @@
+add_executable(demo_motion_controller DemoMotionController.cpp)
+target_link_libraries(demo_motion_controller PRIVATE state_lib vis_lib cfg_lib rob_lib)
+
+add_executable(demo_go_home DemoGoHome.cpp)
+target_link_libraries(demo_go_home PRIVATE state_lib vis_lib cfg_lib rob_lib)

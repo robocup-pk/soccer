@@ -12,7 +12,7 @@
 
 namespace rob {
 
-enum class RobotState { IDLE, DRIVING_TO_POINT, MANUAL_DRIVING, AUTONOMOUS_DRIVING, GO_TO_HOME };
+enum class RobotState { IDLE, DRIVING_TO_POINT, MANUAL_DRIVING, AUTONOMOUS_DRIVING, GOING_HOME };
 
 class RobotManager {
  public:
@@ -27,9 +27,13 @@ class RobotManager {
   void StartDrivingToPoint(Eigen::Vector3d pose_dest);
   void SetBodyVelocity(Eigen::Vector3d& velocity_fBody);
   void AddGoal(const Eigen::Vector3d& goal);
+  void GoHome();
+  void InitializeHome(Eigen::Vector3d pose_home);
 
   Eigen::Vector3d GetPoseInWorldFrame();
-  void AssignNextGoal(bool finished_motion);
+  void TryAssignNextGoal();
+
+  std::string GetRobotState();
 
  private:
   RobotState previous_robot_state;
@@ -49,6 +53,8 @@ class RobotManager {
   bool rob_manager_running = false;
   double control_loop_frequency_hz = 50;
   double sense_loop_frequency_hz = 100;
+
+  bool finished_motion;
 
   // For driving to point
   Eigen::Vector3d pose_destination;

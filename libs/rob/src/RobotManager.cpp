@@ -10,6 +10,7 @@ rob::RobotManager::RobotManager() {
   start_time_idle_s = util::GetCurrentTime();
   velocity_fBody << 0, 0, 0;
   initialized_pose_home = false;
+  finished_motion = true;
 
   rob_manager_running = true;
 
@@ -49,7 +50,6 @@ void rob::RobotManager::ControlLoop() {
 }
 
 void rob::RobotManager::ControlLogic() {
-  bool finished_motion;
   Eigen::Vector3d velocity_fBody_;
 
   switch (robot_state) {
@@ -60,13 +60,13 @@ void rob::RobotManager::ControlLogic() {
     case RobotState::DRIVING_TO_POINT:
       std::tie(finished_motion, velocity_fBody_) =
           motion_controller.DriveToPoint(pose_fWorld, pose_destination);
-      AssignNextGoal(finished_motion);
+      TryAssignNextGoal();
       break;
     case RobotState::MANUAL_DRIVING:
       velocity_fBody_ = velocity_fBody;
       // finished_motion = true;
       break;
-    case RobotState::GO_TO_HOME:
+    case RobotState::GOING_HOME:
       std::tie(finished_motion, velocity_fBody_) =
           motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
       break;
@@ -75,8 +75,10 @@ void rob::RobotManager::ControlLogic() {
       break;
   }
 
-  if (finished_motion) robot_state = RobotState::IDLE;
-
+  if (finished_motion) {
+    std::cout << "State: " << GetRobotState() << std::endl;
+    robot_state = RobotState::IDLE;
+  }
   hardware_manager.SetBodyVelocity(velocity_fBody_);
 }
 
@@ -90,7 +92,7 @@ void rob::RobotManager::SenseLogic() {
   if (pose_from_camera.has_value()) estimator.NewCameraData(pose_from_camera.value());
 
   pose_fWorld = estimator.GetPose();
-  std::cout << "Pose (est): " << pose_fWorld.transpose() << std::endl;
+  // std::cout << "Pose (est): " << pose_fWorld.transpose() << std::endl;
 
   // Set home pose
   if (!initialized_pose_home && estimator.initialized_pose) {
@@ -122,11 +124,40 @@ void rob::RobotManager::AddGoal(const Eigen::Vector3d& goal) {
   }
 }
 
-void rob::RobotManager::AssignNextGoal(bool finished_motion) {
+void rob::RobotManager::TryAssignNextGoal() {
   if (finished_motion && !goal_queue.empty()) {
     pose_destination = goal_queue.front();
     goal_queue.pop();
+    finished_motion = false;
     std::cout << "[rob::RobotManager::AssignNextGoal] Drive to point. Goal: "
               << pose_destination.transpose() << std::endl;
+  }
+}
+
+void rob::RobotManager::InitializeHome(Eigen::Vector3d pose_home) {
+  pose_home_fWorld = pose_home;
+  initialized_pose_home = true;
+}
+
+void rob::RobotManager::GoHome() {
+  if (!initialized_pose_home) {
+    std::cout << "[rob::RobotManager::GoHome] Can't go home. It is uninitialized" << std::endl;
+    return;
+  }
+  robot_state = RobotState::GOING_HOME;
+}
+
+std::string rob::RobotManager::GetRobotState() {
+  switch (robot_state) {
+    case RobotState::IDLE:
+      return "IDLE";
+    case RobotState::DRIVING_TO_POINT:
+      return "DRIVING_TO_POINT";
+    case RobotState::MANUAL_DRIVING:
+      return "MANUAL_DRIVING";
+    case RobotState::AUTONOMOUS_DRIVING:
+      return "AUTONOMOUS_DRIVING";
+    case RobotState::GOING_HOME:
+      return "GOING_HOME";
   }
 }

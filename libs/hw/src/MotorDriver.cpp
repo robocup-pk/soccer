@@ -20,8 +20,8 @@ void hw::MotorDriver::SendWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
     for (int i = 0; i < kin::RobotDescription::num_wheels; ++i) {
       motors[i].SetWheelSpeedRpm(wheel_speeds_rpm[i]);
     }
-    std::cout << "[hw::MotorDriver::SendWheelSpeedsRpm] RPMS: " << wheel_speeds_rpm.transpose()
-              << std::endl;
+    // std::cout << "[hw::MotorDriver::SendWheelSpeedsRpm] MODEL RPMS: "
+    //           << wheel_speeds_rpm.transpose() << std::endl;
 
     return;
   }
@@ -57,7 +57,8 @@ Eigen::Vector4d hw::MotorDriver::GetMotorsRpms() {
       motors_rpms[i] = motors[i].GetRpm();
     }
     new_data_available = true;
-    std::cout << "[hw::MotorDriver::GetMotorsRpms] MODEL RPMS: " << motors_rpms.transpose() << std::endl;
+    // std::cout << "[hw::MotorDriver::GetMotorsRpms] MODEL RPMS: " << motors_rpms.transpose()
+    //           << std::endl;
     return motors_rpms;
   }
 
