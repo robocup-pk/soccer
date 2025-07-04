@@ -35,6 +35,10 @@ void hw::MotorModel::SetWheelSpeedRpm(double rpm) {
   this->rpm = rpm;
 }
 
+double hw::MotorModel::GetRpm() {
+  return rpm;
+}
+
 void hw::MotorModel::Clear() {
   ticks_discrete = 0;
   ticks_continuous = 0;

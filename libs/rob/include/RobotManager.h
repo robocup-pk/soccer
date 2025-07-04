@@ -1,6 +1,9 @@
 #ifndef ROBOT_MANAGER_H
 #define ROBOT_MANAGER_H
 
+#include <queue>
+#include <mutex>
+
 #include "HardwareManager.h"
 #include "Estimator.h"
 #include "MotionController.h"
@@ -39,6 +42,7 @@ class RobotManager {
   est::Estimator estimator;
   ctrl::MotionController motion_controller;
 
+  std::mutex robot_manager_threads_mutex;
   std::thread control_thread;
   std::thread sense_thread;
 

@@ -21,13 +21,16 @@ void hw::HardwareManager::SetBodyVelocity(Eigen::Vector3d velocity_fBody) {
 }
 
 void hw::HardwareManager::SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
-  motor_driver->SetWheelSpeedsRpm(wheel_speeds_rpm);
+  motor_driver->SendWheelSpeedsRpm(wheel_speeds_rpm);
 }
 
-std::optional<Eigen::Vector4d> hw::HardwareManager::NewEncoderTicks() {
-  // if (motor_driver->NewDataAvailable()) return motor_driver->GetEncoderTicks();
-  // return std::nullopt;
-  return motor_driver->GetEncoderTicks();
+std::optional<Eigen::Vector4d> hw::HardwareManager::NewMotorsRpms() {
+  Eigen::Vector4d motor_rpms = motor_driver->GetMotorsRpms();
+  if (motor_driver->NewDataAvailable()) {
+    motor_driver->new_data_available = false;
+    return motor_rpms;
+  }
+  return std::nullopt;
 }
 
 std::optional<double> hw::HardwareManager::NewGyroAngularVelocity() {

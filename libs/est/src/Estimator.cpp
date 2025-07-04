@@ -37,7 +37,7 @@ est::Estimator::Estimator() {
       std::pow(meas_sigma_rad, 2);
 }
 
-void est::Estimator::NewEncoderData(Eigen::Vector4d ticks) {
+void est::Estimator::NewMotorsData(Eigen::Vector4d wheel_speeds_rpm) {
   if (!initialized_pose) {
     std::cout << "[est::Estimator::NewEncoderData] Pose uninitialized!" << std::endl;
     return;
@@ -45,7 +45,6 @@ void est::Estimator::NewEncoderData(Eigen::Vector4d ticks) {
 
   if (!initialized_encoder) {
     initialized_encoder = true;
-    Eigen::Vector4d last_ticks = ticks;
     t_last_encoder = util::GetCurrentTime();
     return;
   }
@@ -54,20 +53,10 @@ void est::Estimator::NewEncoderData(Eigen::Vector4d ticks) {
   if (dt == 0) return;
   t_last_encoder = util::GetCurrentTime();
 
-  // Calculate wheel speeds from encoder ticks
-  Eigen::Vector4d wheel_speeds;
-  for (int i = 0; i < kin::RobotDescription::num_wheels; i++) {
-    double d_ticks = ticks[i] - last_ticks[i];
-    last_ticks[i] = ticks[i];
-    double d_num_rev = d_ticks / hw::Config::ticks_per_rev;
-    double dist_per_rev = 2 * M_PI * kin::RobotDescription::wheel_radius_m;
-    double d_dist = dist_per_rev * d_num_rev;
-    wheel_speeds[i] = d_dist / dt;  // m_persec --> radps --> 60/2pi
-  }
-
   // Calculate body velocity from wheel speeds [Vb = J * Vw]
-  Eigen::Vector3d velocity_fBody = robot_model->WheelSpeedsToRobotVelocity(
-      std::vector<double>(wheel_speeds.data(), wheel_speeds.data() + wheel_speeds.size()));
+  Eigen::Vector3d velocity_fBody = robot_model->WheelSpeedsRpmToRobotVelocity(wheel_speeds_rpm);
+
+  std::cout << "[est::Estimator::NewEncoderData] Measured velocity_fBody: " << velocity_fBody.transpose() << std::endl;
 
   // Transform body velocities to world frame
   Eigen::Vector3d velocity_fWorld = util::RotateAboutZ(velocity_fBody, pose_init[2]);

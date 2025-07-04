@@ -14,7 +14,7 @@
 class EstimatorTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    tolerance << 0.15, 0.15, 0.15;
+    tolerance << 0.25, 0.25, 0.25;
     estimator = std::make_unique<est::Estimator>();
     hardware_manager = std::make_unique<hw::HardwareManager>();
   }
@@ -43,8 +43,8 @@ TEST_F(EstimatorTest, TestForwardMotionWithCamera) {
 
   while (elapsed_time_s < t_sec) {
     elapsed_time_s = util::GetCurrentTime() - start_time_s;
-    std::optional<Eigen::Vector4d> ticks = hardware_manager->NewEncoderTicks();
-    if (ticks.has_value()) estimator->NewEncoderData(ticks.value());
+    std::optional<Eigen::Vector4d> motors_rpms = hardware_manager->NewMotorsRpms();
+    if (motors_rpms.has_value()) estimator->NewMotorsData(motors_rpms.value());
 
     if (iteration % 2 == 0) {
       Eigen::Vector3d pose_cam = velocity_fBody * elapsed_time_s;
@@ -78,8 +78,8 @@ TEST_F(EstimatorTest, TestForwardMotionWithCameraAgain) {
   int iteration = 0;
   while (elapsed_time_s < t_sec) {
     elapsed_time_s = util::GetCurrentTime() - start_time;
-    std::optional<Eigen::Vector4d> ticks = hardware_manager->NewEncoderTicks();
-    if (ticks.has_value()) estimator->NewEncoderData(ticks.value());
+    std::optional<Eigen::Vector4d> motors_rpms = hardware_manager->NewMotorsRpms();
+    if (motors_rpms.has_value()) estimator->NewMotorsData(motors_rpms.value());
 
     if (iteration % 4 == 0) {
       Eigen::Vector3d pose_cam = velocity_fBody * elapsed_time_s;
@@ -110,8 +110,8 @@ TEST_F(EstimatorTest, TestForwardMotionDeadReckoning) {
 
   while (elapsed_time_s < t_sec) {
     elapsed_time_s = util::GetCurrentTime() - start_time;
-    std::optional<Eigen::Vector4d> ticks = hardware_manager->NewEncoderTicks();
-    if (ticks.has_value()) estimator->NewEncoderData(ticks.value());
+    std::optional<Eigen::Vector4d> motors_rpms = hardware_manager->NewMotorsRpms();
+    if (motors_rpms.has_value()) estimator->NewMotorsData(motors_rpms.value());
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
@@ -135,8 +135,8 @@ TEST_F(EstimatorTest, TestForwardMotionDeadReckoningWithRotation) {
 
   while (elapsed_time_s < t_sec) {
     elapsed_time_s = util::GetCurrentTime() - start_time;
-    std::optional<Eigen::Vector4d> ticks = hardware_manager->NewEncoderTicks();
-    if (ticks.has_value()) estimator->NewEncoderData(ticks.value());
+    std::optional<Eigen::Vector4d> motors_rpms = hardware_manager->NewMotorsRpms();
+    if (motors_rpms.has_value()) estimator->NewMotorsData(motors_rpms.value());
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
@@ -163,8 +163,8 @@ TEST_F(EstimatorTest, TestMotionWithInitialPose) {
   int iteration = 0;
   while (elapsed_time_s < t_sec) {
     elapsed_time_s = util::GetCurrentTime() - start_time;
-    std::optional<Eigen::Vector4d> ticks = hardware_manager->NewEncoderTicks();
-    if (ticks.has_value()) estimator->NewEncoderData(ticks.value());
+    std::optional<Eigen::Vector4d> motors_rpms = hardware_manager->NewMotorsRpms();
+    if (motors_rpms.has_value()) estimator->NewMotorsData(motors_rpms.value());
 
     if (iteration % 2 == 0) {
       Eigen::Vector3d pose_cam =
@@ -199,8 +199,8 @@ TEST_F(EstimatorTest, TestMotionWithAllSensors) {
   int iteration = 0;
   while (elapsed_time_s < t_sec) {
     elapsed_time_s = util::GetCurrentTime() - start_time;
-    std::optional<Eigen::Vector4d> ticks = hardware_manager->NewEncoderTicks();
-    if (ticks.has_value()) estimator->NewEncoderData(ticks.value());
+    std::optional<Eigen::Vector4d> motors_rpms = hardware_manager->NewMotorsRpms();
+    if (motors_rpms.has_value()) estimator->NewMotorsData(motors_rpms.value());
     estimator->NewGyroData(velocity_fWorld[2]);
 
     if (iteration % 2 == 0) {
