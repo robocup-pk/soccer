@@ -25,7 +25,10 @@ void rob::RobotManager::SenseLoop() {
   int next_time_step_ms = 1000 / sense_loop_frequency_hz;
 
   while (rob_manager_running) {
-    SenseLogic();
+    {
+      std::unique_lock<std::mutex> lock(robot_manager_threads_mutex);
+      SenseLogic();
+    }
     time_step += std::chrono::milliseconds(next_time_step_ms);
     std::this_thread::sleep_until(time_step);
   }
@@ -36,35 +39,35 @@ void rob::RobotManager::ControlLoop() {
   int next_time_step_ms = 1000 / control_loop_frequency_hz;
 
   while (rob_manager_running) {
-    ControlLogic();
+    {
+      std::unique_lock<std::mutex> lock(robot_manager_threads_mutex);
+      ControlLogic();
+    }
     time_step += std::chrono::milliseconds(next_time_step_ms);
     std::this_thread::sleep_until(time_step);
   }
 }
 
 void rob::RobotManager::ControlLogic() {
-  if (previous_robot_state == RobotState::IDLE && robot_state != RobotState::IDLE) {
-    start_time_idle_s = util::GetCurrentTime();
-  }
-
   bool finished_motion;
-  Eigen::Vector3d velocity_fBody;
+  Eigen::Vector3d velocity_fBody_;
 
   switch (robot_state) {
     case RobotState::IDLE:
       elapsed_time_idle_s = util::GetCurrentTime() - start_time_idle_s;
-      velocity_fBody = Eigen::Vector3d(0, 0, 0);
+      velocity_fBody_ = Eigen::Vector3d(0, 0, 0);
       break;
     case RobotState::DRIVING_TO_POINT:
-      std::tie(finished_motion, velocity_fBody) =
+      std::tie(finished_motion, velocity_fBody_) =
           motion_controller.DriveToPoint(pose_fWorld, pose_destination);
       AssignNextGoal(finished_motion);
       break;
     case RobotState::MANUAL_DRIVING:
-      finished_motion = true;
+      velocity_fBody_ = velocity_fBody;
+      // finished_motion = true;
       break;
     case RobotState::GO_TO_HOME:
-      std::tie(finished_motion, velocity_fBody) =
+      std::tie(finished_motion, velocity_fBody_) =
           motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
       break;
     case RobotState::AUTONOMOUS_DRIVING:
@@ -72,23 +75,22 @@ void rob::RobotManager::ControlLogic() {
       break;
   }
 
-  if (elapsed_time_idle_s > sleep_time_while_idle_s) return;
   if (finished_motion) robot_state = RobotState::IDLE;
-  previous_robot_state = robot_state;
 
-  hardware_manager.SetBodyVelocity(velocity_fBody);
+  hardware_manager.SetBodyVelocity(velocity_fBody_);
 }
 
 void rob::RobotManager::SenseLogic() {
-  std::optional<Eigen::Vector4d> encoder_ticks = hardware_manager.NewEncoderTicks();
+  std::optional<Eigen::Vector4d> motors_rpms = hardware_manager.NewMotorsRpms();
   std::optional<double> w_radps = hardware_manager.NewGyroAngularVelocity();
   std::optional<Eigen::Vector3d> pose_from_camera = hardware_manager.NewCameraData();
 
-  if (encoder_ticks.has_value()) estimator.NewEncoderData(encoder_ticks.value());
+  if (motors_rpms.has_value()) estimator.NewMotorsData(motors_rpms.value());
   if (w_radps.has_value()) estimator.NewGyroData(w_radps.value());
   if (pose_from_camera.has_value()) estimator.NewCameraData(pose_from_camera.value());
 
   pose_fWorld = estimator.GetPose();
+  std::cout << "Pose (est): " << pose_fWorld.transpose() << std::endl;
 
   // Set home pose
   if (!initialized_pose_home && estimator.initialized_pose) {

@@ -18,7 +18,7 @@ class HardwareManager {
   HardwareManager();
 
   // Sensing
-  std::optional<Eigen::Vector4d> NewEncoderTicks();
+  std::optional<Eigen::Vector4d> NewMotorsRpms();
   std::optional<double> NewGyroAngularVelocity();
   std::optional<Eigen::Vector3d> NewCameraData();
 

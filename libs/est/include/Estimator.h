@@ -11,7 +11,7 @@ class Estimator {
  public:
   Estimator();
 
-  void NewEncoderData(Eigen::Vector4d ticks);
+  void NewMotorsData(Eigen::Vector4d ticks);
   void NewGyroData(double w_radps);
   void NewCameraData(Eigen::Vector3d pose_meas);
 
@@ -25,7 +25,6 @@ class Estimator {
  private:
   // Encoders
   bool initialized_encoder;
-  Eigen::Vector4d last_ticks;
   double t_last_encoder;
 
   // Gyro
