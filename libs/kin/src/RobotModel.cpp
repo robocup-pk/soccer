@@ -30,7 +30,9 @@ Eigen::VectorXd kin::RobotModel::WheelSpeedsRpmToRobotVelocity(
   // rpm to radps
   Eigen::Vector4d wheel_speeds_radps = (2 * M_PI * wheel_speeds_rpm) / 60;
 
-  return forward_mapping * wheel_speeds_radps;
+  return forward_mapping * wheel_speeds_radps *
+         robot_description.wheel_radius_m;  // TODO: Figure this out: RADIUS thing is wrong when i
+                                            // use physical robot
 }
 
 Eigen::VectorXd kin::RobotModel::RobotVelocityToWheelSpeedsMps(

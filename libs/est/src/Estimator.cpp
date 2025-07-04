@@ -13,6 +13,8 @@ est::Estimator::Estimator() {
   robot_model = std::make_shared<kin::RobotModel>();
   angle_random_walk_per_rt_t = 0.001;
   initialized_pose = false;
+  pose_init << 0, 0, 0;
+  pose_est << 0, 0, 0;
   initialized_gyro = false;
   initialized_encoder = false;
   // P_init
@@ -55,10 +57,6 @@ void est::Estimator::NewMotorsData(Eigen::Vector4d wheel_speeds_rpm) {
 
   // Calculate body velocity from wheel speeds [Vb = J * Vw]
   Eigen::Vector3d velocity_fBody = robot_model->WheelSpeedsRpmToRobotVelocity(wheel_speeds_rpm);
-
-  std::cout << "[est::Estimator::NewEncoderData] Measured velocity_fBody: " << velocity_fBody.transpose() << std::endl;
-
-  // Transform body velocities to world frame
   Eigen::Vector3d velocity_fWorld = util::RotateAboutZ(velocity_fBody, pose_init[2]);
 
   // State Transfer Function
