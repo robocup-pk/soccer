@@ -3,13 +3,13 @@
 #include "SoccerObject.h"
 
 void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) {
-  soccer_objects.push_back(state::SoccerObject(
-      "ball",
-      Eigen::Vector3d(-cfg::SystemConfig::ball_radius_ft, cfg::SystemConfig::ball_radius_ft, 0),
-      Eigen::Vector2d(cfg::SystemConfig::ball_radius_ft * 2,
-                      cfg::SystemConfig::ball_radius_ft * 2),
-      cfg::SystemConfig::init_ball_velocity_ftps, cfg::SystemConfig::init_ball_acceleration_ftpsps,
-      1));
+  // soccer_objects.push_back(state::SoccerObject(
+  //     "ball",
+  //     Eigen::Vector3d(-cfg::SystemConfig::ball_radius_ft, cfg::SystemConfig::ball_radius_ft, 0),
+  //     Eigen::Vector2d(cfg::SystemConfig::ball_radius_ft * 2,
+  //                     cfg::SystemConfig::ball_radius_ft * 2),
+  //     cfg::SystemConfig::init_ball_velocity_ftps, cfg::SystemConfig::init_ball_acceleration_ftpsps,
+  //     1));
 
   // Robots
   for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {

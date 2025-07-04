@@ -5,6 +5,8 @@
 #include "Estimator.h"
 #include "MotionController.h"
 
+#include <queue>
+
 namespace rob {
 
 enum class RobotState { IDLE, DRIVING_TO_POINT, MANUAL_DRIVING, AUTONOMOUS_DRIVING, GO_TO_HOME };
