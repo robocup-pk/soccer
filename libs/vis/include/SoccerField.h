@@ -11,8 +11,8 @@ namespace vis {
 
 class SoccerField {
  public:
-  static constexpr float width_mm = 5486.4f;
-  static constexpr float height_mm = 2800.0f;
+  float width_mm;
+  float height_mm;
   float width_height_ratio;
   float central_circle_radius_mm;
   float playing_area_width_mm;

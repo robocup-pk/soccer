@@ -47,7 +47,11 @@ Eigen::Vector3d util::RotateAboutZ(Eigen::Vector3d pose, double angle_rad) {
 double util::WrapAngle(double angle_rad) {
   double rad = std::fmod(angle_rad + M_PI, 2 * M_PI);
   if (rad < 0) rad += 2 * M_PI;
-  return rad - M_PI;
+  rad -= M_PI;
+   // Normalize -π to +π
+  if (std::abs(rad + M_PI) < 1e-8)
+    return M_PI;
+  return rad;
 }
 
 void util::WaitMs(int ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }

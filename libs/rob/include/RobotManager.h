@@ -3,7 +3,7 @@
 
 #include <queue>
 #include <mutex>
-
+#include <atomic>
 #include "HardwareManager.h"
 #include "Estimator.h"
 #include "MotionController.h"
@@ -29,10 +29,14 @@ class RobotManager {
   void GoHome();
   void InitializeHome(Eigen::Vector3d pose_home);
 
+  bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
+
   Eigen::Vector3d GetPoseInWorldFrame();
   void TryAssignNextGoal();
 
   std::string GetRobotState();
+
+  ~RobotManager();
 
  private:
   RobotState previous_robot_state;
@@ -45,11 +49,11 @@ class RobotManager {
   est::Estimator estimator;
   ctrl::MotionController motion_controller;
 
-  std::mutex robot_manager_threads_mutex;
   std::thread control_thread;
   std::thread sense_thread;
+  std::mutex robot_state_mutex;
 
-  bool rob_manager_running = false;
+  std::atomic<bool> rob_manager_running = false;
   double control_loop_frequency_hz = 50;
   double sense_loop_frequency_hz = 100;
 
@@ -58,6 +62,7 @@ class RobotManager {
   // For driving to point
   Eigen::Vector3d pose_destination;
   std::queue<Eigen::Vector3d> goal_queue;
+  std::mutex goal_queue_mutex;
 
   // Home position
   bool initialized_pose_home;
@@ -67,6 +72,9 @@ class RobotManager {
   double start_time_idle_s;
   double elapsed_time_idle_s;
   double sleep_time_while_idle_s;
+
+  // Error cases
+  int num_sensor_readings_failed;
 };
 }  // namespace rob
 

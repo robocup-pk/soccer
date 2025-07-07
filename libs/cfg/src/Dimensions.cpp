@@ -15,4 +15,7 @@ const float Dimensions::actual_field_line_width_mm = 10.0f;
 const float Dimensions::outer_field_width_mm = 9600.0f;
 const float Dimensions::outer_field_height_mm = 6600.0f;
 
+const float Dimensions::width_mm = 5486.4f;
+const float Dimensions::height_mm = 2800.0f;
+
 }  // namespace cfg

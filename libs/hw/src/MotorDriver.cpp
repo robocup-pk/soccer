@@ -42,7 +42,7 @@ void hw::MotorDriver::SendWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
   std::cout << "[hw::MotorDriver::SendWheelSpeedsRpm] " << speeds_rpm[0] << " " << speeds_rpm[1]
             << " " << speeds_rpm[2] << " " << speeds_rpm[3] << std::endl;
 
-  std::unique_lock<std::mutex> lock(shared_serial_port_mutex);
+  std::unique_lock<std::mutex> lock(shared_serial_port_mutex); // 5 ms
   shared_serial_port->FlushOutputBuffer();
   util::WaitMs(2);
   shared_serial_port->Write(buffer);
@@ -64,19 +64,19 @@ Eigen::Vector4d hw::MotorDriver::GetMotorsRpms() {
 
   // Get encoder ticks using serial
   // First Byte
-  if (shared_serial_port->GetNumberOfBytesAvailable() < 1) return Eigen::Vector4d();
-
+  
   std::vector<int> rpm(4);
   std::vector<uint8_t> buffer(16);
-
+  
   {
     // Check if it's header
     uint8_t header;
     std::unique_lock<std::mutex> lock(shared_serial_port_mutex);
-    shared_serial_port->ReadByte(header, 1000);
+    if (shared_serial_port->GetNumberOfBytesAvailable() < 1) return Eigen::Vector4d();
+    shared_serial_port->ReadByte(header, 20);
     if (header != 'x') return Eigen::Vector4d();
     util::WaitMs(1);
-    shared_serial_port->Read(buffer, 16, 1000);
+    shared_serial_port->Read(buffer, 16, 20);
     util::WaitMs(1);
     shared_serial_port->FlushInputBuffer();
   }

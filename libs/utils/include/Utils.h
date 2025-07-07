@@ -19,7 +19,7 @@ void WaitMs(int ms);
 double CalculateDt();  // Relative to the first call of this function. Returns time_sec between
                        // consecutive calls
 float PixelsPerMm();
-float util::MmToPixels(float mm_value);
+float MmToPixels(float mm_value);
 }  // namespace util
 
 #endif  // READ_FILE_H

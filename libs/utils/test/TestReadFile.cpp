@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "ReadFile.h"
+#include "Utils.h"
 
 TEST(UtilsTest, TestReadFile) {
   std::string file = util::ReadFile("../resources/DemoFile.txt");

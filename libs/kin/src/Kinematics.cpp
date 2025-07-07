@@ -140,7 +140,7 @@ void kin::ResolveCircularCollision(state::SoccerObject& obj1, state::SoccerObjec
   float distance = sqrt(dx * dx + dy * dy);
 
   // Prevent division by zero
-  if (distance < 0.0001f) {
+  if (distance < 0.001f) {
     // Objects are at same position, separate them artificially
     dx = 1.0f;
     dy = 0.0f;

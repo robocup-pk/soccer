@@ -8,6 +8,7 @@
 #include "Shader.h"
 #include "ResourceManager.h"
 #include "SpriteRenderer.h"
+#include "Utils.h"
 
 vis::SoccerField::SoccerField() {
   vis::SoccerField::MaintainAspectRatio();

@@ -1,4 +1,5 @@
 #include <cmath>
+#include <iostream>
 
 #include "Estimator.h"
 #include "HwConfig.h"
@@ -52,7 +53,10 @@ void est::Estimator::NewMotorsData(Eigen::Vector4d wheel_speeds_rpm) {
   }
 
   double dt = util::GetCurrentTime() - t_last_encoder;
-  if (dt == 0) return;
+  if (dt <= 0) {
+    std::cout << "[est::Estimator::NewMotorsData] dt <= 0. Some serious problem!" << std::endl;
+    return;
+  }
   t_last_encoder = util::GetCurrentTime();
 
   // Calculate body velocity from wheel speeds [Vb = J * Vw]
@@ -116,13 +120,14 @@ void est::Estimator::NewCameraData(Eigen::Vector3d pose_meas) {
   pose_est += kalman_gain * innovation;
 
   // Covariance Update
-  state_cov -= kalman_gain * state_cov;  // Prone to floating point errors
-
+  // state_cov -= kalman_gain * state_cov;  // Prone to floating point errors
   // Covariance Update: Joseph form
-  // Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
-  // Eigen::Matrix3d KH = kalman_gain;
-  // state_cov = (I - KH) * state_cov * (I - KH).transpose() +
-  //             kalman_gain * meas_cov * kalman_gain.transpose();
+  Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
+  state_cov = (identity - kalman_gain) * state_cov * (identity - kalman_gain).transpose() +
+              kalman_gain * meas_cov * kalman_gain.transpose();
+
+  // Symmetrize covariance to ensure numerical stability
+  state_cov = 0.5 * (state_cov + state_cov.transpose());
 }
 
 Eigen::Vector3d est::Estimator::GetPose() { return pose_est; }
