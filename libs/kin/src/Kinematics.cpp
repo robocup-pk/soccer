@@ -1,8 +1,14 @@
 #include <iostream>
 #include <algorithm>
 
-#include "Collision.h"
+#include "Kinematics.h"
 #include "Coordinates.h"
+
+void kin::UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects, float dt) {
+  for (state::SoccerObject& soccer_object : soccer_objects) {
+    soccer_object.Move(dt);
+  }
+}
 
 void kin::CheckAndResolveCollisions(std::vector<state::SoccerObject>& soccer_objects) {
   // Update Ball Attachment
@@ -134,7 +140,7 @@ void kin::ResolveCircularCollision(state::SoccerObject& obj1, state::SoccerObjec
   float distance = sqrt(dx * dx + dy * dy);
 
   // Prevent division by zero
-  if (distance < 0.0001f) {
+  if (distance < 0.001f) {
     // Objects are at same position, separate them artificially
     dx = 1.0f;
     dy = 0.0f;

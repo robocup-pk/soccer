@@ -11,7 +11,7 @@
 // self
 #include "GameObject.h"
 #include "GLConfig.h"
-#include "FieldRenderer.h"
+#include "SoccerField.h"
 
 namespace vis {
 
@@ -38,7 +38,7 @@ class GLSimulation {
   GLFWwindow* window;
   std::map<std::string, GameObject> game_objects;
   SpriteRenderer renderer;
-  FieldRenderer field;
+  SoccerField field;
 };
 
 }  // namespace vis

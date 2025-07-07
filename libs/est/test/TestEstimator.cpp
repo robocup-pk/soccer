@@ -56,6 +56,9 @@ TEST_F(EstimatorTest, TestForwardMotionWithCamera) {
   }
 
   Eigen::Vector3d error = (estimator->GetPose() - pose_true).cwiseAbs();
+  std::cout << "Pose tru: " << pose_true.transpose() << std::endl;
+  std::cout << "Pose est: " << estimator->GetPose().transpose() << std::endl;
+  std::cout << "Error: " << error.transpose() << std::endl;
   EXPECT_TRUE((error.array() <= tolerance.array()).all());
 }
 
@@ -91,6 +94,9 @@ TEST_F(EstimatorTest, TestForwardMotionWithCameraAgain) {
   }
 
   Eigen::Vector3d error = (estimator->GetPose() - pose_true).cwiseAbs();
+  std::cout << "Pose tru: " << pose_true.transpose() << std::endl;
+  std::cout << "Pose est: " << estimator->GetPose().transpose() << std::endl;
+  std::cout << "Error: " << error.transpose() << std::endl;
   EXPECT_TRUE((error.array() <= tolerance.array()).all());
 }
 
@@ -116,6 +122,9 @@ TEST_F(EstimatorTest, TestForwardMotionDeadReckoning) {
   }
 
   Eigen::Vector3d error = (estimator->GetPose() - pose_true).cwiseAbs();
+  std::cout << "Pose tru: " << pose_true.transpose() << std::endl;
+  std::cout << "Pose est: " << estimator->GetPose().transpose() << std::endl;
+  std::cout << "Error: " << error.transpose() << std::endl;
   EXPECT_TRUE((error.array() <= tolerance.array()).all());
 }
 
@@ -141,6 +150,9 @@ TEST_F(EstimatorTest, TestForwardMotionDeadReckoningWithRotation) {
   }
 
   Eigen::Vector3d error = (estimator->GetPose() - pose_true).cwiseAbs();
+  std::cout << "Pose tru: " << pose_true.transpose() << std::endl;
+  std::cout << "Pose est: " << estimator->GetPose().transpose() << std::endl;
+  std::cout << "Error: " << error.transpose() << std::endl;
   EXPECT_TRUE((error.array() <= tolerance.array()).all());
 }
 
@@ -177,6 +189,9 @@ TEST_F(EstimatorTest, TestMotionWithInitialPose) {
   }
 
   Eigen::Vector3d error = (estimator->GetPose() - pose_true).cwiseAbs();
+  std::cout << "Pose tru: " << pose_true.transpose() << std::endl;
+  std::cout << "Pose est: " << estimator->GetPose().transpose() << std::endl;
+  std::cout << "Error: " << error.transpose() << std::endl;
   EXPECT_TRUE((error.array() <= tolerance.array()).all());
 }
 
@@ -213,5 +228,8 @@ TEST_F(EstimatorTest, TestMotionWithAllSensors) {
   }
 
   Eigen::Vector3d error = (estimator->GetPose() - pose_true).cwiseAbs();
+  std::cout << "Pose tru: " << pose_true.transpose() << std::endl;
+  std::cout << "Pose est: " << estimator->GetPose().transpose() << std::endl;
+  std::cout << "Error: " << error.transpose() << std::endl;
   EXPECT_TRUE((error.array() <= tolerance.array()).all());
 }

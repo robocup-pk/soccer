@@ -3,15 +3,6 @@
 #include "GLCallback.h"
 #include "GLSimulation.h"
 
-float vis::GLCallback::x_offset_robot0 = 0;
-float vis::GLCallback::y_offset_robot0 = 0;
-float vis::GLCallback::x_offset_robot0_worldf = 0;
-float vis::GLCallback::y_offset_robot0_worldf = 0;
-float vis::GLCallback::x_offset_robot1 = 0;
-float vis::GLCallback::y_offset_robot1 = 0;
-float vis::GLCallback::x_offset_robot1_worldf = 0;
-float vis::GLCallback::y_offset_robot1_worldf = 0;
-
 bool vis::GLCallback::keys[1024] = {false};
 
 // When window is resized (this function is called), we have to resize the viewport
@@ -44,9 +35,7 @@ void vis::GLCallback::KeyCallback(GLFWwindow* window, int key, int scancode, int
 void vis::GLSimulation::RegisterCallbacks() {
   // Any key pressed
   glfwSetKeyCallback(window, vis::GLCallback::KeyCallback);
-
   // Window resized
   glfwSetFramebufferSizeCallback(window, vis::GLCallback::FrameBufferCallback);
-
   // TODO: register callback for joystick inputs when available
 }

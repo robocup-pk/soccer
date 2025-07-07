@@ -16,8 +16,8 @@ struct Dimensions {
   static const float outer_field_width_mm;
   static const float outer_field_height_mm;
 
-  static const float our_field_width_mm;
-  static const float our_field_height_mm;
+  static const float width_mm;
+  static const float height_mm;
 };
 }  // namespace cfg
 

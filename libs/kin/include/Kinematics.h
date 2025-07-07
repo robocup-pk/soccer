@@ -7,6 +7,8 @@
 
 namespace kin {
 
+void UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects, float dt);
+
 void CheckAndResolveCollisions(std::vector<state::SoccerObject>& soccer_objects);
 bool CheckCircularCollision(state::SoccerObject& obj1, state::SoccerObject& obj2);
 void ResolveCircularCollision(state::SoccerObject& obj1, state::SoccerObject& obj2);

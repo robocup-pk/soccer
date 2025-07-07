@@ -11,6 +11,7 @@
 
 #include "RobotModel.h"
 #include "MotorDriver.h"
+#include "GyroDriver.h"
 
 namespace hw {
 class HardwareManager {
@@ -33,7 +34,7 @@ class HardwareManager {
 
  private:
   std::unique_ptr<MotorDriver> motor_driver;
-  // std::unique_ptr<GyroDriver> gyro_driver;
+  std::unique_ptr<GyroDriver> gyro_driver;
   // std::unique_ptr<CameraDriver> camera_driver;
 
   std::string motor_driver_port = "/dev/ttyUSB0";

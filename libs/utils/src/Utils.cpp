@@ -5,11 +5,18 @@
 
 #include <Eigen/Dense>
 
-#include "ReadFile.h"
+#include "Utils.h"
 
 #ifndef M_PI  // in case it doesnt work on windows
 #define M_PI 3.14159265
 #endif
+
+float util::PixelsPerMm() {
+  // Calculate pixels per mm based on window size and field dimensions
+  return 0.2f;
+}
+
+float util::MmToPixels(float mm_value) { return mm_value * PixelsPerMm(); }
 
 std::string util::ReadFile(const std::string& path) {
   std::ifstream file(path, std::ios::binary);
@@ -40,7 +47,21 @@ Eigen::Vector3d util::RotateAboutZ(Eigen::Vector3d pose, double angle_rad) {
 double util::WrapAngle(double angle_rad) {
   double rad = std::fmod(angle_rad + M_PI, 2 * M_PI);
   if (rad < 0) rad += 2 * M_PI;
-  return rad - M_PI;
+  rad -= M_PI;
+   // Normalize -π to +π
+  if (std::abs(rad + M_PI) < 1e-8)
+    return M_PI;
+  return rad;
 }
 
 void util::WaitMs(int ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }
+
+double util::CalculateDt() {
+  static auto start_time = std::chrono::high_resolution_clock::now();
+  static auto last_time = start_time;
+  auto current_time = std::chrono::high_resolution_clock::now();
+  auto duration = current_time - last_time;
+  double dt = std::chrono::duration<double>(duration).count();
+  last_time = current_time;
+  return dt;
+}

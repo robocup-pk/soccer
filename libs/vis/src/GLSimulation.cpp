@@ -4,12 +4,12 @@
 #include <algorithm>
 
 // self libs
-#include "Collision.h"
+#include "Kinematics.h"
 #include "GLConfig.h"
 #include "GLSimulation.h"
 #include "ResourceManager.h"
 #include "GLCallback.h"
-#include "ReadFile.h"
+#include "Utils.h"
 
 bool vis::GLSimulation::RunSimulationStep(std::vector<state::SoccerObject>& soccer_objects,
                                           float dt) {
@@ -73,9 +73,9 @@ vis::GLSimulation::GLSimulation() {
 #endif
 
   // Create a window
-  window = glfwCreateWindow(field.MmToPixels(field.our_field_width_mm),
-                            field.MmToPixels(field.our_field_height_mm), "Soccer Field", nullptr,
-                            nullptr);
+  window =
+      glfwCreateWindow(util::MmToPixels(field.width_mm),
+                       util::MmToPixels(field.height_mm), "Soccer Field", nullptr, nullptr);
   if (!window) {
     std::cout << "[vis::GLSimulation::Init] Couldn’t create window\n";
     glfwTerminate();
@@ -95,9 +95,12 @@ vis::GLSimulation::GLSimulation() {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   // Area in GLFW window where OpenGL rendering is performed
-  glViewport(0, 0, field.MmToPixels(field.our_field_width_mm),
-             field.MmToPixels(field.our_field_height_mm));
-
+  glViewport(0, 0, util::MmToPixels(field.width_mm),
+             util::MmToPixels(field.height_mm));
+  std::cout << "Window Size: " << util::MmToPixels(field.width_mm) << " "
+            << util::MmToPixels(field.height_mm) << std::endl;
+  // glViewport(0, 0, cfg::Coordinates::window_width_px,
+  // cfg::Coordinates::window_height_px);
   RegisterCallbacks();
 }
 
@@ -119,7 +122,7 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
                               "field");
   ResourceManager::GetShader("field").Use().SetInteger("field", 0);
 
-  field.FieldRendererInit();
+  field.SoccerFieldInit();
 
   // sprite Renderer
   Shader shader = ResourceManager::GetShader("sprite");
@@ -173,9 +176,13 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
 GLFWwindow* vis::GLSimulation::GetRawGLFW() const { return window; }
 
 vis::GLSimulation::~GLSimulation() {
+  game_objects.clear();
+  ResourceManager::Clear();
+
   if (window) {
     glfwDestroyWindow(window);
     window = nullptr;
   }
+
   glfwTerminate();
 }
