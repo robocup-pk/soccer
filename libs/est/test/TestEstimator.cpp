@@ -133,17 +133,23 @@ TEST_F(EstimatorTest, TestForwardMotionDeadReckoningWithRotation) {
   estimator->initialized_pose = true;
 
   // GROUND TRUTH
-  Eigen::Vector3d velocity_fBody(1, -1, 2);
-  Eigen::Vector3d pose_true = velocity_fBody * t_sec;
-
+  Eigen::Vector3d pose_init(0, 0, 0);
+  Eigen::Vector3d velocity_fWorld(1, -1, 2);
+  Eigen::Vector3d pose_true = pose_init + velocity_fWorld * t_sec;
+  std::cout << "This test is failing" << std::endl;
   // ESTIMATION
-  hardware_manager->SetBodyVelocity(velocity_fBody);
   double start_time = util::GetCurrentTime();
   double elapsed_time_s = 0;
   Eigen::Vector4d ticks;
 
   while (elapsed_time_s < t_sec) {
     elapsed_time_s = util::GetCurrentTime() - start_time;
+
+    // Control
+    Eigen::Vector3d pose_est = estimator->GetPose();
+    Eigen::Vector3d velocity_fBody = util::RotateAboutZ(velocity_fWorld, -pose_est[2]);
+    hardware_manager->SetBodyVelocity(velocity_fBody);
+
     std::optional<Eigen::Vector4d> motors_rpms = hardware_manager->NewMotorsRpms();
     if (motors_rpms.has_value()) estimator->NewMotorsData(motors_rpms.value());
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
