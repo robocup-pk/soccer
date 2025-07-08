@@ -63,8 +63,6 @@ void kin::CheckAndResolveCollisions(std::vector<state::SoccerObject>& soccer_obj
 
 void kin::ResolveCollisionWithWall(std::vector<state::SoccerObject>& soccer_objects) {
   for (state::SoccerObject& soccer_object : soccer_objects) {
-    if (soccer_object.name == "background") continue;
-
     Eigen::Vector3d center = soccer_object.GetCenterPosition();
     float left = soccer_object.position[0];
     float right = soccer_object.position[0] + soccer_object.size[0];
@@ -99,14 +97,13 @@ bool kin::IsInsideBoundary(const state::SoccerObject& obj) {
   float left = obj.position[0];
   float right = obj.position[0] + obj.size[0];
   float top = obj.position[1];
-  float bottom = obj.position[1] + obj.size[1];
+  float bottom = obj.position[1] - obj.size[1];
 
   return left >= -half_width && right <= half_width && top >= -half_height &&
          bottom <= half_height;
 }
 
 void kin::ClampInsideBoundary(state::SoccerObject& obj) {
-  if (obj.name == "background") return;
   // x direction
   double half_width = vis::SoccerField::GetInstance().width_mm / 2;
   double half_height = vis::SoccerField::GetInstance().height_mm / 2;
@@ -258,7 +255,7 @@ void kin::DetachBall(state::SoccerObject& ball, float detach_velocity) {
 
   // Move ball slightly away from robot before detaching to prevent immediate re-collision
   Eigen::Vector3d robot_center = robot->GetCenterPosition();
-  float separation_distance = 1.5f;
+  float separation_distance = 500.0f;  // Distance to separate ball from robot
 
   // Position ball in front of robot using the same front direction
   ball.position[0] = robot_center.x() + separation_distance * front_dir.x() - ball.size[0] / 2.0f;
