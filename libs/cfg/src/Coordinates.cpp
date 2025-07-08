@@ -1,14 +1,7 @@
 #include "Coordinates.h"
 
 namespace cfg {
-// Field size
-const float Coordinates::field_width_ft = 16;
-const float Coordinates::field_height_ft = 10;
 const float Coordinates::px_per_mm = 0.2f;
-
-// Window size
-const int Coordinates::window_width_px = Coordinates::field_width_ft * Coordinates::px_per_mm;
-const int Coordinates::window_height_px = Coordinates::field_height_ft * Coordinates::px_per_mm;
 
 // Coordinate transformation: flip y-axis
 const Eigen::Vector3d Coordinates::mm_px_coords = Eigen::Vector3d(1, -1, 1);

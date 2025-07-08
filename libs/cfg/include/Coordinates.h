@@ -7,14 +7,6 @@
 namespace cfg {
 
 struct Coordinates {
-  // Field size
-  static const float field_width_ft;
-  static const float field_height_ft;
-
-  // Window size
-  static const int window_width_px;
-  static const int window_height_px;
-
   // Conversion factor
   static const float px_per_mm;  // Conversion factor from mm to pixels
 

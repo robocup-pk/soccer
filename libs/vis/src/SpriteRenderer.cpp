@@ -17,8 +17,10 @@ void vis::SpriteRenderer::Init(Shader& shader) {
 
   // Set up projection matrix for 2D rendering
   // glm::mat4 projection =
-  //     glm::ortho(0.0f, static_cast<float>(cfg::Coordinates::window_width_px),
-  //                static_cast<float>(cfg::Coordinates::window_height_px), 0.0f, -1.0f, 1.0f);
+  //     glm::ortho(0.0f,
+  //     static_cast<float>(util::MmToPixels(SoccerField::GetInstance().width_mm)),
+  //                static_cast<float>(util::MmToPixels(SoccerField::GetInstance().height_mm)),
+  //                0.0f, -1.0f, 1.0f);
   // Set up projection matrix with (0,0) at center
   float half_width =
       static_cast<float>(util::MmToPixels(SoccerField::GetInstance().width_mm)) / 2.0f;

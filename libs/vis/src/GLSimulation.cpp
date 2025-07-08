@@ -100,8 +100,6 @@ vis::GLSimulation::GLSimulation() {
              util::MmToPixels(SoccerField::GetInstance().height_mm));
   std::cout << "Window Size: " << util::MmToPixels(SoccerField::GetInstance().width_mm) << " "
             << util::MmToPixels(SoccerField::GetInstance().height_mm) << std::endl;
-  // glViewport(0, 0, cfg::Coordinates::window_width_px,
-  // cfg::Coordinates::window_height_px);
   RegisterCallbacks();
 }
 
@@ -146,10 +144,10 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
   ResourceManager::LoadTexture(arrow_texture_path.c_str(), false, "arrow");
 
   // Window
-  Eigen::Vector3d window_position(-cfg::Coordinates::window_width_px / 2,
-                                  -cfg::Coordinates::window_height_px / 2, 0);
-  Eigen::Vector2d window_size(cfg::Coordinates::window_width_px,
-                              cfg::Coordinates::window_height_px);
+  Eigen::Vector3d window_position(-util::MmToPixels(SoccerField::GetInstance().width_mm) / 2,
+                                  -util::MmToPixels(SoccerField::GetInstance().height_mm) / 2, 0);
+  Eigen::Vector2d window_size(util::MmToPixels(SoccerField::GetInstance().width_mm),
+                              util::MmToPixels(SoccerField::GetInstance().height_mm));
 
   // Robots and Ball
   for (const auto& soccer_object : soccer_objects) {
