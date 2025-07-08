@@ -12,7 +12,14 @@
 
 namespace rob {
 
-enum class RobotState { IDLE, DRIVING_TO_POINT, MANUAL_DRIVING, AUTONOMOUS_DRIVING, GOING_HOME };
+enum class RobotState {
+  IDLE,
+  DRIVING_TO_POINT,
+  INTERPOLATING_TO_POINT,
+  MANUAL_DRIVING,
+  AUTONOMOUS_DRIVING,
+  GOING_HOME
+};
 
 class RobotManager {
  public:

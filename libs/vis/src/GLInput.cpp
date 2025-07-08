@@ -1,5 +1,6 @@
 #include "GLCallback.h"
 #include "GLSimulation.h"
+#include "SystemConfig.h"
 
 void vis::GLSimulation::ProcessInput(float dt) {
   // Calculate movement speed (with acceleration for held keys)

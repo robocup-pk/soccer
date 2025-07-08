@@ -1,3 +1,4 @@
+#include "SystemConfig.h"
 #include "GLConfig.h"
 
 namespace vis {

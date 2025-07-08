@@ -1,6 +1,7 @@
 #include <iostream>
 #include <tuple>
 
+#include "SystemConfig.h"
 #include "MotionController.h"
 #include "RobotManager.h"
 #include "Utils.h"
@@ -13,7 +14,6 @@ rob::RobotManager::RobotManager() {
   initialized_pose_home = false;
   finished_motion = true;
   num_sensor_readings_failed = 0;
-
   rob_manager_running.store(true);
 
   // TODO: remove when we have the camera system ready
@@ -53,7 +53,6 @@ void rob::RobotManager::ControlLogic() {
 
   switch (robot_state) {
     case RobotState::IDLE:
-      elapsed_time_idle_s = util::GetCurrentTime() - start_time_idle_s;
       velocity_fBody_ = Eigen::Vector3d(0, 0, 0);
       break;
     case RobotState::DRIVING_TO_POINT:
@@ -61,6 +60,9 @@ void rob::RobotManager::ControlLogic() {
           motion_controller.DriveToPoint(pose_fWorld, pose_destination);
       TryAssignNextGoal();
       break;
+    case RobotState::INTERPOLATING_TO_POINT:
+      std::tie(finished_motion, velocity_fBody_) = motion_controller.InterpolateToPoint(pose_fWorld, pose_destination);
+      TryAssignNextGoal();
     case RobotState::MANUAL_DRIVING:
       velocity_fBody_ = velocity_fBody;
       // finished_motion = true;
@@ -78,8 +80,8 @@ void rob::RobotManager::ControlLogic() {
 
   if (!BodyVelocityIsInLimits(velocity_fBody_)) {
     std::cout << "[rob::RobotManager::ControlLogic] Velocity is too high. Stopping the robot and "
-                 "going to IDLE mode"
-              << std::endl;
+                 "going to IDLE mode. velocity_fBody: "
+              << velocity_fBody_.transpose() << std::endl;
     velocity_fBody_ = Eigen::Vector3d::Zero();
     robot_state = RobotState::IDLE;
   }
@@ -198,9 +200,8 @@ std::string rob::RobotManager::GetRobotState() {
 }
 
 bool rob::RobotManager::BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody) {
-  if (velocity_fBody.norm() > 1.0) return false;
   for (int i = 0; i < 3; i++) {
-    if (std::fabs(velocity_fBody[i]) > 1.0) {
+    if (std::fabs(velocity_fBody[i]) > cfg::SystemConfig::max_velocity_fBody[i]) {
       return false;
     }
   }

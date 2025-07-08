@@ -1,6 +1,7 @@
 #include <iostream>
 #include "Coordinates.h"
 #include "SoccerObject.h"
+#include "SystemConfig.h"
 
 void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) {
   // soccer_objects.push_back(state::SoccerObject(
