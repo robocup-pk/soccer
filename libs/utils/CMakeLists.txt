@@ -3,7 +3,7 @@ file(GLOB_RECURSE HEADERS "include/*.h")
 
 add_library(utils_lib ${SOURCES} ${HEADERS})
 target_include_directories(utils_lib PUBLIC include)
-target_link_libraries(utils_lib PUBLIC Eigen3::Eigen)
+target_link_libraries(utils_lib PUBLIC Eigen3::Eigen cfg_lib)
 
 add_subdirectory(test)
 

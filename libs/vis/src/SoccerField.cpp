@@ -57,13 +57,6 @@ void vis::SoccerField::MaintainAspectRatio() {
   vis::SoccerField::height_mm = cfg::Dimensions::height_mm;
   vis::SoccerField::width_mm = vis::SoccerField::height_mm * vis::SoccerField::width_height_ratio;
 
-  // Debug output
-  //   std::cout << "Width-Height Ratio: " << vis::SoccerField::width_height_ratio << std::endl;
-  //   std::cout << width_mm << " mm" << std::endl;
-  //   std::cout << height_mm << " mm" << std::endl;
-  //   std::cout << "Our Field W/H Ratio: " << width_mm / height_mm <<
-  //   std::endl;
-
   // Ensure the calculated dimensions are positive
   if (vis::SoccerField::width_mm <= 0 || vis::SoccerField::height_mm <= 0) {
     std::cerr << "Error: Calculated field dimensions must be positive." << std::endl;
@@ -89,26 +82,6 @@ void vis::SoccerField::CalculateFieldDimensions() {
   this->line_width_mm = cfg::Dimensions::actual_field_line_width_mm / this->actual_to_our_ratio;
   this->outer_width_mm = cfg::Dimensions::outer_field_width_mm / this->actual_to_our_ratio;
   this->outer_height_mm = cfg::Dimensions::outer_field_height_mm / this->actual_to_our_ratio;
-
-  // Debug output
-  //   std::cout << "Our Field Central Circle Radius: " << this->central_circle_radius_mm
-  //             << " mm" << std::endl;
-  //   std::cout << "Our Field Playing Area Width: " << this->playing_area_width_mm << "
-  //   mm"
-  //             << std::endl;
-  //   std::cout << "Our Field Playing Area Height: " << this->playing_area_height_mm <<
-  //   " mm"
-  //             << std::endl;
-  //   std::cout << "Our Field Penalty Area Width: " << this->penalty_area_width_mm << "
-  //   mm"
-  //             << std::endl;
-  //   std::cout << "Our Field Penalty Area Height: " << this->penalty_area_height_mm <<
-  //   " mm"
-  //             << std::endl;
-  //   std::cout << "Our Field Goal Width: " << this->goal_width_mm << " mm" <<
-  //   std::endl; std::cout << "Our Field Goal Height: " << this->goal_height_mm << " mm"
-  //   << std::endl; std::cout << "Our Field Line Width: " << this->line_width_mm << "
-  //   mm" << std::endl;
 }
 
 void vis::SoccerField::SetupBuffers() {
@@ -469,19 +442,4 @@ void vis::SoccerField::Render() {
 
   // Draw goal areas
   DrawGoalAreas();
-}
-
-vis::SoccerField::~SoccerField() {
-  if (VAO != 0) {
-    glDeleteVertexArrays(1, &VAO);
-    VAO = 0;
-  }
-  if (VBO != 0) {
-    glDeleteBuffers(1, &VBO);
-    VBO = 0;
-  }
-  if (shaderProgram != 0) {
-    glDeleteProgram(shaderProgram);
-    shaderProgram = 0;
-  }
 }

@@ -4,7 +4,7 @@
 #include <cmath>
 
 #include <Eigen/Dense>
-
+#include "Coordinates.h"
 #include "Utils.h"
 
 #ifndef M_PI  // in case it doesnt work on windows
@@ -13,7 +13,7 @@
 
 float util::PixelsPerMm() {
   // Calculate pixels per mm based on window size and field dimensions
-  return 0.2f;
+  return cfg::Coordinates::px_per_mm;
 }
 
 float util::MmToPixels(float mm_value) { return mm_value * PixelsPerMm(); }
@@ -48,9 +48,8 @@ double util::WrapAngle(double angle_rad) {
   double rad = std::fmod(angle_rad + M_PI, 2 * M_PI);
   if (rad < 0) rad += 2 * M_PI;
   rad -= M_PI;
-   // Normalize -π to +π
-  if (std::abs(rad + M_PI) < 1e-8)
-    return M_PI;
+  // Normalize -π to +π
+  if (std::abs(rad + M_PI) < 1e-8) return M_PI;
   return rad;
 }
 

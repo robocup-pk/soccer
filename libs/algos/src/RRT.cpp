@@ -1,13 +1,13 @@
-#include "Coordinates.h"
+#include "SoccerField.h"
 
 #include "RRT.h"
 
 namespace algos {
 std::mt19937 rng(std::random_device{}());
 std::uniform_real_distribution<double> x_distribution =
-    std::uniform_real_distribution<double>(0, cfg::Coordinates::field_width_ft);
+    std::uniform_real_distribution<double>(0, vis::SoccerField::GetInstance().width_mm);
 std::uniform_real_distribution<double> y_distribution =
-    std::uniform_real_distribution<double>(0, cfg::Coordinates::field_height_ft);
+    std::uniform_real_distribution<double>(0, vis::SoccerField::GetInstance().width_mm);
 double step_size = 1;
 }  // namespace algos
 

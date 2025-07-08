@@ -3,6 +3,7 @@
 
 #include "Kinematics.h"
 #include "Coordinates.h"
+#include "SoccerField.h"
 
 void kin::UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects, float dt) {
   for (state::SoccerObject& soccer_object : soccer_objects) {
@@ -62,16 +63,14 @@ void kin::CheckAndResolveCollisions(std::vector<state::SoccerObject>& soccer_obj
 
 void kin::ResolveCollisionWithWall(std::vector<state::SoccerObject>& soccer_objects) {
   for (state::SoccerObject& soccer_object : soccer_objects) {
-    if (soccer_object.name == "background") continue;
-
     Eigen::Vector3d center = soccer_object.GetCenterPosition();
     float left = soccer_object.position[0];
     float right = soccer_object.position[0] + soccer_object.size[0];
     float top = soccer_object.position[1];
     float bottom = soccer_object.position[1] - soccer_object.size[1];
 
-    double boundary_x = cfg::Coordinates::field_width_ft / 2.0f;
-    double boundary_y = cfg::Coordinates::field_height_ft / 2.0f;
+    double boundary_x = vis::SoccerField::GetInstance().width_mm / 2.0f;
+    double boundary_y = vis::SoccerField::GetInstance().height_mm / 2.0f;
 
     // X-axis collision
     if ((right > boundary_x && soccer_object.velocity[0] > 0) ||
@@ -93,22 +92,21 @@ void kin::ResolveCollisionWithWall(std::vector<state::SoccerObject>& soccer_obje
 }
 
 bool kin::IsInsideBoundary(const state::SoccerObject& obj) {
-  float half_width = cfg::Coordinates::window_width_px / 2;
-  float half_height = cfg::Coordinates::window_height_px / 2;
+  float half_width = vis::SoccerField::GetInstance().width_mm / 2;
+  float half_height = vis::SoccerField::GetInstance().height_mm / 2;
   float left = obj.position[0];
   float right = obj.position[0] + obj.size[0];
   float top = obj.position[1];
-  float bottom = obj.position[1] + obj.size[1];
+  float bottom = obj.position[1] - obj.size[1];
 
   return left >= -half_width && right <= half_width && top >= -half_height &&
          bottom <= half_height;
 }
 
 void kin::ClampInsideBoundary(state::SoccerObject& obj) {
-  if (obj.name == "background") return;
   // x direction
-  double half_width = cfg::Coordinates::window_width_px / 2;
-  double half_height = cfg::Coordinates::window_height_px / 2;
+  double half_width = vis::SoccerField::GetInstance().width_mm / 2;
+  double half_height = vis::SoccerField::GetInstance().height_mm / 2;
 
   obj.position[0] = std::clamp(obj.position[0], -half_width, half_width - obj.size[0]);
   obj.position[1] = std::clamp(obj.position[1], -half_height, half_height - obj.size[1]);
@@ -236,17 +234,17 @@ void kin::DetachBall(state::SoccerObject& ball, float detach_velocity) {
 
   // Get robot's current orientation for detachment direction
   float robot_rotation = robot->position[2] - M_PI / 2.0f;
-  
+
   // Calculate front direction vector (same as in IsPointInFrontSector)
   Eigen::Vector2d front_dir(cos(robot_rotation), -sin(robot_rotation));
-  
+
   // Apply detach velocity in the front direction
   float detach_vel_x = detach_velocity * front_dir.x();
   float detach_vel_y = detach_velocity * front_dir.y();
 
   // Debug: Check if velocities make sense
   float velocity_magnitude = sqrt(detach_vel_x * detach_vel_x + detach_vel_y * detach_vel_y);
-  
+
   // If velocity is too small, ensure minimum movement in front direction
   if (velocity_magnitude < 0.5f) {
     // Use a minimum velocity in the front direction
@@ -257,8 +255,8 @@ void kin::DetachBall(state::SoccerObject& ball, float detach_velocity) {
 
   // Move ball slightly away from robot before detaching to prevent immediate re-collision
   Eigen::Vector3d robot_center = robot->GetCenterPosition();
-  float separation_distance = 1.5f;
-  
+  float separation_distance = 500.0f;  // Distance to separate ball from robot
+
   // Position ball in front of robot using the same front direction
   ball.position[0] = robot_center.x() + separation_distance * front_dir.x() - ball.size[0] / 2.0f;
   ball.position[1] = robot_center.y() + separation_distance * front_dir.y() + ball.size[1] / 2.0f;

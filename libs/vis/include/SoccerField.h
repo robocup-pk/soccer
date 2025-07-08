@@ -27,15 +27,25 @@ class SoccerField {
 
   float actual_to_our_ratio;
 
-  SoccerField();
-  ~SoccerField();
   void RenderField(GLFWwindow* r_window);
   void SoccerFieldInit();
+
+  static SoccerField& GetInstance() {
+    static SoccerField instance;
+    return instance;
+  }
+
+  // Delete copy constructor and assignment operator
+  SoccerField(const SoccerField&) = delete;
+  SoccerField& operator=(const SoccerField&) = delete;
 
  private:
   // Initialization functions
   void MaintainAspectRatio();
   void CalculateFieldDimensions();
+
+  SoccerField();
+  ~SoccerField() = default;
 
   void SetupProjection();
   void Render();
