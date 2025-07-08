@@ -35,13 +35,17 @@ class SoccerField {
     return instance;
   }
 
+  // Delete copy constructor and assignment operator
+  SoccerField(const SoccerField&) = delete;
+  SoccerField& operator=(const SoccerField&) = delete;
+
  private:
   // Initialization functions
   void MaintainAspectRatio();
   void CalculateFieldDimensions();
 
   SoccerField();
-  ~SoccerField();
+  ~SoccerField() = default;
 
   void SetupProjection();
   void Render();

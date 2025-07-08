@@ -35,7 +35,11 @@ void vis::SpriteRenderer::Init(Shader& shader) {
   this->shader.Use().SetMatrix4("projection", projection);
 }
 
-vis::SpriteRenderer::~SpriteRenderer() { glDeleteVertexArrays(1, &this->quadVAO); }
+vis::SpriteRenderer::~SpriteRenderer() {
+  if (glfwGetCurrentContext() != nullptr) {
+    glDeleteVertexArrays(1, &this->quadVAO);
+  }
+}
 
 void vis::SpriteRenderer::DrawSprite(Texture2D& texture, glm::vec2 position, glm::vec2 size,
                                      float rotate, glm::vec3 color) {

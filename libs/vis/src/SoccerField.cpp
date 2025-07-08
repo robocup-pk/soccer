@@ -82,7 +82,6 @@ void vis::SoccerField::CalculateFieldDimensions() {
   this->line_width_mm = cfg::Dimensions::actual_field_line_width_mm / this->actual_to_our_ratio;
   this->outer_width_mm = cfg::Dimensions::outer_field_width_mm / this->actual_to_our_ratio;
   this->outer_height_mm = cfg::Dimensions::outer_field_height_mm / this->actual_to_our_ratio;
-
 }
 
 void vis::SoccerField::SetupBuffers() {
@@ -443,19 +442,4 @@ void vis::SoccerField::Render() {
 
   // Draw goal areas
   DrawGoalAreas();
-}
-
-vis::SoccerField::~SoccerField() {
-  if (VAO != 0) {
-    glDeleteVertexArrays(1, &VAO);
-    VAO = 0;
-  }
-  if (VBO != 0) {
-    glDeleteBuffers(1, &VBO);
-    VBO = 0;
-  }
-  if (shaderProgram != 0) {
-    glDeleteProgram(shaderProgram);
-    shaderProgram = 0;
-  }
 }
