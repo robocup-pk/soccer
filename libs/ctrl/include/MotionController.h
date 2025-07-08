@@ -17,10 +17,11 @@ class MotionController {
                                             Eigen::Vector3d pose_destination);
 
   std::pair<bool, Eigen::Vector3d> InterpolateToPoint(Eigen::Vector3d pose_fWorld,
-                                                Eigen::Vector3d pose_destination);
+                                                      Eigen::Vector3d pose_destination);
 
  private:
   double position_error_tolerance_m;
+  double angle_error_tolerance_rad;
 };
 
 }  // namespace ctrl

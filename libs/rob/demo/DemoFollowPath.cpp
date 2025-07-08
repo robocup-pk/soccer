@@ -26,10 +26,11 @@ int main(int argc, char* argv[]) {
   // ROBOT
   std::vector<Eigen::Vector3d> path;
   path.push_back(Eigen::Vector3d(0, 0, 0));
-  path.push_back(Eigen::Vector3d(1, 1, 1));
-  path.push_back(Eigen::Vector3d(1, 3, 0.5));
-  path.push_back(Eigen::Vector3d(2, 3, 1));
-  path.push_back(Eigen::Vector3d(1, 1, -2));
+  path.push_back(Eigen::Vector3d(1, 1, 90 * M_PI / 180));
+  path.push_back(Eigen::Vector3d(2, 3, 0 * M_PI / 180));
+  path.push_back(Eigen::Vector3d(0, 2, 180 * M_PI / 180));
+  // path.push_back(Eigen::Vector3d(0, 0, 270 * M_PI / 180));
+  // path.push_back(Eigen::Vector3d(0, 0, 360 * M_PI / 180));
 
   rob::RobotManager robot_manager;
   robot_manager.SetPath(path);

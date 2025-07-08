@@ -84,6 +84,7 @@ vis::Texture2D vis::ResourceManager::loadTextureFromFile(const char* file, bool 
   // load image
   int width, height, nrChannels;
   unsigned char* data = stbi_load(file, &width, &height, &nrChannels, 0);
+
   if (nrChannels == 3) {
     texture.Internal_Format = GL_RGB;
     texture.Image_Format = GL_RGB;

@@ -61,7 +61,7 @@ void est::Estimator::NewMotorsData(Eigen::Vector4d wheel_speeds_rpm) {
 
   // Calculate body velocity from wheel speeds [Vb = J * Vw]
   Eigen::Vector3d velocity_fBody = robot_model->WheelSpeedsRpmToRobotVelocity(wheel_speeds_rpm);
-  Eigen::Vector3d velocity_fWorld = util::RotateAboutZ(velocity_fBody, pose_init[2]);
+  Eigen::Vector3d velocity_fWorld = util::RotateAboutZ(velocity_fBody, pose_est[2]);
 
   // State Transfer Function
   double dx = -dt * (velocity_fBody[0] * std::sin(pose_est[2]) +

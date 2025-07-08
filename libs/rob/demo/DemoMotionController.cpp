@@ -30,6 +30,7 @@ int main(int argc, char* argv[]) {
   robot_manager.AddGoal(Eigen::Vector3d(1, 3, 1));
   robot_manager.AddGoal(Eigen::Vector3d(0, 0, 1));
   robot_manager.AddGoal(Eigen::Vector3d(1, 3, 1));
+  robot_manager.AddGoal(Eigen::Vector3d(1, 1, 0));
 
   while (1) {
     soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();

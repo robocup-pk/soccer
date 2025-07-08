@@ -63,11 +63,10 @@ void rob::RobotManager::ControlLogic() {
     case RobotState::INTERPOLATING_TO_POINT:
       std::tie(finished_motion, velocity_fBody_) =
           motion_controller.InterpolateToPoint(pose_fWorld, pose_destination);
-      std::cout << "I2P: pose: " << pose_fWorld.transpose()
+      std::cout << "Pose: " << std::fixed << std::setprecision(2) << pose_fWorld.transpose()
                 << " and destination: " << pose_destination.transpose() << std::endl;
-      std::cout << "v_w: a " << velocity_fBody_.transpose() << std::endl;
       TryAssignNextGoal();
-      std::cout << "v_w: b " << velocity_fBody_.transpose() << std::endl;
+      std::cout << "v_w: " << velocity_fBody_.transpose() << std::endl << std::endl;
       break;
     case RobotState::MANUAL_DRIVING:
       velocity_fBody_ = velocity_fBody;
@@ -92,7 +91,6 @@ void rob::RobotManager::ControlLogic() {
     robot_state = RobotState::IDLE;
   }
 
-  std::cout << "v_w: c " << velocity_fBody_.transpose() << std::endl;
   hardware_manager.SetBodyVelocity(velocity_fBody_);
 }
 
@@ -217,6 +215,8 @@ std::string rob::RobotManager::GetRobotState() {
       return "AUTONOMOUS_DRIVING";
     case RobotState::GOING_HOME:
       return "GOING_HOME";
+    case RobotState::INTERPOLATING_TO_POINT:
+      return "INTERPOLATING_TO_POINT";
   }
   return "ERROR";
 }
