@@ -14,8 +14,8 @@ class UDPWiFi {
   bool start();
   void stop();
 
-  int16_t getX() const;
-  int16_t getY() const;
+  float getX() const;
+  float getY() const;
 
  private:
   void listenLoop();

@@ -4,6 +4,7 @@
 #include <cstring>
 #include <fcntl.h>  // Add this include
 #include <iostream>
+#include <cmath>
 
 namespace comm {
 
@@ -46,6 +47,11 @@ void UDPWiFi::stop() {
   }
 }
 
+float normalize(int val) {
+  return std::roundf(((val - 2048.0f) / 2047.0f) * 100.0f) /
+         100.0f;  // normalize and rounded to 2 decimal places
+}
+
 void UDPWiFi::listenLoop() {
   uint8_t buffer[4];
 
@@ -56,15 +62,13 @@ void UDPWiFi::listenLoop() {
       int16_t x = (buffer[2] << 8) | buffer[3];
       _x = x;
       _y = y;
-
-      std::cout << "Received X: " << x << "  Y: " << y << std::endl;
     }
     // Sleep briefly to avoid busy-waiting
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 }
 
-int16_t UDPWiFi::getX() const { return _x.load(); }
-int16_t UDPWiFi::getY() const { return _y.load(); }
+float UDPWiFi::getX() const { return normalize(_x.load()); }
+float UDPWiFi::getY() const { return normalize(_y.load()); }
 
 }  // namespace comm
