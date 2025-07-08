@@ -23,27 +23,27 @@ vis::GameObject::GameObject(std::string name_, Eigen::Vector3d position_, Eigen:
 */
 vis::GameObject& vis::GameObject::operator=(const state::SoccerObject& soccer_object) {
   position = ConvertEigenVecToGlm(static_cast<Eigen::Vector3d>(
-                 soccer_object.position.cwiseProduct(cfg::Coordinates::ft_px_coords))) *
-             cfg::Coordinates::px_per_ft;
+                 soccer_object.position.cwiseProduct(cfg::Coordinates::mm_px_coords))) *
+             cfg::Coordinates::px_per_mm;
 
   // TODO: The angle is in radians, we do not need to convert it to pixels. Need to add proper for
   // it later, and also for velocity and acceleration
   position.z = soccer_object.position[2];  // angle in radians
 
   velocity = ConvertEigenVecToGlm(static_cast<Eigen::Vector3d>(
-                 soccer_object.velocity.cwiseProduct(cfg::Coordinates::ft_px_coords))) *
-             cfg::Coordinates::px_per_ft;
+                 soccer_object.velocity.cwiseProduct(cfg::Coordinates::mm_px_coords))) *
+             cfg::Coordinates::px_per_mm;
 
   acceleration = ConvertEigenVecToGlm(static_cast<Eigen::Vector3d>(
-                     soccer_object.acceleration.cwiseProduct(cfg::Coordinates::ft_px_coords))) *
-                 cfg::Coordinates::px_per_ft;
+                     soccer_object.acceleration.cwiseProduct(cfg::Coordinates::mm_px_coords))) *
+                 cfg::Coordinates::px_per_mm;
 
   size = ConvertEigenVecToGlm(static_cast<Eigen::Vector2d>(soccer_object.size)) *
-         cfg::Coordinates::px_per_ft;
+         cfg::Coordinates::px_per_mm;
 
   mass_kg = soccer_object.mass_kg;
 
-  radius = soccer_object.radius_ft * cfg::Coordinates::px_per_ft;
+  radius = soccer_object.radius_mm * cfg::Coordinates::px_per_mm;
 
   return *this;
 }

@@ -52,7 +52,7 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
 
     // From pixel-frame to world-frame
     // xpos -= field.util::MmToPixels(field.width_mm);
-    // double ft_per_pixel = 1 / cfg::Coordinates::px_per_ft;
+    // double ft_per_pixel = 1 / cfg::Coordinates::px_per_mm;
     // double x = xpos * ft_per_pixel;
 
     std::cout << "[MouseClick] Click at: (" << xpos << ", " << ypos << ")\n";

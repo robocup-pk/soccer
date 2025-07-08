@@ -4,7 +4,7 @@
 void vis::GLSimulation::ProcessInput(float dt) {
   // Calculate movement speed (with acceleration for held keys)
   static float speed_multiplier = 1.0f;
-  static float move_speed = cfg::SystemConfig::init_robot_speed_ftps * cfg::Coordinates::px_per_ft;
+  static float move_speed = cfg::SystemConfig::init_robot_speed_mmps * cfg::Coordinates::px_per_mm;
 
   // Check if any movement keys are pressed
   bool any_movement_key = GLCallback::keys[GLFW_KEY_W] || GLCallback::keys[GLFW_KEY_S] ||
@@ -14,10 +14,10 @@ void vis::GLSimulation::ProcessInput(float dt) {
 
   if (any_movement_key) {
     // Increase speed for held keys (acceleration)
-    move_speed = std::min(cfg::SystemConfig::max_robot_speed_ftps * cfg::Coordinates::px_per_ft,
+    move_speed = std::min(cfg::SystemConfig::max_robot_speed_mmps * cfg::Coordinates::px_per_mm,
                           move_speed + 10);
   } else {
-    move_speed = cfg::SystemConfig::init_robot_speed_ftps * cfg::Coordinates::px_per_ft;
+    move_speed = cfg::SystemConfig::init_robot_speed_mmps * cfg::Coordinates::px_per_mm;
   }
 
   if (game_objects.find("robot0") != game_objects.end()) {
