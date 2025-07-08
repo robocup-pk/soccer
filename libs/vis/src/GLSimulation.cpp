@@ -4,12 +4,13 @@
 #include <algorithm>
 
 // self libs
-#include "Collision.h"
+#include "Kinematics.h"
 #include "GLConfig.h"
 #include "GLSimulation.h"
 #include "ResourceManager.h"
 #include "GLCallback.h"
-#include "ReadFile.h"
+#include "Utils.h"
+#include "SoccerField.h"
 
 bool vis::GLSimulation::RunSimulationStep(std::vector<state::SoccerObject>& soccer_objects,
                                           float dt) {
@@ -38,8 +39,8 @@ void vis::GLSimulation::Render(float dt) {
   glClearColor(0.0f, 0.5f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  // Render field first (background)
-  field.RenderField(this->window);
+  // Render SoccerField::GetInstance() first (background)
+  SoccerField::GetInstance().RenderField(this->window);
 
   for (auto& [name, game_object] : game_objects) {
     game_object.Draw(renderer);
@@ -73,9 +74,9 @@ vis::GLSimulation::GLSimulation() {
 #endif
 
   // Create a window
-  window = glfwCreateWindow(field.MmToPixels(field.our_field_width_mm),
-                            field.MmToPixels(field.our_field_height_mm), "Soccer Field", nullptr,
-                            nullptr);
+  window = glfwCreateWindow(util::MmToPixels(SoccerField::GetInstance().width_mm),
+                            util::MmToPixels(SoccerField::GetInstance().height_mm), "Soccer Field",
+                            nullptr, nullptr);
   if (!window) {
     std::cout << "[vis::GLSimulation::Init] Couldn’t create window\n";
     glfwTerminate();
@@ -95,9 +96,10 @@ vis::GLSimulation::GLSimulation() {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   // Area in GLFW window where OpenGL rendering is performed
-  glViewport(0, 0, field.MmToPixels(field.our_field_width_mm),
-             field.MmToPixels(field.our_field_height_mm));
-
+  glViewport(0, 0, util::MmToPixels(SoccerField::GetInstance().width_mm),
+             util::MmToPixels(SoccerField::GetInstance().height_mm));
+  std::cout << "Window Size: " << util::MmToPixels(SoccerField::GetInstance().width_mm) << " "
+            << util::MmToPixels(SoccerField::GetInstance().height_mm) << std::endl;
   RegisterCallbacks();
 }
 
@@ -119,7 +121,7 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
                               "field");
   ResourceManager::GetShader("field").Use().SetInteger("field", 0);
 
-  field.FieldRendererInit();
+  SoccerField::GetInstance().SoccerFieldInit();
 
   // sprite Renderer
   Shader shader = ResourceManager::GetShader("sprite");
@@ -130,17 +132,22 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
   // Load Textures
   std::string robot_texture_path =
       util::GetExecutableDir() + "/libs/vis/resources/textures/robot.png";
+  std::string robot_texture_path_2 =
+      util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
   std::string ball_texture_path =
       util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
+  std::string arrow_texture_path =
+      util::GetExecutableDir() + "/libs/vis/resources/textures/arrow.png";
 
   ResourceManager::LoadTexture(robot_texture_path.c_str(), false, "face");
   ResourceManager::LoadTexture(ball_texture_path.c_str(), false, "ball");
+  ResourceManager::LoadTexture(arrow_texture_path.c_str(), false, "arrow");
 
   // Window
-  Eigen::Vector3d window_position(-cfg::Coordinates::window_width_px / 2,
-                                  -cfg::Coordinates::window_height_px / 2, 0);
-  Eigen::Vector2d window_size(cfg::Coordinates::window_width_px,
-                              cfg::Coordinates::window_height_px);
+  Eigen::Vector3d window_position(-util::MmToPixels(SoccerField::GetInstance().width_mm) / 2,
+                                  -util::MmToPixels(SoccerField::GetInstance().height_mm) / 2, 0);
+  Eigen::Vector2d window_size(util::MmToPixels(SoccerField::GetInstance().width_mm),
+                              util::MmToPixels(SoccerField::GetInstance().height_mm));
 
   // Robots and Ball
   for (const auto& soccer_object : soccer_objects) {
@@ -150,10 +157,17 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
                      soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
                      ResourceManager::GetTexture("ball"), Eigen::Vector3d(1.0, 1.0, 1.0));
     } else if (soccer_object.name.find("robot") != std::string::npos) {
-      game_objects[soccer_object.name] =
-          GameObject(soccer_object.name, soccer_object.position, soccer_object.size,
-                     soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
-                     ResourceManager::GetTexture("face"), Eigen::Vector3d(1.0, 1.0, 1.0));
+      if (soccer_object.name == "robot1") {
+        game_objects[soccer_object.name] =
+            GameObject(soccer_object.name, soccer_object.position, soccer_object.size,
+                       soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
+                       ResourceManager::GetTexture("ball"), Eigen::Vector3d(1.0, 1.0, 1.0));
+      } else {
+        game_objects[soccer_object.name] =
+            GameObject(soccer_object.name, soccer_object.position, soccer_object.size,
+                       soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
+                       ResourceManager::GetTexture("face"), Eigen::Vector3d(1.0, 1.0, 1.0));
+      }
     }
   }
 }
@@ -161,9 +175,13 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
 GLFWwindow* vis::GLSimulation::GetRawGLFW() const { return window; }
 
 vis::GLSimulation::~GLSimulation() {
+  game_objects.clear();
+  ResourceManager::Clear();
+
   if (window) {
     glfwDestroyWindow(window);
     window = nullptr;
   }
+
   glfwTerminate();
 }

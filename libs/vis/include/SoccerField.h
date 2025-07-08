@@ -9,37 +9,43 @@
 
 namespace vis {
 
-class FieldRenderer {
+class SoccerField {
  public:
+  float width_mm;
+  float height_mm;
   float width_height_ratio;
-  float our_field_width_mm;
-  float our_field_height_mm;
-  float our_field_central_circle_radius_mm;
-  float our_field_playing_area_width_mm;
-  float our_field_playing_area_height_mm;
-  float our_field_penalty_area_width_mm;
-  float our_field_penalty_area_height_mm;
-  float our_field_goal_width_mm;
-  float our_field_goal_height_mm;
-  float our_field_line_width_mm;
-  float our_field_outer_width_mm;
-  float our_field_outer_height_mm;
+  float central_circle_radius_mm;
+  float playing_area_width_mm;
+  float playing_area_height_mm;
+  float penalty_area_width_mm;
+  float penalty_area_height_mm;
+  float goal_width_mm;
+  float goal_height_mm;
+  float line_width_mm;
+  float outer_width_mm;
+  float outer_height_mm;
 
   float actual_to_our_ratio;
 
-  FieldRenderer();
-  ~FieldRenderer();
   void RenderField(GLFWwindow* r_window);
-  void FieldRendererInit();
+  void SoccerFieldInit();
 
-  // Unit conversion functions
-  float MmToPixels(float mm_value) const;
-  float GetPixelsPerMm() const;
+  static SoccerField& GetInstance() {
+    static SoccerField instance;
+    return instance;
+  }
+
+  // Delete copy constructor and assignment operator
+  SoccerField(const SoccerField&) = delete;
+  SoccerField& operator=(const SoccerField&) = delete;
 
  private:
   // Initialization functions
   void MaintainAspectRatio();
   void CalculateFieldDimensions();
+
+  SoccerField();
+  ~SoccerField() = default;
 
   void SetupProjection();
   void Render();

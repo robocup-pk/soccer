@@ -8,6 +8,8 @@
 #include "Shader.h"
 #include "Texture.h"
 #include "GLCallback.h"
+#include "Utils.h"
+#include "SoccerField.h"
 
 void vis::SpriteRenderer::Init(Shader& shader) {
   this->shader = shader;
@@ -15,11 +17,15 @@ void vis::SpriteRenderer::Init(Shader& shader) {
 
   // Set up projection matrix for 2D rendering
   // glm::mat4 projection =
-  //     glm::ortho(0.0f, static_cast<float>(cfg::Coordinates::window_width_px),
-  //                static_cast<float>(cfg::Coordinates::window_height_px), 0.0f, -1.0f, 1.0f);
+  //     glm::ortho(0.0f,
+  //     static_cast<float>(util::MmToPixels(SoccerField::GetInstance().width_mm)),
+  //                static_cast<float>(util::MmToPixels(SoccerField::GetInstance().height_mm)),
+  //                0.0f, -1.0f, 1.0f);
   // Set up projection matrix with (0,0) at center
-  float half_width = static_cast<float>(cfg::Coordinates::window_width_px) / 2.0f;
-  float half_height = static_cast<float>(cfg::Coordinates::window_height_px) / 2.0f;
+  float half_width =
+      static_cast<float>(util::MmToPixels(SoccerField::GetInstance().width_mm)) / 2.0f;
+  float half_height =
+      static_cast<float>(util::MmToPixels(SoccerField::GetInstance().height_mm)) / 2.0f;
 
   glm::mat4 projection =
       glm::ortho(-half_width, half_width,  // left: -400, right: +400 (for 800px window)
@@ -29,7 +35,11 @@ void vis::SpriteRenderer::Init(Shader& shader) {
   this->shader.Use().SetMatrix4("projection", projection);
 }
 
-vis::SpriteRenderer::~SpriteRenderer() { glDeleteVertexArrays(1, &this->quadVAO); }
+vis::SpriteRenderer::~SpriteRenderer() {
+  if (glfwGetCurrentContext() != nullptr) {
+    glDeleteVertexArrays(1, &this->quadVAO);
+  }
+}
 
 void vis::SpriteRenderer::DrawSprite(Texture2D& texture, glm::vec2 position, glm::vec2 size,
                                      float rotate, glm::vec3 color) {

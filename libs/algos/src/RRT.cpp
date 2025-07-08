@@ -1,29 +1,29 @@
-#include "Coordinates.h"
+#include "SoccerField.h"
 
 #include "RRT.h"
 
 namespace algos {
 std::mt19937 rng(std::random_device{}());
 std::uniform_real_distribution<double> x_distribution =
-    std::uniform_real_distribution<double>(0, cfg::Coordinates::field_width_ft);
+    std::uniform_real_distribution<double>(0, vis::SoccerField::GetInstance().width_mm);
 std::uniform_real_distribution<double> y_distribution =
-    std::uniform_real_distribution<double>(0, cfg::Coordinates::field_height_ft);
+    std::uniform_real_distribution<double>(0, vis::SoccerField::GetInstance().width_mm);
 double step_size = 1;
 }  // namespace algos
 
 state::Path algos::FindSinglePath(const state::Waypoint& start, const state::Waypoint& goal) {
   state::Waypoint goal_tolerance(0.2, 0.2);
-  std::vector<algos::Node> path;
+  std::vector<algos::NodeRRT> path;
   state::Waypoint start_cpy = start;
-  Node start_node(start_cpy, -1);
-  path.push_back(start_node);
+  NodeRRT start_NodeRRT(start_cpy, -1);
+  path.push_back(start_NodeRRT);
 
   int iterations = 100;
   for (int iteration = 0; iteration < iterations; ++iteration) {
     state::Waypoint random_wp = FindRandomWaypoint(goal);
     int nearest_wp_idx = FindNearestWaypointIdx(random_wp, path);  // parent
     state::Waypoint new_wp = Extend(path[nearest_wp_idx].wp, random_wp);
-    path.push_back(Node(new_wp, nearest_wp_idx));
+    path.push_back(NodeRRT(new_wp, nearest_wp_idx));
 
     if ((new_wp - goal) > state::Waypoint(-goal_tolerance.x, -goal_tolerance.y) &&
         (new_wp - goal) < goal_tolerance) {
@@ -37,7 +37,7 @@ state::Path algos::FindSinglePath(const state::Waypoint& start, const state::Way
 }
 
 state::Path algos::ReconstructPath(const int goal_idx, const state::Waypoint& goal,
-                                   const std::vector<algos::Node>& path) {
+                                   const std::vector<algos::NodeRRT>& path) {
   state::Path sol;
   sol.push_back(goal);
 
@@ -64,7 +64,7 @@ state::Waypoint algos::Extend(const state::Waypoint& from, const state::Waypoint
 }
 
 int algos::FindNearestWaypointIdx(const state::Waypoint& random_wp,
-                                  const std::vector<algos::Node>& path) {
+                                  const std::vector<algos::NodeRRT>& path) {
   double min_distance = (random_wp - path[0].wp).Norm();
   int nearest_wp_idx = 0;
 

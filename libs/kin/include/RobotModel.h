@@ -14,18 +14,24 @@ namespace kin {
 */
 class RobotModel {
  public:
-  RobotModel(const RobotDescription& robot_description);
+  RobotModel();
+  RobotModel(RobotDescription& robot_desc);
 
   // Compute robot velocity in body frame (x_dot_b, y_dot_b, theta_dot_b) from wheel speeds (for
   // simulating)
-  Eigen::VectorXd WheelSpeedsToRobotVelocity(const std::vector<double>& wheel_speeds_radps);
+  Eigen::VectorXd WheelSpeedsRadpsToRobotVelocity(const std::vector<double>& wheel_speeds_radps);
+  Eigen::VectorXd WheelSpeedsRpmToRobotVelocity(
+      const Eigen::Vector4d& wheel_speeds_rpm);
 
   // Compute wheel speeds (radps) from robot velocity (for actuation)
-  Eigen::VectorXd RobotVelocityToWheelSpeeds(const Eigen::Vector3d& robot_velocity_mps_radps);
+  Eigen::VectorXd RobotVelocityToWheelSpeedsMps(const Eigen::Vector3d& robot_velocity_mps_radps);
+  Eigen::VectorXd RobotVelocityToWheelSpeedsRpm(const Eigen::Vector3d& robot_velocity_mps_radps);
 
   // Getters for jacobians
   Eigen::MatrixXd InverseMapping() const;  // u = J * v
   Eigen::MatrixXd ForwardMapping() const;  // v = J+ * u
+
+  RobotDescription robot_description;
 
  private:
   // Inverse mapping: u = J * v
@@ -38,7 +44,6 @@ class RobotModel {
 
   Eigen::MatrixXd inverse_mapping;
   Eigen::MatrixXd forward_mapping;
-  RobotDescription robot_description;
 };
 
 }  // namespace kin

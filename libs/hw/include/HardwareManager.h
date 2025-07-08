@@ -1,27 +1,53 @@
 #ifndef HARDWARE_MANAGER_H
 #define HARDWARE_MANAGER_H
 
-#include "MotorDriver.h"
-
-#include <iostream>
-#include <thread>
-#include <mutex>
 #include <vector>
-#include <string>
+#include <thread>
+#include <optional>
+#include <memory>
+
+#include <Eigen/Dense>
+#include <libserial/SerialPort.h>
+
+#include "RobotModel.h"
+#include "MotorDriver.h"
+#include "GyroDriver.h"
 
 namespace hw {
 class HardwareManager {
  public:
-  HardwareManager(size_t numMotors = 4) : motor_driver_(numMotors) { init(); }
+  HardwareManager();
 
-  ~HardwareManager() { motor_driver_.stop(); }
+  // Sensing
+  std::optional<Eigen::Vector4d> NewMotorsRpms();
+  std::optional<double> NewGyroAngularVelocity();
+  std::optional<Eigen::Vector3d> NewCameraData();
 
-  void init(const std::string& port = "/dev/ttyAMA0") { motor_driver_.init(port); motor_driver_.start(); }
-  void setSpeeds(const std::vector<int>& speeds) {}
+  // Control
+  void SetBodyVelocity(Eigen::Vector3d velocity_fBody);
+  void SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm);
+
+  // Serial Comms
+  void InitializeSerialPort();
+
+  ~HardwareManager();
 
  private:
-  MotorDriver motor_driver_;
-  std::mutex init_mutex_;
+  std::unique_ptr<MotorDriver> motor_driver;
+  std::unique_ptr<GyroDriver> gyro_driver;
+  // std::unique_ptr<CameraDriver> camera_driver;
+
+  std::string motor_driver_port = "/dev/ttyUSB0";
+  std::string gyro_driver_port = "/dev/ttyUSB1";
+
+  bool new_encoder_ticks = false;
+  bool new_gyro_data = false;
+  bool new_camera_data = false;
+
+  std::shared_ptr<kin::RobotModel> robot_model;
+
+  // Serial port
+  std::shared_ptr<LibSerial::SerialPort> shared_serial_port;
 };
 }  // namespace hw
 

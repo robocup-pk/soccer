@@ -2,13 +2,19 @@
 
 #include <iostream>
 
-kin::RobotModel::RobotModel(const RobotDescription& robot_description)
-    : robot_description(robot_description) {
+kin::RobotModel::RobotModel() {
+  robot_description = kin::GetRobotDescription();
   ComputeInverseMapping();
   ComputeForwardMapping();
 }
 
-Eigen::VectorXd kin::RobotModel::WheelSpeedsToRobotVelocity(
+kin::RobotModel::RobotModel(kin::RobotDescription& robot_dec) {
+  robot_description = robot_dec;
+  ComputeInverseMapping();
+  ComputeForwardMapping();
+}
+
+Eigen::VectorXd kin::RobotModel::WheelSpeedsRadpsToRobotVelocity(
     const std::vector<double>& wheel_speeds_radps) {
   // Convert std::vector to Eigen::VectorXd
   Eigen::VectorXd wheel_speeds(wheel_speeds_radps.size());
@@ -19,10 +25,26 @@ Eigen::VectorXd kin::RobotModel::WheelSpeedsToRobotVelocity(
   return forward_mapping * wheel_speeds;
 }
 
-Eigen::VectorXd kin::RobotModel::RobotVelocityToWheelSpeeds(
+Eigen::VectorXd kin::RobotModel::WheelSpeedsRpmToRobotVelocity(
+    const Eigen::Vector4d& wheel_speeds_rpm) {
+  // rpm to radps
+  Eigen::Vector4d wheel_speeds_radps = (2 * M_PI * wheel_speeds_rpm) / 60;
+
+  return forward_mapping * wheel_speeds_radps *
+         robot_description.wheel_radius_m;  // TODO: Figure this out: RADIUS thing is wrong
+}
+
+Eigen::VectorXd kin::RobotModel::RobotVelocityToWheelSpeedsMps(
     const Eigen::Vector3d& robot_velocity_mps_radps) {
   // Inverse kinematics
   return inverse_mapping * robot_velocity_mps_radps;
+}
+
+Eigen::VectorXd kin::RobotModel::RobotVelocityToWheelSpeedsRpm(
+    const Eigen::Vector3d& robot_velocity_mps_radps) {
+  Eigen::Vector4d wheel_speeds_mps = RobotVelocityToWheelSpeedsMps(robot_velocity_mps_radps);
+  Eigen::Vector4d wheel_speeds_radps = wheel_speeds_mps / robot_description.wheel_radius_m;
+  return 60 * wheel_speeds_radps / (2 * M_PI);
 }
 
 Eigen::MatrixXd kin::RobotModel::InverseMapping() const { return inverse_mapping; }

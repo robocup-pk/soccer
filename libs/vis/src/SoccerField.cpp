@@ -1,26 +1,26 @@
-#include "FieldRenderer.h"
-#include "Dimensions.h"
-
 #include <iostream>
 #include <cmath>
 #include <string>
 #include <vector>
 
+#include "SoccerField.h"
+#include "Dimensions.h"
 #include "Shader.h"
 #include "ResourceManager.h"
 #include "SpriteRenderer.h"
+#include "Utils.h"
 
-vis::FieldRenderer::FieldRenderer() {
-  vis::FieldRenderer::MaintainAspectRatio();
-  vis::FieldRenderer::CalculateFieldDimensions();
+vis::SoccerField::SoccerField() {
+  vis::SoccerField::MaintainAspectRatio();
+  vis::SoccerField::CalculateFieldDimensions();
 }
 
-void vis::FieldRenderer::RenderField(GLFWwindow* r_window) {
+void vis::SoccerField::RenderField(GLFWwindow* r_window) {
   this->window = r_window;
   Render();
 }
 
-void vis::FieldRenderer::FieldRendererInit() {
+void vis::SoccerField::SoccerFieldInit() {
   Shader shader = ResourceManager::GetShader("field");
   shader.Use();
 
@@ -37,91 +37,57 @@ void vis::FieldRenderer::FieldRendererInit() {
   UpdateProjectionMatrix();
 }
 
-void vis::FieldRenderer::MaintainAspectRatio() {
-  if (cfg::Dimensions::our_field_width_mm <= 0 || cfg::Dimensions::our_field_height_mm <= 0) {
+void vis::SoccerField::MaintainAspectRatio() {
+  if (cfg::Dimensions::width_mm <= 0 || cfg::Dimensions::height_mm <= 0) {
     std::cerr << "Error: Width and height must be positive values." << std::endl;
     return;
   }
 
   // Calculate the width-height ratio
-  vis::FieldRenderer::width_height_ratio =
+  vis::SoccerField::width_height_ratio =
       cfg::Dimensions::actual_field_width_mm / cfg::Dimensions::actual_field_height_mm;
 
   // Ensure the ratio is not zero to avoid division by zero
-  if (vis::FieldRenderer::width_height_ratio == 0) {
+  if (vis::SoccerField::width_height_ratio == 0) {
     std::cerr << "Error: Width-height ratio cannot be zero." << std::endl;
     return;
   }
 
   // Calculate our field dimensions based on the actual field dimensions
-  vis::FieldRenderer::our_field_height_mm = cfg::Dimensions::our_field_height_mm;
-  vis::FieldRenderer::our_field_width_mm =
-      vis::FieldRenderer::our_field_height_mm * vis::FieldRenderer::width_height_ratio;
-
-  // Debug output
-  //   std::cout << "Width-Height Ratio: " << vis::FieldRenderer::width_height_ratio << std::endl;
-  //   std::cout << our_field_width_mm << " mm" << std::endl;
-  //   std::cout << our_field_height_mm << " mm" << std::endl;
-  //   std::cout << "Our Field W/H Ratio: " << our_field_width_mm / our_field_height_mm <<
-  //   std::endl;
+  vis::SoccerField::height_mm = cfg::Dimensions::height_mm;
+  vis::SoccerField::width_mm = vis::SoccerField::height_mm * vis::SoccerField::width_height_ratio;
 
   // Ensure the calculated dimensions are positive
-  if (vis::FieldRenderer::our_field_width_mm <= 0 ||
-      vis::FieldRenderer::our_field_height_mm <= 0) {
+  if (vis::SoccerField::width_mm <= 0 || vis::SoccerField::height_mm <= 0) {
     std::cerr << "Error: Calculated field dimensions must be positive." << std::endl;
     return;
   }
 }
 
-void vis::FieldRenderer::CalculateFieldDimensions() {
-  this->actual_to_our_ratio = cfg::Dimensions::actual_field_width_mm / this->our_field_width_mm;
+void vis::SoccerField::CalculateFieldDimensions() {
+  this->actual_to_our_ratio = cfg::Dimensions::actual_field_width_mm / this->width_mm;
 
-  this->our_field_central_circle_radius_mm =
+  this->central_circle_radius_mm =
       cfg::Dimensions::actual_field_central_circle_radius_mm / this->actual_to_our_ratio;
-  this->our_field_playing_area_width_mm =
+  this->playing_area_width_mm =
       cfg::Dimensions::actual_field_playing_area_width_mm / this->actual_to_our_ratio;
-  this->our_field_playing_area_height_mm =
+  this->playing_area_height_mm =
       cfg::Dimensions::actual_field_playing_area_height_mm / this->actual_to_our_ratio;
-  this->our_field_penalty_area_width_mm =
+  this->penalty_area_width_mm =
       cfg::Dimensions::actual_field_penalty_area_width_mm / this->actual_to_our_ratio;
-  this->our_field_penalty_area_height_mm =
+  this->penalty_area_height_mm =
       cfg::Dimensions::actual_field_penalty_area_height_mm / this->actual_to_our_ratio;
-  this->our_field_goal_width_mm =
-      cfg::Dimensions::actual_field_goal_width_mm / this->actual_to_our_ratio;
-  this->our_field_goal_height_mm =
-      cfg::Dimensions::actual_field_goal_height_mm / this->actual_to_our_ratio;
-  this->our_field_line_width_mm =
-      cfg::Dimensions::actual_field_line_width_mm / this->actual_to_our_ratio;
-  this->our_field_outer_width_mm =
-      cfg::Dimensions::outer_field_width_mm / this->actual_to_our_ratio;
-  this->our_field_outer_height_mm =
-      cfg::Dimensions::outer_field_height_mm / this->actual_to_our_ratio;
-
-  // Debug output
-  //   std::cout << "Our Field Central Circle Radius: " << this->our_field_central_circle_radius_mm
-  //             << " mm" << std::endl;
-  //   std::cout << "Our Field Playing Area Width: " << this->our_field_playing_area_width_mm << "
-  //   mm"
-  //             << std::endl;
-  //   std::cout << "Our Field Playing Area Height: " << this->our_field_playing_area_height_mm <<
-  //   " mm"
-  //             << std::endl;
-  //   std::cout << "Our Field Penalty Area Width: " << this->our_field_penalty_area_width_mm << "
-  //   mm"
-  //             << std::endl;
-  //   std::cout << "Our Field Penalty Area Height: " << this->our_field_penalty_area_height_mm <<
-  //   " mm"
-  //             << std::endl;
-  //   std::cout << "Our Field Goal Width: " << this->our_field_goal_width_mm << " mm" <<
-  //   std::endl; std::cout << "Our Field Goal Height: " << this->our_field_goal_height_mm << " mm"
-  //   << std::endl; std::cout << "Our Field Line Width: " << this->our_field_line_width_mm << "
-  //   mm" << std::endl;
+  this->goal_width_mm = cfg::Dimensions::actual_field_goal_width_mm / this->actual_to_our_ratio;
+  this->goal_height_mm = cfg::Dimensions::actual_field_goal_height_mm / this->actual_to_our_ratio;
+  this->line_width_mm = cfg::Dimensions::actual_field_line_width_mm / this->actual_to_our_ratio;
+  this->outer_width_mm = cfg::Dimensions::outer_field_width_mm / this->actual_to_our_ratio;
+  this->outer_height_mm = cfg::Dimensions::outer_field_height_mm / this->actual_to_our_ratio;
 }
 
-void vis::FieldRenderer::SetupBuffers() {
+void vis::SoccerField::SetupBuffers() {
   // Rectangle vertices (field boundary) - convert from mm to pixels
-  float half_width = MmToPixels(this->our_field_playing_area_width_mm / 2);
-  float half_height = MmToPixels(this->our_field_playing_area_height_mm / 2);
+  float half_width = util::MmToPixels(this->playing_area_width_mm / 2);
+  float half_height = util::MmToPixels(this->playing_area_height_mm / 2);
 
   float vertices[] = {
       -half_width, -half_height,  // Bottom left
@@ -145,10 +111,10 @@ void vis::FieldRenderer::SetupBuffers() {
   glBindVertexArray(0);
 }
 
-void vis::FieldRenderer::UpdateProjectionMatrix() {
+void vis::SoccerField::UpdateProjectionMatrix() {
   // Create orthographic projection matrix for 2D rendering
-  float half_width = MmToPixels(this->our_field_width_mm / 2);
-  float half_height = MmToPixels(this->our_field_height_mm / 2);
+  float half_width = util::MmToPixels(this->width_mm / 2);
+  float half_height = util::MmToPixels(this->height_mm / 2);
 
   // Initialize to zero
   for (int i = 0; i < 16; i++) {
@@ -164,15 +130,8 @@ void vis::FieldRenderer::UpdateProjectionMatrix() {
   projectionMatrix[15] = 1.0f;   // Homogeneous coordinate
 }
 
-float vis::FieldRenderer::GetPixelsPerMm() const {
-  // Calculate pixels per mm based on window size and field dimensions
-  return 0.2f;
-}
-
-float vis::FieldRenderer::MmToPixels(float mm_value) const { return mm_value * GetPixelsPerMm(); }
-
-void vis::FieldRenderer::DrawCenterCircle() {
-  float radius = MmToPixels(this->our_field_central_circle_radius_mm);
+void vis::SoccerField::DrawCenterCircle() {
+  float radius = util::MmToPixels(this->central_circle_radius_mm);
 
   // Calculate optimal number of segments based on circle size
   // Rule: approximately 1 segment per 3-4 pixels of circumference for smooth appearance
@@ -214,10 +173,10 @@ void vis::FieldRenderer::DrawCenterCircle() {
   glDeleteBuffers(1, &circleVBO);
 }
 
-void vis::FieldRenderer::DrawOuterRectangle() {
+void vis::SoccerField::DrawOuterRectangle() {
   // Calculate outer field dimensions
-  float half_outer_width = MmToPixels(this->our_field_outer_width_mm / 2);
-  float half_outer_height = MmToPixels(this->our_field_outer_height_mm / 2);
+  float half_outer_width = util::MmToPixels(this->outer_width_mm / 2);
+  float half_outer_height = util::MmToPixels(this->outer_height_mm / 2);
 
   // Outer rectangle vertices
   float outer_vertices[] = {
@@ -251,15 +210,15 @@ void vis::FieldRenderer::DrawOuterRectangle() {
   glDeleteBuffers(1, &outerVBO);
 }
 
-void vis::FieldRenderer::DrawPenaltyAreas() {
+void vis::SoccerField::DrawPenaltyAreas() {
   // Calculate penalty area dimensions
-  float penalty_width = MmToPixels(this->our_field_penalty_area_width_mm);
-  float penalty_height = MmToPixels(this->our_field_penalty_area_height_mm);
+  float penalty_width = util::MmToPixels(this->penalty_area_width_mm);
+  float penalty_height = util::MmToPixels(this->penalty_area_height_mm);
   float half_penalty_width = penalty_width / 2;
   float half_penalty_height = penalty_height / 2;
 
   // Calculate field boundaries for positioning
-  float half_field_width = MmToPixels(this->our_field_playing_area_width_mm / 2);
+  float half_field_width = util::MmToPixels(this->playing_area_width_mm / 2);
 
   // Left penalty area (positioned at left end of field)
   float left_penalty_vertices[] = {
@@ -326,13 +285,13 @@ void vis::FieldRenderer::DrawPenaltyAreas() {
   glDeleteBuffers(1, &rightPenaltyVBO);
 }
 
-void vis::FieldRenderer::DrawGoalAreas() {
+void vis::SoccerField::DrawGoalAreas() {
   // Calculate goal area dimensions in pixels
-  float goal_width = MmToPixels(this->our_field_goal_width_mm);
-  float half_goal_height = MmToPixels(this->our_field_goal_height_mm / 2);
+  float goal_width = util::MmToPixels(this->goal_width_mm);
+  float half_goal_height = util::MmToPixels(this->goal_height_mm / 2);
 
   // Calculate field boundaries for positioning
-  float half_field_width = MmToPixels(this->our_field_playing_area_width_mm / 2);
+  float half_field_width = util::MmToPixels(this->playing_area_width_mm / 2);
 
   // Left goal area (positioned at left end of field)
   float left_goal_vertices[] = {
@@ -397,11 +356,11 @@ void vis::FieldRenderer::DrawGoalAreas() {
   glDeleteBuffers(1, &rightGoalVBO);
 }
 
-void vis::FieldRenderer::SetupProjection() {
-  glViewport(0, 0, MmToPixels(this->our_field_width_mm), MmToPixels(this->our_field_height_mm));
+void vis::SoccerField::SetupProjection() {
+  glViewport(0, 0, util::MmToPixels(this->width_mm), util::MmToPixels(this->height_mm));
 }
 
-void vis::FieldRenderer::Render() {
+void vis::SoccerField::Render() {
   glUseProgram(shaderProgram);
 
   // Set projection matrix
@@ -412,7 +371,7 @@ void vis::FieldRenderer::Render() {
   glUniform3f(colorLoc, 1.0f, 1.0f, 1.0f);
 
   // Set line width using consistent conversion
-  float line_width_pixels = MmToPixels(this->our_field_line_width_mm);
+  float line_width_pixels = util::MmToPixels(this->line_width_mm);
   glLineWidth(line_width_pixels);
 
   // Draw outer rectangle first (black boundary)
@@ -422,8 +381,8 @@ void vis::FieldRenderer::Render() {
   glUniform3f(colorLoc, 1.0f, 1.0f, 1.0f);
 
   // Calculate field dimensions
-  float half_width = MmToPixels(this->our_field_playing_area_width_mm / 2);
-  float half_height = MmToPixels(this->our_field_playing_area_height_mm / 2);
+  float half_width = util::MmToPixels(this->playing_area_width_mm / 2);
+  float half_height = util::MmToPixels(this->playing_area_height_mm / 2);
 
   // Draw the boundary rectangle
   glBindVertexArray(VAO);
@@ -483,19 +442,4 @@ void vis::FieldRenderer::Render() {
 
   // Draw goal areas
   DrawGoalAreas();
-}
-
-vis::FieldRenderer::~FieldRenderer() {
-  if (VAO != 0) {
-    glDeleteVertexArrays(1, &VAO);
-    VAO = 0;
-  }
-  if (VBO != 0) {
-    glDeleteBuffers(1, &VBO);
-    VBO = 0;
-  }
-  if (shaderProgram != 0) {
-    glDeleteProgram(shaderProgram);
-    shaderProgram = 0;
-  }
 }
