@@ -35,6 +35,7 @@ class RobotManager {
   void AddGoal(const Eigen::Vector3d& goal);
   void GoHome();
   void InitializeHome(Eigen::Vector3d pose_home);
+  void SetPath(std::vector<Eigen::Vector3d> path);
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
 

@@ -3,3 +3,6 @@ target_link_libraries(demo_motion_controller PRIVATE state_lib vis_lib cfg_lib r
 
 add_executable(demo_go_home DemoGoHome.cpp)
 target_link_libraries(demo_go_home PRIVATE state_lib vis_lib cfg_lib rob_lib)
+
+add_executable(demo_follow_path DemoFollowPath.cpp)
+target_link_libraries(demo_follow_path PRIVATE state_lib vis_lib cfg_lib rob_lib)

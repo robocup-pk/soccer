@@ -61,8 +61,14 @@ void rob::RobotManager::ControlLogic() {
       TryAssignNextGoal();
       break;
     case RobotState::INTERPOLATING_TO_POINT:
-      std::tie(finished_motion, velocity_fBody_) = motion_controller.InterpolateToPoint(pose_fWorld, pose_destination);
+      std::tie(finished_motion, velocity_fBody_) =
+          motion_controller.InterpolateToPoint(pose_fWorld, pose_destination);
+      std::cout << "I2P: pose: " << pose_fWorld.transpose()
+                << " and destination: " << pose_destination.transpose() << std::endl;
+      std::cout << "v_w: a " << velocity_fBody_.transpose() << std::endl;
       TryAssignNextGoal();
+      std::cout << "v_w: b " << velocity_fBody_.transpose() << std::endl;
+      break;
     case RobotState::MANUAL_DRIVING:
       velocity_fBody_ = velocity_fBody;
       // finished_motion = true;
@@ -86,6 +92,7 @@ void rob::RobotManager::ControlLogic() {
     robot_state = RobotState::IDLE;
   }
 
+  std::cout << "v_w: c " << velocity_fBody_.transpose() << std::endl;
   hardware_manager.SetBodyVelocity(velocity_fBody_);
 }
 
@@ -130,6 +137,12 @@ void rob::RobotManager::SenseLogic() {
   }
 }
 
+void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path) {
+  for (int i = 0; i < path.size(); ++i) {
+    AddGoal(path[i]);
+  }
+}
+
 void rob::RobotManager::SetBodyVelocity(Eigen::Vector3d& velocity_fBody) {
   std::unique_lock<std::mutex> lock(robot_state_mutex);
   this->velocity_fBody = velocity_fBody;
@@ -147,6 +160,7 @@ void rob::RobotManager::AddGoal(const Eigen::Vector3d& goal) {
       return;
     }
     goal_queue.push(goal);
+    std::cout << "[rob::RobotManager::AddGoal] Set Goal: " << goal.transpose() << std::endl;
   }
   std::unique_lock<std::mutex> lock(robot_state_mutex);
   if (robot_state == RobotState::IDLE) {
@@ -154,7 +168,14 @@ void rob::RobotManager::AddGoal(const Eigen::Vector3d& goal) {
     goal_queue.pop();
     std::cout << "[rob::RobotManager::ControlLogic] Drive to point. Goal: "
               << pose_destination.transpose() << std::endl;
+
+    // If RobotManager is running on PC, we can perform motion using interpolation
+    // If on PI, we must use d2p
+#ifdef BUILD_ON_PI
     robot_state = RobotState::DRIVING_TO_POINT;
+#else
+    robot_state = RobotState::INTERPOLATING_TO_POINT;
+#endif
   }
 }
 
@@ -197,6 +218,7 @@ std::string rob::RobotManager::GetRobotState() {
     case RobotState::GOING_HOME:
       return "GOING_HOME";
   }
+  return "ERROR";
 }
 
 bool rob::RobotManager::BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody) {
