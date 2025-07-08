@@ -10,7 +10,7 @@ namespace kin {
 */
 struct RobotDescription {
   static constexpr int num_wheels = 4;
-  static constexpr double wheel_radius_m = 0.0325;  // 0.05;
+  static constexpr double wheel_radius_m = 0.03225;  // 0.05; Wheel Diameter 64.5 mm
 
   // Angles between robot frame x-axis and wheel frame x-axis
   std::vector<double> wheel_angles_rad;
