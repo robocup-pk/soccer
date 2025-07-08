@@ -38,7 +38,6 @@ class GLSimulation {
   GLFWwindow* window;
   std::map<std::string, GameObject> game_objects;
   SpriteRenderer renderer;
-  SoccerField field;
 };
 
 }  // namespace vis

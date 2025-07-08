@@ -10,6 +10,7 @@
 #include "ResourceManager.h"
 #include "GLCallback.h"
 #include "Utils.h"
+#include "SoccerField.h"
 
 bool vis::GLSimulation::RunSimulationStep(std::vector<state::SoccerObject>& soccer_objects,
                                           float dt) {
@@ -38,8 +39,8 @@ void vis::GLSimulation::Render(float dt) {
   glClearColor(0.0f, 0.5f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  // Render field first (background)
-  field.RenderField(this->window);
+  // Render SoccerField::GetInstance() first (background)
+  SoccerField::GetInstance().RenderField(this->window);
 
   for (auto& [name, game_object] : game_objects) {
     game_object.Draw(renderer);
@@ -73,9 +74,9 @@ vis::GLSimulation::GLSimulation() {
 #endif
 
   // Create a window
-  window =
-      glfwCreateWindow(util::MmToPixels(field.width_mm),
-                       util::MmToPixels(field.height_mm), "Soccer Field", nullptr, nullptr);
+  window = glfwCreateWindow(util::MmToPixels(SoccerField::GetInstance().width_mm),
+                            util::MmToPixels(SoccerField::GetInstance().height_mm), "Soccer Field",
+                            nullptr, nullptr);
   if (!window) {
     std::cout << "[vis::GLSimulation::Init] Couldn’t create window\n";
     glfwTerminate();
@@ -95,10 +96,10 @@ vis::GLSimulation::GLSimulation() {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   // Area in GLFW window where OpenGL rendering is performed
-  glViewport(0, 0, util::MmToPixels(field.width_mm),
-             util::MmToPixels(field.height_mm));
-  std::cout << "Window Size: " << util::MmToPixels(field.width_mm) << " "
-            << util::MmToPixels(field.height_mm) << std::endl;
+  glViewport(0, 0, util::MmToPixels(SoccerField::GetInstance().width_mm),
+             util::MmToPixels(SoccerField::GetInstance().height_mm));
+  std::cout << "Window Size: " << util::MmToPixels(SoccerField::GetInstance().width_mm) << " "
+            << util::MmToPixels(SoccerField::GetInstance().height_mm) << std::endl;
   // glViewport(0, 0, cfg::Coordinates::window_width_px,
   // cfg::Coordinates::window_height_px);
   RegisterCallbacks();
@@ -122,7 +123,7 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
                               "field");
   ResourceManager::GetShader("field").Use().SetInteger("field", 0);
 
-  field.SoccerFieldInit();
+  SoccerField::GetInstance().SoccerFieldInit();
 
   // sprite Renderer
   Shader shader = ResourceManager::GetShader("sprite");

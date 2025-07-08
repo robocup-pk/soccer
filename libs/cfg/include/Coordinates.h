@@ -23,7 +23,7 @@ struct Coordinates {
 };
 
 struct SystemConfig {
-  static constexpr int num_robots = 2;
+  static constexpr int num_robots = 1;
 
   // Wall
   static const float wall_velocity_damping_factor;

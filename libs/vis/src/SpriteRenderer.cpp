@@ -8,6 +8,8 @@
 #include "Shader.h"
 #include "Texture.h"
 #include "GLCallback.h"
+#include "Utils.h"
+#include "SoccerField.h"
 
 void vis::SpriteRenderer::Init(Shader& shader) {
   this->shader = shader;
@@ -18,8 +20,10 @@ void vis::SpriteRenderer::Init(Shader& shader) {
   //     glm::ortho(0.0f, static_cast<float>(cfg::Coordinates::window_width_px),
   //                static_cast<float>(cfg::Coordinates::window_height_px), 0.0f, -1.0f, 1.0f);
   // Set up projection matrix with (0,0) at center
-  float half_width = static_cast<float>(cfg::Coordinates::window_width_px) / 2.0f;
-  float half_height = static_cast<float>(cfg::Coordinates::window_height_px) / 2.0f;
+  float half_width =
+      static_cast<float>(util::MmToPixels(SoccerField::GetInstance().width_mm)) / 2.0f;
+  float half_height =
+      static_cast<float>(util::MmToPixels(SoccerField::GetInstance().height_mm)) / 2.0f;
 
   glm::mat4 projection =
       glm::ortho(-half_width, half_width,  // left: -400, right: +400 (for 800px window)
