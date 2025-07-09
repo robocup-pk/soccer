@@ -35,7 +35,7 @@ struct RobotDescription {
     //     -3 * M_PI / 4  // -135° (wheel 4)
     // };
 
-    wheel_angles_rad = {-30 * M_PI / 180, 45, 135 * M_PI / 180, -150 * M_PI / 180};
+    wheel_angles_rad = {-30 * M_PI / 180, 45 * M_PI / 180, 135 * M_PI / 180, -150 * M_PI / 180};
 
     wheel_positions_m = {{0.045601, 0.080113},
                          {-0.064798, 0.065573},
