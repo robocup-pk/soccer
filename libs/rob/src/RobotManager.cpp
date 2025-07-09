@@ -53,7 +53,7 @@ void rob::RobotManager::ControlLogic() {
 
   switch (robot_state) {
     case RobotState::IDLE:
-      velocity_fBody_ = Eigen::Vector3d(0, 0, 0);
+      velocity_fBody_ = velocity_fBody;
       break;
     case RobotState::DRIVING_TO_POINT:
       std::tie(finished_motion, velocity_fBody_) =
@@ -145,7 +145,7 @@ void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path) {
 void rob::RobotManager::SetBodyVelocity(Eigen::Vector3d& velocity_fBody) {
   std::unique_lock<std::mutex> lock(robot_state_mutex);
   this->velocity_fBody = velocity_fBody;
-  robot_state = RobotState::MANUAL_DRIVING;
+  robot_state = RobotState::IDLE;
 }
 
 Eigen::Vector3d rob::RobotManager::GetPoseInWorldFrame() { return pose_fWorld; }
