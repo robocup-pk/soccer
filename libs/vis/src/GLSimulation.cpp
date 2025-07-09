@@ -96,8 +96,14 @@ vis::GLSimulation::GLSimulation() {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   // Area in GLFW window where OpenGL rendering is performed
+#ifdef __APPLE__
+  glViewport(0, 0, 2 * util::MmToPixels(SoccerField::GetInstance().width_mm),
+             2 * util::MmToPixels(SoccerField::GetInstance().height_mm));
+#else
   glViewport(0, 0, util::MmToPixels(SoccerField::GetInstance().width_mm),
              util::MmToPixels(SoccerField::GetInstance().height_mm));
+#endif
+
   std::cout << "Window Size: " << util::MmToPixels(SoccerField::GetInstance().width_mm) << " "
             << util::MmToPixels(SoccerField::GetInstance().height_mm) << std::endl;
   RegisterCallbacks();

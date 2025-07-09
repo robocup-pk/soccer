@@ -12,16 +12,16 @@ struct SystemConfig {
   static const float wall_velocity_damping_factor;
 
   // Ball
-  static const Eigen::Vector3d init_ball_velocity_ftps;
-  static const Eigen::Vector3d init_ball_acceleration_ftpsps;
-  static const float ball_radius_ft;
+  static const Eigen::Vector3d init_ball_velocity_mps;
+  static const Eigen::Vector3d init_ball_acceleration_mpsps;
+  static const float ball_radius_m;
 
   // Robots
-  static const Eigen::Vector2d robot_size_ft;
-  static const float init_robot_speed_ftps;
-  static const float max_robot_speed_ftps;
-  static const Eigen::Vector3d init_robot_velocity_ftps;
-  static const Eigen::Vector3d init_robot_acceleration_ftpsps;
+  static const Eigen::Vector2d robot_size_m;
+  static const float init_robot_speed_mps;
+  static const float max_robot_speed_mps;
+  static const Eigen::Vector3d init_robot_velocity_mps;
+  static const Eigen::Vector3d init_robot_acceleration_mpsps;
 };
 }
 

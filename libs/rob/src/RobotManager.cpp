@@ -103,22 +103,23 @@ void rob::RobotManager::SenseLogic() {
     if (motors_rpms.has_value()) estimator.NewMotorsData(motors_rpms.value());
     if (w_radps.has_value()) estimator.NewGyroData(w_radps.value());
 
+    // TODO: This is not needed right now, but is useful for the physical robot
     // When both motors and gyro fail
-    if (!(motors_rpms.has_value() && w_radps.has_value())) {
-      std::cout
-          << "[rob::RobotManager::SenseLogic] No motors or gyro data. Please check the sensors"
-          << std::endl;
-      num_sensor_readings_failed++;
-      if (num_sensor_readings_failed > 10) {
-        std::cout << "[rob::RobotManager::SenseLogic] Error! Too many sensor readings failed. "
-                     "Shutting down the robot manager"
-                  << std::endl;
-        rob_manager_running.store(false);
-        return;
-      }
-    } else {
-      num_sensor_readings_failed = 0;
-    }
+    // if (!(motors_rpms.has_value() && w_radps.has_value())) {
+    //   std::cout
+    //       << "[rob::RobotManager::SenseLogic] No motors or gyro data. Please check the sensors"
+    //       << std::endl;
+    //   num_sensor_readings_failed++;
+    //   if (num_sensor_readings_failed > 10) {
+    //     std::cout << "[rob::RobotManager::SenseLogic] Error! Too many sensor readings failed. "
+    //                  "Shutting down the robot manager"
+    //               << std::endl;
+    //     rob_manager_running.store(false);
+    //     return;
+    //   }
+    // } else {
+    //   num_sensor_readings_failed = 0;
+    // }
 
     if (pose_from_camera.has_value()) estimator.NewCameraData(pose_from_camera.value());
 

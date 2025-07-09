@@ -43,7 +43,7 @@ class SoccerObject {
   inline Eigen::Vector3d GetVelocity() const { return velocity; }
   inline Eigen::Vector3d GetAcceleration() const { return acceleration; }
   inline Eigen::Vector2d GetSize() const { return size; }
-  inline float GetRadius() const { return radius_mm; }
+  inline float GetRadius() const { return radius_m; }
   inline float GetMass() const { return mass_kg; }
   inline Eigen::Vector3d GetCenterPosition() {
     return Eigen::Vector3d(position[0] + size[0] / 2, position[1] - size[1] / 2, position[2]);
@@ -56,7 +56,7 @@ class SoccerObject {
   Eigen::Vector3d position;      // x, y, angle_rad
 
   Eigen::Vector2d size;
-  float radius_mm;
+  float radius_m;
   float mass_kg;
 
   std::string name;
