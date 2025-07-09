@@ -1,6 +1,7 @@
 #include <iostream>
 #include <tuple>
 
+#include "SystemConfig.h"
 #include "MotionController.h"
 #include "RobotManager.h"
 #include "Utils.h"
@@ -13,7 +14,6 @@ rob::RobotManager::RobotManager() {
   initialized_pose_home = false;
   finished_motion = true;
   num_sensor_readings_failed = 0;
-
   rob_manager_running.store(true);
 
   // TODO: remove when we have the camera system ready
@@ -53,13 +53,20 @@ void rob::RobotManager::ControlLogic() {
 
   switch (robot_state) {
     case RobotState::IDLE:
-      elapsed_time_idle_s = util::GetCurrentTime() - start_time_idle_s;
       velocity_fBody_ = Eigen::Vector3d(0, 0, 0);
       break;
     case RobotState::DRIVING_TO_POINT:
       std::tie(finished_motion, velocity_fBody_) =
           motion_controller.DriveToPoint(pose_fWorld, pose_destination);
       TryAssignNextGoal();
+      break;
+    case RobotState::INTERPOLATING_TO_POINT:
+      std::tie(finished_motion, velocity_fBody_) =
+          motion_controller.InterpolateToPoint(pose_fWorld, pose_destination);
+      std::cout << "Pose: " << std::fixed << std::setprecision(2) << pose_fWorld.transpose()
+                << " and destination: " << pose_destination.transpose() << std::endl;
+      TryAssignNextGoal();
+      std::cout << "v_w: " << velocity_fBody_.transpose() << std::endl << std::endl;
       break;
     case RobotState::MANUAL_DRIVING:
       velocity_fBody_ = velocity_fBody;
@@ -78,8 +85,8 @@ void rob::RobotManager::ControlLogic() {
 
   if (!BodyVelocityIsInLimits(velocity_fBody_)) {
     std::cout << "[rob::RobotManager::ControlLogic] Velocity is too high. Stopping the robot and "
-                 "going to IDLE mode"
-              << std::endl;
+                 "going to IDLE mode. velocity_fBody: "
+              << velocity_fBody_.transpose() << std::endl;
     velocity_fBody_ = Eigen::Vector3d::Zero();
     robot_state = RobotState::IDLE;
   }
@@ -96,22 +103,23 @@ void rob::RobotManager::SenseLogic() {
     if (motors_rpms.has_value()) estimator.NewMotorsData(motors_rpms.value());
     if (w_radps.has_value()) estimator.NewGyroData(w_radps.value());
 
+    // TODO: This is not needed right now, but is useful for the physical robot
     // When both motors and gyro fail
-    if (!(motors_rpms.has_value() && w_radps.has_value())) {
-      std::cout
-          << "[rob::RobotManager::SenseLogic] No motors or gyro data. Please check the sensors"
-          << std::endl;
-      num_sensor_readings_failed++;
-      if (num_sensor_readings_failed > 10) {
-        std::cout << "[rob::RobotManager::SenseLogic] Error! Too many sensor readings failed. "
-                     "Shutting down the robot manager"
-                  << std::endl;
-        rob_manager_running.store(false);
-        return;
-      }
-    } else {
-      num_sensor_readings_failed = 0;
-    }
+    // if (!(motors_rpms.has_value() && w_radps.has_value())) {
+    //   std::cout
+    //       << "[rob::RobotManager::SenseLogic] No motors or gyro data. Please check the sensors"
+    //       << std::endl;
+    //   num_sensor_readings_failed++;
+    //   if (num_sensor_readings_failed > 10) {
+    //     std::cout << "[rob::RobotManager::SenseLogic] Error! Too many sensor readings failed. "
+    //                  "Shutting down the robot manager"
+    //               << std::endl;
+    //     rob_manager_running.store(false);
+    //     return;
+    //   }
+    // } else {
+    //   num_sensor_readings_failed = 0;
+    // }
 
     if (pose_from_camera.has_value()) estimator.NewCameraData(pose_from_camera.value());
 
@@ -125,6 +133,12 @@ void rob::RobotManager::SenseLogic() {
   if (!initialized_pose_home && estimator.initialized_pose) {
     pose_home_fWorld = estimator.GetPoseInit();
     initialized_pose_home = true;
+  }
+}
+
+void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path) {
+  for (int i = 0; i < path.size(); ++i) {
+    AddGoal(path[i]);
   }
 }
 
@@ -145,6 +159,7 @@ void rob::RobotManager::AddGoal(const Eigen::Vector3d& goal) {
       return;
     }
     goal_queue.push(goal);
+    std::cout << "[rob::RobotManager::AddGoal] Set Goal: " << goal.transpose() << std::endl;
   }
   std::unique_lock<std::mutex> lock(robot_state_mutex);
   if (robot_state == RobotState::IDLE) {
@@ -152,7 +167,14 @@ void rob::RobotManager::AddGoal(const Eigen::Vector3d& goal) {
     goal_queue.pop();
     std::cout << "[rob::RobotManager::ControlLogic] Drive to point. Goal: "
               << pose_destination.transpose() << std::endl;
+
+    // If RobotManager is running on PC, we can perform motion using interpolation
+    // If on PI, we must use d2p
+#ifdef BUILD_ON_PI
     robot_state = RobotState::DRIVING_TO_POINT;
+#else
+    robot_state = RobotState::INTERPOLATING_TO_POINT;
+#endif
   }
 }
 
@@ -194,13 +216,15 @@ std::string rob::RobotManager::GetRobotState() {
       return "AUTONOMOUS_DRIVING";
     case RobotState::GOING_HOME:
       return "GOING_HOME";
+    case RobotState::INTERPOLATING_TO_POINT:
+      return "INTERPOLATING_TO_POINT";
   }
+  return "ERROR";
 }
 
 bool rob::RobotManager::BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody) {
-  if (velocity_fBody.norm() > 1.0) return false;
   for (int i = 0; i < 3; i++) {
-    if (std::fabs(velocity_fBody[i]) > 1.0) {
+    if (std::fabs(velocity_fBody[i]) > cfg::SystemConfig::max_velocity_fBody[i]) {
       return false;
     }
   }

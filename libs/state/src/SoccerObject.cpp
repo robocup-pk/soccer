@@ -1,6 +1,7 @@
 #include <iostream>
 #include "Coordinates.h"
 #include "SoccerObject.h"
+#include "SystemConfig.h"
 
 void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) {
   // soccer_objects.push_back(state::SoccerObject(
@@ -14,11 +15,11 @@ void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) 
   // Robots
   for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
     std::string name = "robot" + std::to_string(i);
-    Eigen::Vector3d robot_position_mm(0, 0, 0);
+    Eigen::Vector3d robot_position_m(0, 0, 0);
     soccer_objects.push_back(
-        state::SoccerObject(name, robot_position_mm, cfg::SystemConfig::robot_size_mm,
-                            cfg::SystemConfig::init_robot_velocity_mmps,
-                            cfg::SystemConfig::init_robot_acceleration_mmpsps, 10));
+        state::SoccerObject(name, robot_position_m, cfg::SystemConfig::robot_size_m,
+                            cfg::SystemConfig::init_robot_velocity_mps,
+                            cfg::SystemConfig::init_robot_acceleration_mpsps, 10));
   }
 }
 

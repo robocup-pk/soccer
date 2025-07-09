@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 
+#include "SystemConfig.h"
 #include "Kinematics.h"
 #include "Coordinates.h"
 #include "SoccerField.h"

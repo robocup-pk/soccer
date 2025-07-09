@@ -76,8 +76,8 @@ int main(int argc, char* argv[]) {
   while (1) {
     float dt = util::CalculateDt();
     ProcessInput(gl_window, robot_manager);
-    // kin::UpdateKinematics(soccer_objects, dt);
-    // kin::CheckAndResolveCollisions(soccer_objects);
+    kin::UpdateKinematics(soccer_objects, dt);
+    kin::CheckAndResolveCollisions(soccer_objects);
 
     soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();
 

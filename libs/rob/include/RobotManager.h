@@ -12,7 +12,14 @@
 
 namespace rob {
 
-enum class RobotState { IDLE, DRIVING_TO_POINT, MANUAL_DRIVING, AUTONOMOUS_DRIVING, GOING_HOME };
+enum class RobotState {
+  IDLE,
+  DRIVING_TO_POINT,
+  INTERPOLATING_TO_POINT,
+  MANUAL_DRIVING,
+  AUTONOMOUS_DRIVING,
+  GOING_HOME
+};
 
 class RobotManager {
  public:
@@ -28,6 +35,7 @@ class RobotManager {
   void AddGoal(const Eigen::Vector3d& goal);
   void GoHome();
   void InitializeHome(Eigen::Vector3d pose_home);
+  void SetPath(std::vector<Eigen::Vector3d> path);
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
 

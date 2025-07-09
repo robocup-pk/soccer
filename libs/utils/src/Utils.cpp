@@ -13,7 +13,7 @@
 
 float util::PixelsPerMm() {
   // Calculate pixels per mm based on window size and field dimensions
-  return cfg::Coordinates::px_per_mm;
+  return cfg::Coordinates::px_per_m * 0.001;
 }
 
 float util::MmToPixels(float mm_value) { return mm_value * PixelsPerMm(); }

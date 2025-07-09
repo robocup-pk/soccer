@@ -35,11 +35,11 @@ std::optional<Eigen::Vector4d> hw::HardwareManager::NewMotorsRpms() {
 }
 
 std::optional<double> hw::HardwareManager::NewGyroAngularVelocity() {
-  double w_radps = gyro_driver->GetAngularVelocityRadps();
-  if (gyro_driver->NewDataAvailable()) {
-    gyro_driver->new_data_available = false;
-    return w_radps;
-  }
+  // double w_radps = gyro_driver->GetAngularVelocityRadps();
+  // if (gyro_driver->NewDataAvailable()) {
+  //   gyro_driver->new_data_available = false;
+  //   return w_radps;
+  // }
   return std::nullopt;
 }
 

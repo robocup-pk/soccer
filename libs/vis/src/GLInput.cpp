@@ -1,10 +1,11 @@
 #include "GLCallback.h"
 #include "GLSimulation.h"
+#include "SystemConfig.h"
 
 void vis::GLSimulation::ProcessInput(float dt) {
   // Calculate movement speed (with acceleration for held keys)
   static float speed_multiplier = 1.0f;
-  static float move_speed = cfg::SystemConfig::init_robot_speed_mmps * cfg::Coordinates::px_per_mm;
+  static float move_speed = cfg::SystemConfig::init_robot_speed_mps * cfg::Coordinates::px_per_m;
 
   // Check if any movement keys are pressed
   bool any_movement_key = GLCallback::keys[GLFW_KEY_W] || GLCallback::keys[GLFW_KEY_S] ||
@@ -14,10 +15,10 @@ void vis::GLSimulation::ProcessInput(float dt) {
 
   if (any_movement_key) {
     // Increase speed for held keys (acceleration)
-    move_speed = std::min(cfg::SystemConfig::max_robot_speed_mmps * cfg::Coordinates::px_per_mm,
+    move_speed = std::min(cfg::SystemConfig::max_robot_speed_mps * cfg::Coordinates::px_per_m,
                           move_speed + 10);
   } else {
-    move_speed = cfg::SystemConfig::init_robot_speed_mmps * cfg::Coordinates::px_per_mm;
+    move_speed = cfg::SystemConfig::init_robot_speed_mps * cfg::Coordinates::px_per_m;
   }
 
   if (game_objects.find("robot0") != game_objects.end()) {
