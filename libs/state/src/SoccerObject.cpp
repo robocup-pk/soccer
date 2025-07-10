@@ -6,11 +6,10 @@
 void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) {
   // soccer_objects.push_back(state::SoccerObject(
   //     "ball",
-  //     Eigen::Vector3d(-cfg::SystemConfig::ball_radius_mm, cfg::SystemConfig::ball_radius_mm, 0),
-  //     Eigen::Vector2d(cfg::SystemConfig::ball_radius_mm * 2,
-  //                     cfg::SystemConfig::ball_radius_mm * 2),
-  //     cfg::SystemConfig::init_ball_velocity_mmps,
-  //     cfg::SystemConfig::init_ball_acceleration_mmpsps, 1));
+  //     Eigen::Vector3d(-cfg::SystemConfig::ball_radius_m, cfg::SystemConfig::ball_radius_m, 0),
+  //     Eigen::Vector2d(cfg::SystemConfig::ball_radius_m * 2, cfg::SystemConfig::ball_radius_m *
+  //     2), cfg::SystemConfig::init_ball_velocity_mps,
+  //     cfg::SystemConfig::init_ball_acceleration_mpsps, 1));
 
   // Robots
   for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
@@ -27,8 +26,8 @@ bool state::SoccerObject::IsPointInFrontSector(Eigen::Vector2d point) {
   Eigen::Vector3d center = GetCenterPosition();
   Eigen::Vector2d robot_center(center.x(), center.y());
 
-  // Calculate front direction and flip Y to match graphics coordinate system
-  float rotation_rad = (position[2] - M_PI / 2.0f);
+  // Calculate front direction using same coordinate system as ball attachment
+  float rotation_rad = (position[2]);
   Eigen::Vector2d front_dir(cos(rotation_rad), -sin(rotation_rad));
 
   Eigen::Vector2d to_point = point - robot_center;
