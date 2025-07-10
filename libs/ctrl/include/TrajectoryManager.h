@@ -12,8 +12,12 @@ typedef std::vector<std::unique_ptr<ctrl::Trajectory3D>> Trajectories;
 class TrajectoryManager {
  public:
   bool CreateTrajectoriesFromPath(std::vector<Eigen::Vector3d> path);
-  void MergeNewTrajectories(Trajectories new_trajectories);
+  void MergeNewTrajectories(Trajectories&& new_trajectories);
   Eigen::Vector3d GetVelocityAtT(double time_s);
+
+  inline double GetTFinish() { return t_finish_s; };
+
+  bool Update();
 
   // Helpers
   void Print();

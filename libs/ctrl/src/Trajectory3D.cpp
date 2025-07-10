@@ -64,18 +64,22 @@ std::pair<bool, std::optional<Eigen::Vector3d>> ctrl::Trajectory3D::IsFeasible(
 }
 
 Eigen::Vector3d ctrl::Trajectory3D::VelocityAtT(double t_sec) {
-  std::cout << "baaa: t_sec: " << t_sec << " " << t_start_s;// << " " << t_finish_s << std::endl;
+  std::cout << "[ctrl::Trajectory3D::VelocityAtT] t_sec: " << t_sec << ". t_start: " << t_start_s
+            << ". t_finish: " << t_finish_s << ". total_time_s: " << total_time_s
+            << ". t_acc: " << t_acc_s.transpose() << std::endl;
   if (t_sec < t_start_s || t_sec > t_finish_s) {
-    std::cout << "[ctrl::Trajectory3D::VelocityAtT] Trajectory is from " << t_start_s << "s to "
-              << t_finish_s << "s. Fails at given t: " << t_sec << "s. " << std::endl;
     return Eigen::Vector3d(0, 0, 0);
   }
-std::cout << "b" << std::endl;
+
+  t_sec -= t_start_s;
+
   Eigen::Vector3d velocity_fBody_mps;
   for (int i = 0; i < 3; ++i) {
     double sign = (v_max[i] >= 0.0) ? 1.0 : -1.0;
     if (t_sec < t_acc_s[i]) {
       velocity_fBody_mps[i] = sign * cfg::SystemConfig::max_acceleration_mpsps_radpsps[i] * t_sec;
+      std::cout << "[ctrl::Trajectory3D::VelocityAtT] i = " << i
+                << ". v = " << velocity_fBody_mps[i] << std::endl;
     } else if (t_sec < (total_time_s - t_acc_s[i])) {
       velocity_fBody_mps[i] = v_max[i];
     } else {

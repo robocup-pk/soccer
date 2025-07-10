@@ -79,13 +79,10 @@ void rob::RobotManager::ControlLogic() {
           motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
       break;
     case RobotState::AUTONOMOUS_DRIVING:
-      trajectory_manager.Update();
-      finished_motion = false;
-      velocity_fBody_ = trajectory_manager.GetVelocityAtT(1);
+      finished_motion = trajectory_manager.Update();
+      velocity_fBody_ = trajectory_manager.GetVelocityAtT(0);
       std::cout << "[rob::RobotManager::ControlLogic] v = " << velocity_fBody_.transpose()
                 << std::endl;
-      // std::tie(finished_motion, velocity_fBody_) = trajectory_manager.GetVelocityAtT();
-      // TODO
       break;
   }
 

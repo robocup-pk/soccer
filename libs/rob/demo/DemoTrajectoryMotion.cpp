@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
   path.push_back(Eigen::Vector3d(-1, 0, 0));
   path.push_back(Eigen::Vector3d(0, 0, 0));
   path.push_back(Eigen::Vector3d(1, 0, 0));
-  path.push_back(Eigen::Vector3d(2, 0, 0));
+  path.push_back(Eigen::Vector3d(0, 0, 0));
 
   rob::RobotManager robot_manager;
   robot_manager.SetPath(path);
