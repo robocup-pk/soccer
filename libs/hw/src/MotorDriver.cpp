@@ -1,134 +1,108 @@
+#include <iostream>
+#include <thread>
+#include <chrono>
+
+#include <libserial/SerialPort.h>
+
+#include "RobotModel.h"
+#include "Utils.h"
 #include "MotorDriver.h"
 
-namespace hw {
-
-MotorDriver::MotorDriver(size_t numMotors) : num_motors_(numMotors), running_(false) {
-  desired_speeds_.resize(num_motors_, 0);
-  sensed_speeds_.resize(num_motors_, 0);  // Add this line to initialize sensed_speeds_
+hw::MotorDriver::MotorDriver(std::shared_ptr<LibSerial::SerialPort> shared_serial_port)
+    : shared_serial_port(shared_serial_port) {
+  std::cout << "[hw::MotorDriver::MotorDriver]" << std::endl;
+  motors_rpms << 0, 0, 0, 0;
+  motors = std::vector<hw::MotorModel>(kin::RobotDescription::num_wheels);
 }
 
-MotorDriver::~MotorDriver() { stop(); }
+void hw::MotorDriver::SendWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
+  if (motor_type == MotorType::MODEL) {
+    for (int i = 0; i < kin::RobotDescription::num_wheels; ++i) {
+      motors[i].SetWheelSpeedRpm(wheel_speeds_rpm[i]);
+    }
+    // std::cout << "[hw::MotorDriver::SendWheelSpeedsRpm] MODEL RPMS: "
+    //           << wheel_speeds_rpm.transpose() << std::endl;
 
-void MotorDriver::init(const std::string& port) {
-  try {
-    serial_port_.Open(port);
-    serial_port_.SetBaudRate(LibSerial::BaudRate::BAUD_115200);
-    serial_port_.SetCharacterSize(LibSerial::CharacterSize::CHAR_SIZE_8);
-    serial_port_.SetParity(LibSerial::Parity::PARITY_NONE);
-    serial_port_.SetStopBits(LibSerial::StopBits::STOP_BITS_1);
-    serial_port_.SetFlowControl(LibSerial::FlowControl::FLOW_CONTROL_NONE);
-  } catch (const LibSerial::OpenFailed&) {
-    std::cerr << "Failed to open serial port: " << port << std::endl;
-    throw;
-  }
-}
-
-void MotorDriver::setSpeeds(const std::vector<int>& speeds) {
-  if (speeds.size() != num_motors_) {
-    std::cerr << "Speed vector size mismatch. Expected: " << num_motors_
-              << ", Got: " << speeds.size() << std::endl;
     return;
   }
 
-  std::unique_lock<std::mutex> lock(speed_mutex_);
-  desired_speeds_ = speeds;
+  std::vector<int32_t> speeds_rpm = {static_cast<int32_t>(std::round(wheel_speeds_rpm[0])),
+                                     static_cast<int32_t>(std::round(wheel_speeds_rpm[1])),
+                                     static_cast<int32_t>(std::round(wheel_speeds_rpm[2])),
+                                     static_cast<int32_t>(std::round(wheel_speeds_rpm[3]))};
+
+  std::vector<uint8_t> buffer(17);
+  buffer[0] = 'x';  // header
+  // STM and Raspberry pi both are little-endian
+  std::memcpy(&buffer[1], &speeds_rpm[0], sizeof(int32_t));
+  std::memcpy(&buffer[5], &speeds_rpm[1], sizeof(int32_t));
+  std::memcpy(&buffer[9], &speeds_rpm[2], sizeof(int32_t));
+  std::memcpy(&buffer[13], &speeds_rpm[3], sizeof(int32_t));
+
+  std::cout << "[hw::MotorDriver::SendWheelSpeedsRpm] " << speeds_rpm[0] << " " << speeds_rpm[1]
+            << " " << speeds_rpm[2] << " " << speeds_rpm[3] << std::endl;
+
+  std::unique_lock<std::mutex> lock(shared_serial_port_mutex); // 5 ms
+  shared_serial_port->FlushOutputBuffer();
+  util::WaitMs(2);
+  shared_serial_port->Write(buffer);
+  util::WaitMs(2);
+  shared_serial_port->DrainWriteBuffer();
+  util::WaitMs(1);
 }
 
-void MotorDriver::start() {
-  running_ = true;
-  control_thread_ = std::thread(&MotorDriver::controlLoop, this);
-  // sense_thread_ = std::thread(&MotorDriver::senseLoop, this);
-}
-
-void MotorDriver::stop() {
-  running_ = false;
-
-  if (control_thread_.joinable()) {
-    control_thread_.join();
-  }
-
-  if (sense_thread_.joinable()) {
-    sense_thread_.join();
-  }
-
-  if (serial_port_.IsOpen()) {
-    serial_port_.Close();
-  }
-}
-
-void MotorDriver::controlLoop() {
-  std::vector<int> current_speeds;
-  while (running_) {
-    {
-      std::unique_lock<std::mutex> lock(speed_mutex_);
-      current_speeds = desired_speeds_;
+Eigen::Vector4d hw::MotorDriver::GetMotorsRpms() {
+  if (motor_type == MotorType::MODEL) {
+    for (int i = 0; i < kin::RobotDescription::num_wheels; ++i) {
+      motors_rpms[i] = motors[i].GetRpm();
     }
+    new_data_available = true;
+    // std::cout << "[hw::MotorDriver::GetMotorsRpms] MODEL RPMS: " << motors_rpms.transpose()
+    //           << std::endl;
+    return motors_rpms;
+  }
 
-    std::string command;
-    // Send motor commands via serial
-    for (size_t i = 0; i < num_motors_; ++i) {
-      std::ostringstream oss;
-      int speed = current_speeds[i];
-      bool dir = (speed >= 0);
-      speed = std::abs(speed);
-      oss << std::setfill('0') << std::setw(3) << speed;
-      command += oss.str();
-    }
-    command += "\n";  // Fix: Change "/n" to "\n"
-    try {
-      std::cout << "Sent: " << command << std::endl;
-      serial_port_.Write(command);
-    } catch (const std::exception& e) {
-      std::cerr << "Failed to write to serial port: " << e.what() << std::endl;
-    }
+  // Get encoder ticks using serial
+  // First Byte
+  
+  std::vector<int> rpm(4);
+  std::vector<uint8_t> buffer(16);
+  
+  {
+    // Check if it's header
+    uint8_t header;
+    std::unique_lock<std::mutex> lock(shared_serial_port_mutex);
+    if (shared_serial_port->GetNumberOfBytesAvailable() < 1) return Eigen::Vector4d();
+    shared_serial_port->ReadByte(header, 20);
+    if (header != 'x') return Eigen::Vector4d();
+    util::WaitMs(1);
+    shared_serial_port->Read(buffer, 16, 20);
+    util::WaitMs(1);
+    shared_serial_port->FlushInputBuffer();
+  }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  // Extract the rpms
+  for (int i = 0; i < 4; ++i) {
+    std::memcpy(&rpm[i], &buffer[i * 4], sizeof(int32_t));
+  }
+
+  if (VerifyRpms(rpm)) {
+    new_data_available = true;
+    std::cout << "[hw::MotorDriver::GetMotorRpms] " << rpm[0] << " " << rpm[1] << " " << rpm[2]
+              << " " << rpm[3] << std::endl;
+    return Eigen::Vector4d(rpm[0], rpm[1], rpm[2], rpm[3]);
+  } else {
+    std::cout << "[hw::MotorDriver::GetMotorRpms] INVALID: " << rpm[0] << " " << rpm[1] << " "
+              << rpm[2] << " " << rpm[3] << std::endl;
+    return Eigen::Vector4d(0, 0, 0, 0);
   }
 }
 
-void MotorDriver::senseLoop() {
-  while (running_) {
-    // Read sensor data from serial port
-    try {
-      if (serial_port_.IsDataAvailable()) {
-        std::string data;
-        serial_port_.ReadLine(data);
+bool hw::MotorDriver::NewDataAvailable() { return new_data_available; }
 
-        // Remove any trailing newline/carriage return
-        data.erase(data.find_last_not_of(" \n\r\t") + 1);
-
-        // Parse the data string (assuming same format: continuous 3-digit speeds)
-        if (data.length() == num_motors_ * 3) {
-          std::vector<int> parsed_speeds;
-          parsed_speeds.reserve(num_motors_);
-
-          for (size_t i = 0; i < num_motors_; ++i) {
-            size_t start_pos = i * 3;
-            std::string speed_str = data.substr(start_pos, 3);
-
-            try {
-              int speed = std::stoi(speed_str);
-              parsed_speeds.push_back(speed);
-            } catch (const std::exception&) {
-              // Invalid number, skip this reading
-              parsed_speeds.clear();
-              break;
-            }
-          }
-
-          // If parsing was successful, update sensed_speeds_
-          if (parsed_speeds.size() == num_motors_) {
-            std::lock_guard<std::mutex> lock(speed_mutex_);
-            sensed_speeds_ = parsed_speeds;
-          }
-        }
-      }
-    } catch (const std::exception& e) {
-      std::cerr << "Failed to read from serial port: " << e.what() << std::endl;
-    }
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+bool hw::MotorDriver::VerifyRpms(std::vector<int> rpms) {
+  for (int& rpm : rpms) {
+    if (std::abs(rpm) > 400) return false;
   }
+  return true;
 }
-
-}  // namespace hw
