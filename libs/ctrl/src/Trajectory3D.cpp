@@ -64,22 +64,18 @@ std::pair<bool, std::optional<Eigen::Vector3d>> ctrl::Trajectory3D::IsFeasible(
 }
 
 Eigen::Vector3d ctrl::Trajectory3D::VelocityAtT(double t_sec) {
-  std::cout << "[ctrl::Trajectory3D::VelocityAtT] t_sec: " << t_sec << ". t_start: " << t_start_s
-            << ". t_finish: " << t_finish_s << ". total_time_s: " << total_time_s
-            << ". t_acc: " << t_acc_s.transpose() << std::endl;
+  // t_sec is global
   if (t_sec < t_start_s || t_sec > t_finish_s) {
     return Eigen::Vector3d(0, 0, 0);
   }
 
   t_sec -= t_start_s;
-
+  // t_sec is from 0 to total_time_s
   Eigen::Vector3d velocity_fBody_mps;
   for (int i = 0; i < 3; ++i) {
     double sign = (v_max[i] >= 0.0) ? 1.0 : -1.0;
     if (t_sec < t_acc_s[i]) {
       velocity_fBody_mps[i] = sign * cfg::SystemConfig::max_acceleration_mpsps_radpsps[i] * t_sec;
-      std::cout << "[ctrl::Trajectory3D::VelocityAtT] i = " << i
-                << ". v = " << velocity_fBody_mps[i] << std::endl;
     } else if (t_sec < (total_time_s - t_acc_s[i])) {
       velocity_fBody_mps[i] = v_max[i];
     } else {
@@ -95,7 +91,6 @@ Eigen::Vector3d ctrl::Trajectory3D::VelocityAtT(double t_sec) {
 void ctrl::Trajectory3D::Print() {
   std::cout << "Trajectory Info\n";
   std::cout << "Pose: " << pose_start.transpose() << " -> " << pose_end.transpose() << std::endl;
-  std::cout << "v_max: " << v_max.transpose() << std::endl;
   std::cout << "time: " << t_start_s << " -> " << t_finish_s << "\n\n";
 }
 

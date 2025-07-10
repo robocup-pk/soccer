@@ -17,7 +17,7 @@ class TrajectoryManager {
 
   inline double GetTFinish() { return t_finish_s; };
 
-  bool Update();
+  bool Update(double t_sec);
 
   // Helpers
   void Print();
@@ -26,6 +26,7 @@ class TrajectoryManager {
 
  private:
   double t_finish_s;
+  int current_trajectory_idx;
   std::unique_ptr<ctrl::Trajectory3D> current_trajectory;
 };
 

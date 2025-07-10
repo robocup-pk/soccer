@@ -25,28 +25,36 @@ rob::RobotManager::RobotManager() {
   control_thread = std::thread(&RobotManager::ControlLoop, this);
 }
 
-void rob::RobotManager::SenseLoop() {
-  auto time_step = std::chrono::steady_clock::now();
-  int next_time_step_ms = 1000 / sense_loop_frequency_hz;
+// void rob::RobotManager::SenseLoop() {
+//   auto time_step = std::chrono::steady_clock::now();
+//   int next_time_step_ms = 1000 / sense_loop_frequency_hz;
 
+//   while (rob_manager_running.load()) {
+//     SenseLogic();
+//     time_step += std::chrono::milliseconds(next_time_step_ms);
+//     std::this_thread::sleep_until(time_step);
+//   }
+// }
+void rob::RobotManager::SenseLoop() {
+  const std::chrono::microseconds time_step_us(1000000 / (int)sense_loop_frequency_hz);
+  auto next_time = std::chrono::steady_clock::now();
   while (rob_manager_running.load()) {
+    next_time += time_step_us;
     SenseLogic();
-    time_step += std::chrono::milliseconds(next_time_step_ms);
-    std::this_thread::sleep_until(time_step);
+    std::this_thread::sleep_until(next_time);
   }
 }
 
 void rob::RobotManager::ControlLoop() {
-  auto time_step = std::chrono::steady_clock::now();
-  int next_time_step_ms = 1000 / control_loop_frequency_hz;
-
+  const std::chrono::microseconds time_step_us(1000000 / (int)control_loop_frequency_hz);
+  auto next_time = std::chrono::steady_clock::now();
   while (rob_manager_running.load()) {
+    next_time += time_step_us;
     {
       std::unique_lock<std::mutex> lock(robot_state_mutex);
       ControlLogic();
     }
-    time_step += std::chrono::milliseconds(next_time_step_ms);
-    std::this_thread::sleep_until(time_step);
+    std::this_thread::sleep_until(next_time);
   }
 }
 
@@ -65,10 +73,7 @@ void rob::RobotManager::ControlLogic() {
     case RobotState::INTERPOLATING_TO_POINT:
       std::tie(finished_motion, velocity_fBody_) =
           motion_controller.InterpolateToPoint(pose_fWorld, pose_destination);
-      std::cout << "Pose: " << std::fixed << std::setprecision(2) << pose_fWorld.transpose()
-                << " and destination: " << pose_destination.transpose() << std::endl;
       TryAssignNextGoal();
-      std::cout << "v_w: " << velocity_fBody_.transpose() << std::endl << std::endl;
       break;
     case RobotState::MANUAL_DRIVING:
       velocity_fBody_ = velocity_fBody;
@@ -79,10 +84,9 @@ void rob::RobotManager::ControlLogic() {
           motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
       break;
     case RobotState::AUTONOMOUS_DRIVING:
-      finished_motion = trajectory_manager.Update();
-      velocity_fBody_ = trajectory_manager.GetVelocityAtT(0);
-      std::cout << "[rob::RobotManager::ControlLogic] v = " << velocity_fBody_.transpose()
-                << std::endl;
+      double t_sec = util::GetCurrentTime();
+      finished_motion = trajectory_manager.Update(t_sec);
+      velocity_fBody_ = trajectory_manager.GetVelocityAtT(t_sec);
       break;
   }
 
@@ -147,6 +151,7 @@ void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path) {
   // }
   bool is_path_valid = trajectory_manager.CreateTrajectoriesFromPath(path);
   if (is_path_valid) {
+    std::unique_lock<std::mutex> lock(robot_state_mutex);
     robot_state = RobotState::AUTONOMOUS_DRIVING;
   } else {
     std::cout << "[rob::RobotManager::SetPath] Give path is invalid. Failed to create "
@@ -156,7 +161,6 @@ void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path) {
     }
     std::cout << path[path.size() - 1].transpose() << std::endl;
   }
-  trajectory_manager.Print();
 }
 
 void rob::RobotManager::SetBodyVelocity(Eigen::Vector3d& velocity_fBody) {

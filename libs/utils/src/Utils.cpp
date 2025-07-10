@@ -30,10 +30,9 @@ std::string util::ReadFile(const std::string& path) {
 std::string util::GetExecutableDir() { return CMAKE_BUILD_DIR; }
 
 double util::GetCurrentTime() {
-  return std::chrono::duration_cast<std::chrono::milliseconds>(
-             std::chrono::high_resolution_clock::now().time_since_epoch())
-             .count() /
-         1000.0;
+  static const auto start = std::chrono::steady_clock::now();
+  auto now = std::chrono::steady_clock::now();
+  return std::chrono::duration<double>(now - start).count();
 }
 
 Eigen::Vector3d util::RotateAboutZ(Eigen::Vector3d pose, double angle_rad) {

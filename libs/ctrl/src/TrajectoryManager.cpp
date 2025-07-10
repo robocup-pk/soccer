@@ -10,8 +10,8 @@
 bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vector3d> path) {
   if (path.size() <= 1) return false;
   Trajectories trajectories;
-  double t_start_s = 0;
-  double t_end_s = 0;
+  double t_start_s = util::GetCurrentTime();
+  double t_end_s = util::GetCurrentTime();
   t_finish_s = 0;
   for (int path_index = 1; path_index < path.size(); ++path_index) {
     Eigen::Vector3d pose_start = path[path_index - 1];
@@ -42,18 +42,14 @@ void ctrl::TrajectoryManager::MergeNewTrajectories(Trajectories&& new_trajectori
   // TODO:
 }
 
-Eigen::Vector3d ctrl::TrajectoryManager::GetVelocityAtT(double time_s) {
-  // TODO: remove this
-  static double start_time = util::GetCurrentTime();
-  double current_time = util::GetCurrentTime();
-  double t = (current_time - start_time);// - current_trajectory->GetTStart();
-  if (t > t_finish_s) {
+Eigen::Vector3d ctrl::TrajectoryManager::GetVelocityAtT(double t_sec) {
+  if (t_sec > t_finish_s) {
     std::cout << "[ctrl::TrajectoryManager::GetVelocityAtT] Finished active trajectories. t = "
-              << t << std::endl;
+              << t_sec << std::endl;
     return Eigen::Vector3d::Zero();
   }
 
-  return current_trajectory->VelocityAtT(t);
+  return current_trajectory->VelocityAtT(t_sec);
 }
 
 void ctrl::TrajectoryManager::Print() {
@@ -63,13 +59,8 @@ void ctrl::TrajectoryManager::Print() {
   }
 }
 
-bool ctrl::TrajectoryManager::Update() {
-  static double start_time = util::GetCurrentTime();
-  double current_time = util::GetCurrentTime();
-  double t_s = current_time - start_time;
-  std::cout << "\n[ctrl::TrajectoryManager::Update] t = " << t_s << std::endl;
-
-  if (t_s > t_finish_s) {
+bool ctrl::TrajectoryManager::Update(double t_sec) {
+  if (t_sec > t_finish_s) {
     std::cout << "[ctrl::TrajectoryManager::Update] Finished motion. t_finish_s = " << t_finish_s
               << std::endl;
     current_trajectory = nullptr;
@@ -77,12 +68,22 @@ bool ctrl::TrajectoryManager::Update() {
   }
 
   // Update the current trajectory
-  for (int i = 0; i < active_trajectories.size(); ++i) {
-    if (t_s >= active_trajectories[i]->GetTStart() && t_s < active_trajectories[i]->GetTFinish()) {
-      current_trajectory = std::make_unique<ctrl::Trajectory3D>(*active_trajectories[i]);
-      std::cout << "[ctrl::TrajectoryManager::Update] Current trajectory index " << i << std::endl;
-      break;
-    }
+  if (current_trajectory == nullptr) {
+    current_trajectory_idx = 0;
+    current_trajectory =
+        std::make_unique<ctrl::Trajectory3D>(*active_trajectories[current_trajectory_idx]);
+    std::cout << "[ctrl::TrajectoryManager::Update] Current trajectory index "
+              << current_trajectory_idx << std::endl;
+    current_trajectory->Print();
+  }
+
+  if (t_sec >= current_trajectory->GetTFinish()) {
+    ++current_trajectory_idx;
+    current_trajectory =
+        std::make_unique<ctrl::Trajectory3D>(*active_trajectories[current_trajectory_idx]);
+    std::cout << "[ctrl::TrajectoryManager::Update] Current trajectory index "
+              << current_trajectory_idx << std::endl;
+    current_trajectory->Print();
   }
 
   if (current_trajectory == nullptr) {
