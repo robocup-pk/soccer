@@ -5,6 +5,8 @@
 #include "MotionController.h"
 #include "RobotManager.h"
 #include "Utils.h"
+#include "Trajectory3D.h"
+#include "Waypoint.h"
 
 rob::RobotManager::RobotManager() {
   previous_robot_state = RobotState::IDLE;
@@ -77,6 +79,12 @@ void rob::RobotManager::ControlLogic() {
           motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
       break;
     case RobotState::AUTONOMOUS_DRIVING:
+      trajectory_manager.Update();
+      finished_motion = false;
+      velocity_fBody_ = trajectory_manager.GetVelocityAtT(1);
+      std::cout << "[rob::RobotManager::ControlLogic] v = " << velocity_fBody_.transpose()
+                << std::endl;
+      // std::tie(finished_motion, velocity_fBody_) = trajectory_manager.GetVelocityAtT();
       // TODO
       break;
   }
@@ -137,9 +145,21 @@ void rob::RobotManager::SenseLogic() {
 }
 
 void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path) {
-  for (int i = 0; i < path.size(); ++i) {
-    AddGoal(path[i]);
+  // for (int i = 0; i < path.size(); ++i) {
+  //   AddGoal(path[i]);
+  // }
+  bool is_path_valid = trajectory_manager.CreateTrajectoriesFromPath(path);
+  if (is_path_valid) {
+    robot_state = RobotState::AUTONOMOUS_DRIVING;
+  } else {
+    std::cout << "[rob::RobotManager::SetPath] Give path is invalid. Failed to create "
+                 "trajectories\nPath: ";
+    for (int i = 0; i < path.size() - 1; ++i) {
+      std::cout << path[i].transpose() << " -> ";
+    }
+    std::cout << path[path.size() - 1].transpose() << std::endl;
   }
+  trajectory_manager.Print();
 }
 
 void rob::RobotManager::SetBodyVelocity(Eigen::Vector3d& velocity_fBody) {
@@ -224,7 +244,7 @@ std::string rob::RobotManager::GetRobotState() {
 
 bool rob::RobotManager::BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody) {
   for (int i = 0; i < 3; i++) {
-    if (std::fabs(velocity_fBody[i]) > cfg::SystemConfig::max_velocity_fBody[i]) {
+    if (std::fabs(velocity_fBody[i]) > cfg::SystemConfig::max_velocity_fBody_mps[i]) {
       return false;
     }
   }

@@ -6,6 +6,8 @@
 #include <cmath>
 #include <cassert>
 
+#include <Eigen/Dense>
+
 namespace state {
 
 class Waypoint {
@@ -51,6 +53,8 @@ bool NearPosition(const Waypoint& wp1, const Waypoint& wp2, double tolerance = 0
 bool NearPose(const Waypoint& wp1, const Waypoint& wp2, double tolerance = 0.1);
 std::ostream& operator<<(std::ostream& os, const Waypoint& wp);
 std::ostream& operator<<(std::ostream& os, const Path& path);
+
+std::ostream& operator<<(std::ostream& os, const std::vector<Eigen::Vector3d>& path);
 
 }  // namespace state
 

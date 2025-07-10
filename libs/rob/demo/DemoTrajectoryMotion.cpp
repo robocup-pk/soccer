@@ -5,7 +5,6 @@
 // self libs
 #include "GLSimulation.h"
 #include "SoccerObject.h"
-#include "Kinematics.h"
 #include "Coordinates.h"
 #include "Utils.h"
 #include "RobotManager.h"
@@ -24,9 +23,15 @@ int main(int argc, char* argv[]) {
   gl_simulation.InitGameObjects(soccer_objects);
 
   // ROBOT
+  std::vector<Eigen::Vector3d> path;
+  path.push_back(Eigen::Vector3d(0, 0, 0));
+  path.push_back(Eigen::Vector3d(-1, 0, 0));
+  path.push_back(Eigen::Vector3d(0, 0, 0));
+  path.push_back(Eigen::Vector3d(1, 0, 0));
+  path.push_back(Eigen::Vector3d(2, 0, 0));
+
   rob::RobotManager robot_manager;
-  robot_manager.InitializeHome(Eigen::Vector3d(1.5, 1, 1));
-  robot_manager.GoHome();
+  robot_manager.SetPath(path);
 
   while (1) {
     soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();

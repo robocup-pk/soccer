@@ -1,7 +1,7 @@
 #
 # Minimum version is 3.5 (this supports Ubuntu 16.04 and later, for example)
 #
-CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
+CMAKE_MINIMUM_REQUIRED(VERSION 4.0.1)
 
 #
 # Project version numbering using semantic versioning. See:
@@ -28,8 +28,6 @@ OPTION(INSTALL_SHARED "Install shared object library." ON)
 #
 # LibSerial requies a C++ compiler that supports at least C++14 standard
 #
-SET(CMAKE_CXX_STANDARD 14)
-SET(CMAKE_STANDARD_REQUIRES ON)
 
 INCLUDE(ExternalProject)
 
@@ -86,7 +84,6 @@ ADD_DEFINITIONS(
   -Wfatal-errors
   -Wformat
   -Wformat-security
-  -Wlogical-op
   -Wno-format-extra-args
   -Wno-long-long
   -Wno-parentheses
@@ -103,7 +100,11 @@ ADD_DEFINITIONS(
   -fno-common
   -fvisibility=default
   -pedantic
-  )
+)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  add_compile_options(-Wlogical-op)
+endif()
 
 if (LIBSERIAL_ENABLE_TESTING)
   SET(GTEST_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/gtest")

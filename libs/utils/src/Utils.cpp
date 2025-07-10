@@ -37,11 +37,13 @@ double util::GetCurrentTime() {
 }
 
 Eigen::Vector3d util::RotateAboutZ(Eigen::Vector3d pose, double angle_rad) {
-  Eigen::Matrix3d rotation_matrix;
-  double c = std::cos(angle_rad);
-  double s = std::sin(angle_rad);
-  rotation_matrix << c, -s, 0, s, c, 0, 0, 0, 1;
-  return rotation_matrix * pose;
+  // Eigen::Matrix3d rotation_matrix;
+  // double c = std::cos(angle_rad);
+  // double s = std::sin(angle_rad);
+  // rotation_matrix << c, -s, 0, s, c, 0, 0, 0, 1;
+  // return rotation_matrix * pose;
+  Eigen::AngleAxisd rotation(angle_rad, Eigen::Vector3d::UnitZ());
+  return rotation * pose;
 }
 
 double util::WrapAngle(double angle_rad) {
