@@ -16,7 +16,7 @@ void kin::CheckAndResolveCollisions(std::vector<state::SoccerObject>& soccer_obj
   // Update Ball Attachment
   for (auto& obj : soccer_objects) {
     if (obj.name == "ball" && obj.is_attached) {
-      state::SoccerObject robot = *obj.attached_to;
+      state::SoccerObject& robot = *obj.attached_to;
       UpdateAttachedBallPosition(robot, obj);
       break;
     }
@@ -67,11 +67,11 @@ void kin::ResolveCollisionWithWall(std::vector<state::SoccerObject>& soccer_obje
     Eigen::Vector3d center = soccer_object.GetCenterPosition();
     float left = soccer_object.position[0];
     float right = soccer_object.position[0] + soccer_object.size[0];
-    float top = soccer_object.position[1];
-    float bottom = soccer_object.position[1] - soccer_object.size[1];
+    float top = soccer_object.position[1] + soccer_object.size[1];
+    float bottom = soccer_object.position[1];
 
-    double boundary_x = vis::SoccerField::GetInstance().width_mm / 2.0f;
-    double boundary_y = vis::SoccerField::GetInstance().height_mm / 2.0f;
+    double boundary_x = (vis::SoccerField::GetInstance().width_mm / 2.0f) / 1000.0f;
+    double boundary_y = (vis::SoccerField::GetInstance().height_mm / 2.0f) / 1000.0f;
 
     // X-axis collision
     if ((right > boundary_x && soccer_object.velocity[0] > 0) ||
@@ -85,20 +85,19 @@ void kin::ResolveCollisionWithWall(std::vector<state::SoccerObject>& soccer_obje
     if ((top > boundary_y && soccer_object.velocity[1] > 0) ||
         (bottom < -boundary_y && soccer_object.velocity[1] < 0)) {
       soccer_object.position[1] =
-          std::clamp(soccer_object.position[1], -boundary_y + soccer_object.size[1], boundary_y);
-      soccer_object.velocity[1] *= -1;
-      soccer_object.velocity[1] *= cfg::SystemConfig::wall_velocity_damping_factor;
+          std::clamp(soccer_object.position[1], -boundary_y, boundary_y - soccer_object.size[1]);
+      soccer_object.velocity[1] *= -cfg::SystemConfig::wall_velocity_damping_factor;
     }
   }
 }
 
 bool kin::IsInsideBoundary(const state::SoccerObject& obj) {
-  float half_width = vis::SoccerField::GetInstance().width_mm / 2;
-  float half_height = vis::SoccerField::GetInstance().height_mm / 2;
+  float half_width = (vis::SoccerField::GetInstance().width_mm / 2) / 1000.0f;
+  float half_height = (vis::SoccerField::GetInstance().height_mm / 2) / 1000.0f;
   float left = obj.position[0];
   float right = obj.position[0] + obj.size[0];
-  float top = obj.position[1];
-  float bottom = obj.position[1] - obj.size[1];
+  float top = obj.position[1] + obj.size[1];
+  float bottom = obj.position[1];
 
   return left >= -half_width && right <= half_width && top >= -half_height &&
          bottom <= half_height;
@@ -106,8 +105,8 @@ bool kin::IsInsideBoundary(const state::SoccerObject& obj) {
 
 void kin::ClampInsideBoundary(state::SoccerObject& obj) {
   // x direction
-  double half_width = vis::SoccerField::GetInstance().width_mm / 2;
-  double half_height = vis::SoccerField::GetInstance().height_mm / 2;
+  double half_width = (vis::SoccerField::GetInstance().width_mm / 2) / 1000.0f;
+  double half_height = (vis::SoccerField::GetInstance().height_mm / 2) / 1000.0f;
 
   obj.position[0] = std::clamp(obj.position[0], -half_width, half_width - obj.size[0]);
   obj.position[1] = std::clamp(obj.position[1], -half_height, half_height - obj.size[1]);
