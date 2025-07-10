@@ -11,10 +11,10 @@ vis::GameObject::GameObject(std::string name_, Eigen::Vector3d position_, Eigen:
     : name(name_), sprite(sprite_), mass_kg(mass_kg_) {
   // GameObject works on millimeters (later converted to pixels for display)
   // SoccerObject works on meters
-  position = glm::vec3(0.001) * ConvertEigenVecToGlm(position_);
-  velocity = glm::vec3(0.001) * ConvertEigenVecToGlm(velocity_);
-  acceleration = glm::vec3(0.001) * ConvertEigenVecToGlm(acceleration_);
-  size = glm::vec2(0.001) * ConvertEigenVecToGlm(size_);
+  position = glm::vec3(1000) * ConvertEigenVecToGlm(position_);
+  velocity = glm::vec3(1000) * ConvertEigenVecToGlm(velocity_);
+  acceleration = glm::vec3(1000) * ConvertEigenVecToGlm(acceleration_);
+  size = glm::vec2(1000) * ConvertEigenVecToGlm(size_);
   color = ConvertEigenVecToGlm(color_);
   radius = std::min(size.x / 2, size.y / 2);
 }
