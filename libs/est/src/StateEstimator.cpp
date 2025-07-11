@@ -1,7 +1,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "Estimator.h"
+#include "StateEstimator.h"
 #include "HwConfig.h"
 #include "Utils.h"
 
@@ -9,8 +9,8 @@
 #define M_PI 3.14159265
 #endif
 
-est::Estimator::Estimator() {
-  std::cout << "[est::Estimator::Estimator]" << std::endl;
+est::StateEstimator::StateEstimator() {
+  std::cout << "[est::StateEstimator::StateEstimator]" << std::endl;
   robot_model = std::make_shared<kin::RobotModel>();
   angle_random_walk_per_rt_t = 0.001;
   initialized_pose = false;
@@ -40,9 +40,9 @@ est::Estimator::Estimator() {
       std::pow(meas_sigma_rad, 2);
 }
 
-void est::Estimator::NewMotorsData(Eigen::Vector4d wheel_speeds_rpm) {
+void est::StateEstimator::NewMotorsData(Eigen::Vector4d wheel_speeds_rpm) {
   if (!initialized_pose) {
-    std::cout << "[est::Estimator::NewEncoderData] Pose uninitialized!" << std::endl;
+    std::cout << "[est::StateEstimator::NewEncoderData] Pose uninitialized!" << std::endl;
     return;
   }
 
@@ -54,7 +54,8 @@ void est::Estimator::NewMotorsData(Eigen::Vector4d wheel_speeds_rpm) {
 
   double dt = util::GetCurrentTime() - t_last_encoder;
   if (dt <= 0) {
-    std::cout << "[est::Estimator::NewMotorsData] dt <= 0. Some serious problem!" << std::endl;
+    std::cout << "[est::StateEstimator::NewMotorsData] dt <= 0. Some serious problem!"
+              << std::endl;
     return;
   }
   t_last_encoder = util::GetCurrentTime();
@@ -80,9 +81,9 @@ void est::Estimator::NewMotorsData(Eigen::Vector4d wheel_speeds_rpm) {
   state_cov = phi * state_cov * phi.transpose() + process_cov;
 }
 
-void est::Estimator::NewGyroData(double w_radps) {
+void est::StateEstimator::NewGyroData(double w_radps) {
   if (!initialized_pose) {
-    std::cout << "[est::Estimator::NewGyroData] Pose uninitialized!" << std::endl;
+    std::cout << "[est::StateEstimator::NewGyroData] Pose uninitialized!" << std::endl;
     return;
   }
 
@@ -102,12 +103,12 @@ void est::Estimator::NewGyroData(double w_radps) {
   state_cov(2, 2) += q;
 }
 
-void est::Estimator::NewCameraData(Eigen::Vector3d pose_meas) {
+void est::StateEstimator::NewCameraData(Eigen::Vector3d pose_meas) {
   if (!initialized_pose) {
     initialized_pose = true;
     pose_est = pose_meas;
     pose_init = pose_meas;
-    std::cout << "[est::Estimator::NewCameraData] Initialized pose: " << pose_init.transpose()
+    std::cout << "[est::StateEstimator::NewCameraData] Initialized pose: " << pose_init.transpose()
               << std::endl;
     return;
   }
@@ -130,8 +131,8 @@ void est::Estimator::NewCameraData(Eigen::Vector3d pose_meas) {
   state_cov = 0.5 * (state_cov + state_cov.transpose());
 }
 
-Eigen::Vector3d est::Estimator::GetPose() { return pose_est; }
+Eigen::Vector3d est::StateEstimator::GetPose() { return pose_est; }
 
-Eigen::Vector3d est::Estimator::GetPoseInit() { return pose_init; }
+Eigen::Vector3d est::StateEstimator::GetPoseInit() { return pose_init; }
 
-est::Estimator::~Estimator() { robot_model = nullptr; }
+est::StateEstimator::~StateEstimator() { robot_model = nullptr; }

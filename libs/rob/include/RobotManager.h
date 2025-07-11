@@ -5,7 +5,7 @@
 #include <mutex>
 #include <atomic>
 
-#include "Estimator.h"
+#include "StateEstimator.h"
 #include "HardwareManager.h"
 #include "MotionController.h"
 #include "TrajectoryManager.h"
@@ -53,7 +53,7 @@ class RobotManager {
   Eigen::Vector3d pose_fWorld;
   Eigen::Vector3d velocity_fBody;
 
-  est::Estimator estimator;
+  est::StateEstimator state_estimator;
   hw::HardwareManager hardware_manager;
   ctrl::MotionController motion_controller;
   ctrl::TrajectoryManager trajectory_manager;

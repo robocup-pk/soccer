@@ -1,2 +1,2 @@
-add_executable(demo_estimator DemoEstimator.cpp)
+add_executable(demo_estimator DemoStateEstimator.cpp)
 target_link_libraries(demo_estimator PRIVATE state_lib vis_lib cfg_lib algos_lib rob_lib)

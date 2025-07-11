@@ -7,9 +7,9 @@
 #include "RobotModel.h"
 
 namespace est {
-class Estimator {
+class StateEstimator {
  public:
-  Estimator();
+  StateEstimator();
 
   void NewMotorsData(Eigen::Vector4d ticks);
   void NewGyroData(double w_radps);
@@ -18,7 +18,7 @@ class Estimator {
   Eigen::Vector3d GetPose();
   Eigen::Vector3d GetPoseInit();
 
-  ~Estimator();
+  ~StateEstimator();
 
   bool initialized_pose;
 

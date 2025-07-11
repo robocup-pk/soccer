@@ -19,22 +19,12 @@ rob::RobotManager::RobotManager() {
   rob_manager_running.store(true);
 
   // TODO: remove when we have the camera system ready
-  estimator.initialized_pose = true;
+  state_estimator.initialized_pose = true;
 
   sense_thread = std::thread(&RobotManager::SenseLoop, this);
   control_thread = std::thread(&RobotManager::ControlLoop, this);
 }
 
-// void rob::RobotManager::SenseLoop() {
-//   auto time_step = std::chrono::steady_clock::now();
-//   int next_time_step_ms = 1000 / sense_loop_frequency_hz;
-
-//   while (rob_manager_running.load()) {
-//     SenseLogic();
-//     time_step += std::chrono::milliseconds(next_time_step_ms);
-//     std::this_thread::sleep_until(time_step);
-//   }
-// }
 void rob::RobotManager::SenseLoop() {
   const std::chrono::microseconds time_step_us(1000000 / (int)sense_loop_frequency_hz);
   auto next_time = std::chrono::steady_clock::now();
@@ -109,8 +99,8 @@ void rob::RobotManager::SenseLogic() {
   std::optional<Eigen::Vector3d> pose_from_camera = hardware_manager.NewCameraData();
 
   {
-    if (motors_rpms.has_value()) estimator.NewMotorsData(motors_rpms.value());
-    if (w_radps.has_value()) estimator.NewGyroData(w_radps.value());
+    if (motors_rpms.has_value()) state_estimator.NewMotorsData(motors_rpms.value());
+    if (w_radps.has_value()) state_estimator.NewGyroData(w_radps.value());
 
     // TODO: This is not needed right now, but is useful for the physical robot
     // When both motors and gyro fail
@@ -130,17 +120,17 @@ void rob::RobotManager::SenseLogic() {
     //   num_sensor_readings_failed = 0;
     // }
 
-    if (pose_from_camera.has_value()) estimator.NewCameraData(pose_from_camera.value());
+    if (pose_from_camera.has_value()) state_estimator.NewCameraData(pose_from_camera.value());
 
     // Pose shall not be used in control while it is being updated
     std::unique_lock<std::mutex> lock(robot_state_mutex);
-    pose_fWorld = estimator.GetPose();
+    pose_fWorld = state_estimator.GetPose();
   }
   // std::cout << "Pose (est): " << pose_fWorld.transpose() << std::endl;
 
   // Set home pose
-  if (!initialized_pose_home && estimator.initialized_pose) {
-    pose_home_fWorld = estimator.GetPoseInit();
+  if (!initialized_pose_home && state_estimator.initialized_pose) {
+    pose_home_fWorld = state_estimator.GetPoseInit();
     initialized_pose_home = true;
   }
 }
