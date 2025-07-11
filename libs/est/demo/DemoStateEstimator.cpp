@@ -13,7 +13,7 @@
 int main(int argc, char* argv[]) {
   // Need two robots for this demo to run
   if (cfg::SystemConfig::num_robots != 2) {
-    std::cout << "[DemoEstimator::Main] Set num_robots to 2. Exiting!" << std::endl;
+    std::cout << "[DemoStateEstimator::Main] Set num_robots to 2. Exiting!" << std::endl;
     return 0;
   }
 

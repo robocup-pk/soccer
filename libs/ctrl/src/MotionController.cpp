@@ -37,12 +37,12 @@ std::pair<bool, Eigen::Vector3d> ctrl::MotionController::DriveToPoint(
   velocity_fBody[2] = Kw * util::WrapAngle(pose_dest_fWorld[2] - pose_fWorld[2]);
 
   // Clamp
-  velocity_fBody[0] = std::clamp(velocity_fBody[0], -cfg::SystemConfig::max_velocity_fBody[0],
-                                 cfg::SystemConfig::max_velocity_fBody[0]);
-  velocity_fBody[1] = std::clamp(velocity_fBody[1], -cfg::SystemConfig::max_velocity_fBody[1],
-                                 cfg::SystemConfig::max_velocity_fBody[1]);
-  velocity_fBody[2] = std::clamp(velocity_fBody[2], -cfg::SystemConfig::max_velocity_fBody[2],
-                                 cfg::SystemConfig::max_velocity_fBody[2]);
+  velocity_fBody[0] = std::clamp(velocity_fBody[0], -cfg::SystemConfig::max_velocity_fBody_mps[0],
+                                 cfg::SystemConfig::max_velocity_fBody_mps[0]);
+  velocity_fBody[1] = std::clamp(velocity_fBody[1], -cfg::SystemConfig::max_velocity_fBody_mps[1],
+                                 cfg::SystemConfig::max_velocity_fBody_mps[1]);
+  velocity_fBody[2] = std::clamp(velocity_fBody[2], -cfg::SystemConfig::max_velocity_fBody_mps[2],
+                                 cfg::SystemConfig::max_velocity_fBody_mps[2]);
 
   return std::make_pair(false, velocity_fBody);
 }
@@ -78,8 +78,8 @@ std::pair<bool, Eigen::Vector3d> ctrl::MotionController::InterpolateToPoint(
 
   // Step 4: Apply constant velocity in that direction
   Eigen::Vector3d velocity_fBody;
-  velocity_fBody[0] = direction_fBody[0] * cfg::SystemConfig::max_velocity_fBody[0];
-  velocity_fBody[1] = direction_fBody[1] * cfg::SystemConfig::max_velocity_fBody[1];
+  velocity_fBody[0] = direction_fBody[0] * cfg::SystemConfig::max_velocity_fBody_mps[0];
+  velocity_fBody[1] = direction_fBody[1] * cfg::SystemConfig::max_velocity_fBody_mps[1];
 
   // Step 5: Compute angular velocity with adaptive gain
   double linear_speed = velocity_fBody.head<2>().norm();
@@ -89,8 +89,9 @@ std::pair<bool, Eigen::Vector3d> ctrl::MotionController::InterpolateToPoint(
     velocity_fBody.head<2>().setZero();  // stop moving forward/sideways
   }
 
-  velocity_fBody[2] = std::clamp(Kw * angle_error_rad, -cfg::SystemConfig::max_velocity_fBody[2],
-                                 cfg::SystemConfig::max_velocity_fBody[2]);
+  velocity_fBody[2] =
+      std::clamp(Kw * angle_error_rad, -cfg::SystemConfig::max_velocity_fBody_mps[2],
+                 cfg::SystemConfig::max_velocity_fBody_mps[2]);
 
   return std::make_pair(false, velocity_fBody);
 }

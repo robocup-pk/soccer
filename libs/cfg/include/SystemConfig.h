@@ -6,7 +6,8 @@
 namespace cfg {
 struct SystemConfig {
   static constexpr int num_robots = 1;
-  static const Eigen::Vector3d max_velocity_fBody;
+  static const Eigen::Vector3d max_velocity_fBody_mps;
+  static const Eigen::Vector3d max_acceleration_mpsps_radpsps;
 
   // Wall
   static const float wall_velocity_damping_factor;
@@ -23,6 +24,6 @@ struct SystemConfig {
   static const Eigen::Vector3d init_robot_velocity_mps;
   static const Eigen::Vector3d init_robot_acceleration_mpsps;
 };
-}
+}  // namespace cfg
 
-#endif // SYSTEM_CONFIG_H
+#endif  // SYSTEM_CONFIG_H

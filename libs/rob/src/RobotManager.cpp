@@ -5,6 +5,8 @@
 #include "MotionController.h"
 #include "RobotManager.h"
 #include "Utils.h"
+#include "Trajectory3D.h"
+#include "Waypoint.h"
 
 rob::RobotManager::RobotManager() {
   previous_robot_state = RobotState::IDLE;
@@ -17,34 +19,32 @@ rob::RobotManager::RobotManager() {
   rob_manager_running.store(true);
 
   // TODO: remove when we have the camera system ready
-  estimator.initialized_pose = true;
+  state_estimator.initialized_pose = true;
 
   sense_thread = std::thread(&RobotManager::SenseLoop, this);
   control_thread = std::thread(&RobotManager::ControlLoop, this);
 }
 
 void rob::RobotManager::SenseLoop() {
-  auto time_step = std::chrono::steady_clock::now();
-  int next_time_step_ms = 1000 / sense_loop_frequency_hz;
-
+  const std::chrono::microseconds time_step_us(1000000 / (int)sense_loop_frequency_hz);
+  auto next_time = std::chrono::steady_clock::now();
   while (rob_manager_running.load()) {
+    next_time += time_step_us;
     SenseLogic();
-    time_step += std::chrono::milliseconds(next_time_step_ms);
-    std::this_thread::sleep_until(time_step);
+    std::this_thread::sleep_until(next_time);
   }
 }
 
 void rob::RobotManager::ControlLoop() {
-  auto time_step = std::chrono::steady_clock::now();
-  int next_time_step_ms = 1000 / control_loop_frequency_hz;
-
+  const std::chrono::microseconds time_step_us(1000000 / (int)control_loop_frequency_hz);
+  auto next_time = std::chrono::steady_clock::now();
   while (rob_manager_running.load()) {
+    next_time += time_step_us;
     {
       std::unique_lock<std::mutex> lock(robot_state_mutex);
       ControlLogic();
     }
-    time_step += std::chrono::milliseconds(next_time_step_ms);
-    std::this_thread::sleep_until(time_step);
+    std::this_thread::sleep_until(next_time);
   }
 }
 
@@ -63,10 +63,7 @@ void rob::RobotManager::ControlLogic() {
     case RobotState::INTERPOLATING_TO_POINT:
       std::tie(finished_motion, velocity_fBody_) =
           motion_controller.InterpolateToPoint(pose_fWorld, pose_destination);
-      std::cout << "Pose: " << std::fixed << std::setprecision(2) << pose_fWorld.transpose()
-                << " and destination: " << pose_destination.transpose() << std::endl;
       TryAssignNextGoal();
-      std::cout << "v_w: " << velocity_fBody_.transpose() << std::endl << std::endl;
       break;
     case RobotState::MANUAL_DRIVING:
       velocity_fBody_ = velocity_fBody;
@@ -77,7 +74,9 @@ void rob::RobotManager::ControlLogic() {
           motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
       break;
     case RobotState::AUTONOMOUS_DRIVING:
-      // TODO
+      double t_sec = util::GetCurrentTime();
+      finished_motion = trajectory_manager.Update(t_sec);
+      velocity_fBody_ = trajectory_manager.GetVelocityAtT(t_sec);
       break;
   }
 
@@ -100,8 +99,8 @@ void rob::RobotManager::SenseLogic() {
   std::optional<Eigen::Vector3d> pose_from_camera = hardware_manager.NewCameraData();
 
   {
-    if (motors_rpms.has_value()) estimator.NewMotorsData(motors_rpms.value());
-    if (w_radps.has_value()) estimator.NewGyroData(w_radps.value());
+    if (motors_rpms.has_value()) state_estimator.NewMotorsData(motors_rpms.value());
+    if (w_radps.has_value()) state_estimator.NewGyroData(w_radps.value());
 
     // TODO: This is not needed right now, but is useful for the physical robot
     // When both motors and gyro fail
@@ -121,24 +120,36 @@ void rob::RobotManager::SenseLogic() {
     //   num_sensor_readings_failed = 0;
     // }
 
-    if (pose_from_camera.has_value()) estimator.NewCameraData(pose_from_camera.value());
+    if (pose_from_camera.has_value()) state_estimator.NewCameraData(pose_from_camera.value());
 
     // Pose shall not be used in control while it is being updated
     std::unique_lock<std::mutex> lock(robot_state_mutex);
-    pose_fWorld = estimator.GetPose();
+    pose_fWorld = state_estimator.GetPose();
   }
   // std::cout << "Pose (est): " << pose_fWorld.transpose() << std::endl;
 
   // Set home pose
-  if (!initialized_pose_home && estimator.initialized_pose) {
-    pose_home_fWorld = estimator.GetPoseInit();
+  if (!initialized_pose_home && state_estimator.initialized_pose) {
+    pose_home_fWorld = state_estimator.GetPoseInit();
     initialized_pose_home = true;
   }
 }
 
 void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path) {
-  for (int i = 0; i < path.size(); ++i) {
-    AddGoal(path[i]);
+  // for (int i = 0; i < path.size(); ++i) {
+  //   AddGoal(path[i]);
+  // }
+  bool is_path_valid = trajectory_manager.CreateTrajectoriesFromPath(path);
+  if (is_path_valid) {
+    std::unique_lock<std::mutex> lock(robot_state_mutex);
+    robot_state = RobotState::AUTONOMOUS_DRIVING;
+  } else {
+    std::cout << "[rob::RobotManager::SetPath] Give path is invalid. Failed to create "
+                 "trajectories\nPath: ";
+    for (int i = 0; i < path.size() - 1; ++i) {
+      std::cout << path[i].transpose() << " -> ";
+    }
+    std::cout << path[path.size() - 1].transpose() << std::endl;
   }
 }
 
@@ -224,7 +235,7 @@ std::string rob::RobotManager::GetRobotState() {
 
 bool rob::RobotManager::BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody) {
   for (int i = 0; i < 3; i++) {
-    if (std::fabs(velocity_fBody[i]) > cfg::SystemConfig::max_velocity_fBody[i]) {
+    if (std::fabs(velocity_fBody[i]) > cfg::SystemConfig::max_velocity_fBody_mps[i]) {
       return false;
     }
   }

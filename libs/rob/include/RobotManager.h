@@ -4,11 +4,11 @@
 #include <queue>
 #include <mutex>
 #include <atomic>
-#include "HardwareManager.h"
-#include "Estimator.h"
-#include "MotionController.h"
 
-#include <queue>
+#include "StateEstimator.h"
+#include "HardwareManager.h"
+#include "MotionController.h"
+#include "TrajectoryManager.h"
 
 namespace rob {
 
@@ -53,9 +53,10 @@ class RobotManager {
   Eigen::Vector3d pose_fWorld;
   Eigen::Vector3d velocity_fBody;
 
+  est::StateEstimator state_estimator;
   hw::HardwareManager hardware_manager;
-  est::Estimator estimator;
   ctrl::MotionController motion_controller;
+  ctrl::TrajectoryManager trajectory_manager;
 
   std::thread control_thread;
   std::thread sense_thread;
