@@ -1,6 +1,8 @@
 #ifndef TRAJECTORY_3D_H
 #define TRAJECTORY_3D_H
 
+#include <optional>
+
 #include <Eigen/Dense>
 
 namespace ctrl {
