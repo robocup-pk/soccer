@@ -66,20 +66,29 @@ Eigen::Vector4d hw::MotorDriver::GetMotorsRpms() {
   // First Byte
 
   std::vector<int> rpm(4);
-  std::vector<uint8_t> buffer(16);
+  std::vector<uint8_t> buffer(20);
+  std::cout << "a\n";
 
   {
     // Check if it's header
     uint8_t header;
     std::unique_lock<std::mutex> lock(shared_serial_port_mutex);
+    std::cout << "[hw::MotorDriver::GetMotorRpms]Number of Bytes Available (e): " << shared_serial_port->GetNumberOfBytesAvailable() << "\n";
     if (shared_serial_port->GetNumberOfBytesAvailable() < 1) return Eigen::Vector4d();
+    std::cout << "[hw::MotorDriver::GetMotorRpms]Number of Bytes Available (d): "
+              << shared_serial_port->GetNumberOfBytesAvailable() << "\n";
     shared_serial_port->ReadByte(header, 20);
-    if (header != 'x') return Eigen::Vector4d();
+    if (header != 'x') {
+      std::cout << "read: " << header << std::endl;
+      return Eigen::Vector4d();
+    }
+    // std::cout << "c\n";
     util::WaitMs(1);
-    shared_serial_port->Read(buffer, 16, 20);
+    shared_serial_port->Read(buffer, 20, 20);
     util::WaitMs(1);
     shared_serial_port->FlushInputBuffer();
   }
+  // std::cout << "b\n";
 
   // Extract the rpms
   for (int i = 0; i < 4; ++i) {

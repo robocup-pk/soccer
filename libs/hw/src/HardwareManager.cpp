@@ -27,8 +27,6 @@ void hw::HardwareManager::SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
 
 std::optional<Eigen::Vector4d> hw::HardwareManager::NewMotorsRpms() {
   Eigen::Vector4d motor_rpms = motor_driver->GetMotorsRpms();
-  double w_radps = motor_driver->GetAngularVelocityRadps();
-  std::cout << "Gyro Data: " << w_radps << std::endl;
   if (motor_driver->NewDataAvailable()) {
     motor_driver->new_data_available = false;
     return motor_rpms;
@@ -36,13 +34,33 @@ std::optional<Eigen::Vector4d> hw::HardwareManager::NewMotorsRpms() {
   return std::nullopt;
 }
 
+double ComputeGyroAngle(double angular_velocity_radps) {
+  static double angle_rad = 0.0;
+  static auto prev_time = std::chrono::steady_clock::now();
+
+  auto now = std::chrono::steady_clock::now();
+  std::chrono::duration<double> dt = now - prev_time;
+  prev_time = now;
+
+  angle_rad += angular_velocity_radps * dt.count();
+  return angle_rad;
+}
+
 std::optional<double> hw::HardwareManager::NewGyroAngularVelocity() {
+  double w_radps = motor_driver->GetAngularVelocityRadps();
+  std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Data: " << w_radps << std::endl;
+
+  double angle = ComputeGyroAngle(w_radps);
+  std::cout << "[Integrated Angle] " << angle << " rad (" << angle * 180.0 / M_PI << " deg)"
+            << std::endl;
+
+  return w_radps;
   // double w_radps = gyro_driver->GetAngularVelocityRadps();
   // if (gyro_driver->NewDataAvailable()) {
   //   gyro_driver->new_data_available = false;
   //   return w_radps;
   // }
-  return std::nullopt;
+  // return std::nullopt;
 }
 
 std::optional<Eigen::Vector3d> hw::HardwareManager::NewCameraData() {

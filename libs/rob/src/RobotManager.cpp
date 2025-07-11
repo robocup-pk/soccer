@@ -90,7 +90,8 @@ void rob::RobotManager::ControlLogic() {
     robot_state = RobotState::IDLE;
   }
 
-  hardware_manager.SetBodyVelocity(velocity_fBody_);
+  // velocity_fBody[0] = 0;
+  // hardware_manager.SetBodyVelocity(velocity_fBody_);
 }
 
 void rob::RobotManager::SenseLogic() {
@@ -126,7 +127,7 @@ void rob::RobotManager::SenseLogic() {
     std::unique_lock<std::mutex> lock(robot_state_mutex);
     pose_fWorld = state_estimator.GetPose();
   }
-  // std::cout << "Pose (est): " << pose_fWorld.transpose() << std::endl;
+  std::cout << "Pose (est): " << pose_fWorld.transpose() << std::endl;
 
   // Set home pose
   if (!initialized_pose_home && state_estimator.initialized_pose) {

@@ -1,26 +1,28 @@
 import serial
+import struct
 import time
 
-SERIAL_PORT = "/dev/ttyACM0"
+SERIAL_PORT = "/dev/ttyUSB0"
 BAUDRATE = 115200
-HEADER_CHAR = 'x'
+HEADER_CHAR = b'x'
+PACKET_SIZE = 21  # 1 byte header + 5 x int32_t
 
-def parse_line(line):
+def parse_packet(packet):
     """
-    Parses a line like: 'x0,0,0,0,-1616'
-    Returns a tuple: ([rpm1, rpm2, rpm3, rpm4], gyro)
+    Parse a 21-byte packet of format:
+    b'x' + 4*int32 (rpm1-4) + 1*int32 (gyro)
+    Returns: ([rpm1, rpm2, rpm3, rpm4], gyro)
     """
-    if not line.startswith(HEADER_CHAR):
+    if len(packet) != PACKET_SIZE:
         return None
-
-    parts = line[1:].strip().split(',')  # skip 'x'
-    if len(parts) != 5:
+    if packet[0:1] != HEADER_CHAR:
         return None
 
     try:
-        values = list(map(int, parts))
+        # Unpack 5 int32_t starting from byte 1
+        values = struct.unpack('<5i', packet[1:])  # little-endian, 5 integers
         return values[:4], values[4]
-    except ValueError:
+    except struct.error:
         return None
 
 def main():
@@ -31,9 +33,20 @@ def main():
             prev_time = time.time()
 
             while True:
-                line = ser.readline().decode(errors='ignore').strip()
-                result = parse_line(line)
+                # Read until we get a valid packet
+                sync_found = False
+                while not sync_found:
+                    byte = ser.read(1)
+                    if byte == HEADER_CHAR:
+                        rest = ser.read(20)  # Read remaining 20 bytes
+                        packet = byte + rest
+                        if len(packet) == PACKET_SIZE:
+                            sync_found = True
+                        else:
+                            print("Incomplete packet, skipping")
+                            continue
 
+                result = parse_packet(packet)
                 if result:
                     rpm_values, gyro_mdeg_per_s = result
 
@@ -46,7 +59,7 @@ def main():
                     print(f"RPMs: {rpm_values}, Gyro: {gyro_mdeg_per_s} m°/s | "
                           f"Δt: {dt:.3f}s | Angle: {angle_deg:.2f}°")
                 else:
-                    print(f"Skipped: {line}")
+                    print("Parse failed")
 
     except serial.SerialException as e:
         print(f"Serial error: {e}")
@@ -55,3 +68,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
