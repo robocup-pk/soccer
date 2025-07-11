@@ -27,6 +27,8 @@ void hw::HardwareManager::SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
 
 std::optional<Eigen::Vector4d> hw::HardwareManager::NewMotorsRpms() {
   Eigen::Vector4d motor_rpms = motor_driver->GetMotorsRpms();
+  double w_radps = motor_driver->GetAngularVelocityRadps();
+  std::cout << "Gyro Data: " << w_radps << std::endl;
   if (motor_driver->NewDataAvailable()) {
     motor_driver->new_data_available = false;
     return motor_rpms;

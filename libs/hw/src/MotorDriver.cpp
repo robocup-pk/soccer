@@ -42,7 +42,7 @@ void hw::MotorDriver::SendWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
   std::cout << "[hw::MotorDriver::SendWheelSpeedsRpm] " << speeds_rpm[0] << " " << speeds_rpm[1]
             << " " << speeds_rpm[2] << " " << speeds_rpm[3] << std::endl;
 
-  std::unique_lock<std::mutex> lock(shared_serial_port_mutex); // 5 ms
+  std::unique_lock<std::mutex> lock(shared_serial_port_mutex);  // 5 ms
   shared_serial_port->FlushOutputBuffer();
   util::WaitMs(2);
   shared_serial_port->Write(buffer);
@@ -64,10 +64,10 @@ Eigen::Vector4d hw::MotorDriver::GetMotorsRpms() {
 
   // Get encoder ticks using serial
   // First Byte
-  
+
   std::vector<int> rpm(4);
   std::vector<uint8_t> buffer(16);
-  
+
   {
     // Check if it's header
     uint8_t header;
@@ -85,17 +85,22 @@ Eigen::Vector4d hw::MotorDriver::GetMotorsRpms() {
   for (int i = 0; i < 4; ++i) {
     std::memcpy(&rpm[i], &buffer[i * 4], sizeof(int32_t));
   }
+  std::memcpy(&gyro_mdeg_ps, &buffer[16], sizeof(int32_t));
 
   if (VerifyRpms(rpm)) {
     new_data_available = true;
     std::cout << "[hw::MotorDriver::GetMotorRpms] " << rpm[0] << " " << rpm[1] << " " << rpm[2]
-              << " " << rpm[3] << std::endl;
+              << " " << rpm[3] << ". Gyro (mdeg_ps): " << gyro_mdeg_ps << std::endl;
     return Eigen::Vector4d(rpm[0], rpm[1], rpm[2], rpm[3]);
   } else {
     std::cout << "[hw::MotorDriver::GetMotorRpms] INVALID: " << rpm[0] << " " << rpm[1] << " "
               << rpm[2] << " " << rpm[3] << std::endl;
     return Eigen::Vector4d(0, 0, 0, 0);
   }
+}
+
+double hw::MotorDriver::GetAngularVelocityRadps() {
+  return (gyro_mdeg_ps / 1000.0) * M_PI / 180.0;
 }
 
 bool hw::MotorDriver::NewDataAvailable() { return new_data_available; }

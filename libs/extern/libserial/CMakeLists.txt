@@ -1,7 +1,7 @@
 #
 # Minimum version is 3.5 (this supports Ubuntu 16.04 and later, for example)
 #
-CMAKE_MINIMUM_REQUIRED(VERSION 3.31.6)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.28)
 
 #
 # Project version numbering using semantic versioning. See:
