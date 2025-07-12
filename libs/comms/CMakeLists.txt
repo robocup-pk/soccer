@@ -1,23 +1,23 @@
-# Find locally installed protobuf
-find_package(Protobuf REQUIRED)
-find_package(Threads REQUIRED)
+# # Find locally installed protobuf
+# find_package(Protobuf REQUIRED)
+# find_package(Threads REQUIRED)
 
-# Verify protobuf was found
-if(NOT Protobuf_FOUND)
-  message(FATAL_ERROR "Protobuf not found! Make sure it's installed locally.")
-endif()
+# # Verify protobuf was found
+# if(NOT Protobuf_FOUND)
+#   message(FATAL_ERROR "Protobuf not found! Make sure it's installed locally.")
+# endif()
 
-message(STATUS "Using Protobuf version: ${Protobuf_VERSION}")
-message(STATUS "Protobuf compiler: ${Protobuf_PROTOC_EXECUTABLE}")
-message(STATUS "Protobuf libraries: ${Protobuf_LIBRARIES}")
+# message(STATUS "Using Protobuf version: ${Protobuf_VERSION}")
+# message(STATUS "Protobuf compiler: ${Protobuf_PROTOC_EXECUTABLE}")
+# message(STATUS "Protobuf libraries: ${Protobuf_LIBRARIES}")
 
-# 1) Collect all .cpp sources under src/
-file(GLOB_RECURSE COMM_SOURCES
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
-)
+# # 1) Collect all .cpp sources under src/
+# file(GLOB_RECURSE COMM_SOURCES
+#   "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+# )
 
-# 2) Find every .proto under proto/ and its subdirectories
-file(GLOB_RECURSE PROTO_FILES "${CMAKE_CURRENT_SOURCE_DIR}/proto/*.proto")
+# # 2) Find every .proto under proto/ and its subdirectories
+# file(GLOB_RECURSE PROTO_FILES "${CMAKE_CURRENT_SOURCE_DIR}/proto/*.proto")
 
 # Generate proto sources if any
 if(PROTO_FILES)

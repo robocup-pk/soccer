@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
   // ROBOT
   std::vector<Eigen::Vector3d> path;
   path.push_back(Eigen::Vector3d(0, 0, 0));
-  path.push_back(Eigen::Vector3d(-1, 0, 0));
+  path.push_back(Eigen::Vector3d(-2, 0, 0));
   // path.push_back(Eigen::Vector3d(-1, 1, 0));
   // path.push_back(Eigen::Vector3d(0, 1, 0));
   // path.push_back(Eigen::Vector3d(0, 0, 0));
@@ -33,8 +33,21 @@ int main(int argc, char* argv[]) {
   rob::RobotManager robot_manager;
   robot_manager.SetPath(path);
 
+  double t_start = util::GetCurrentTime();
+
+  std::vector<Eigen::Vector3d> path2;
+  path2.push_back(Eigen::Vector3d(-1, 0, 0));
+  path2.push_back(Eigen::Vector3d(0, 0, 0));
+
+  bool replan = true;
   while (1) {
-    // soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();
+    double t = util::GetCurrentTime();
+    soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();
+
+    if (t > 5 + t_start && replan) {
+      robot_manager.SetPath(path2);
+      replan = false;
+    }
 
     // // Simulation
     // if (!gl_simulation.RunSimulationStep(soccer_objects, util::CalculateDt())) {

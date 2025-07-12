@@ -74,9 +74,7 @@ void rob::RobotManager::ControlLogic() {
           motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
       break;
     case RobotState::AUTONOMOUS_DRIVING:
-      double t_sec = util::GetCurrentTime();
-      finished_motion = trajectory_manager.Update(t_sec);
-      velocity_fBody_ = trajectory_manager.GetVelocityAtT(t_sec);
+      std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update();
       break;
   }
 
@@ -90,8 +88,9 @@ void rob::RobotManager::ControlLogic() {
     robot_state = RobotState::IDLE;
   }
 
-  // velocity_fBody[0] = 0;
+  std::cout << "aa\n";
   hardware_manager.SetBodyVelocity(velocity_fBody_);
+  std::cout << "ab\n";
 }
 
 void rob::RobotManager::SenseLogic() {
