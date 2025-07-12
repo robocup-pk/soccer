@@ -15,7 +15,7 @@ file(GLOB EXAMPLES "*.cpp")
 foreach(EXAMPLE ${EXAMPLES})
     get_filename_component(EXENAME ${EXAMPLE} NAME_WE)
     add_executable(${EXENAME} ${EXAMPLE})
-    target_link_libraries(${EXENAME} comms)
+    target_link_libraries(${EXENAME} comms_lib)
 endforeach()
 
 # Build test pair - for testing the communication
