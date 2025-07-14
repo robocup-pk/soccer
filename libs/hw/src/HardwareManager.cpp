@@ -68,7 +68,14 @@ std::optional<Eigen::Vector3d> hw::HardwareManager::NewCameraData() {
   return std::nullopt;
 }
 
-hw::HardwareManager::~HardwareManager() { robot_model = nullptr; }
+hw::HardwareManager::~HardwareManager() { 
+  // Properly close the serial port before destruction
+  if (shared_serial_port && shared_serial_port->IsOpen()) {
+    std::cout << "[hw::HardwareManager::~HardwareManager] Closing serial port..." << std::endl;
+    shared_serial_port->Close();
+  }
+  robot_model = nullptr; 
+}
 
 void hw::HardwareManager::InitializeSerialPort() {
   shared_serial_port = std::make_shared<LibSerial::SerialPort>();

@@ -91,7 +91,7 @@ void rob::RobotManager::ControlLogic() {
   }
 
   // velocity_fBody[0] = 0;
-  // hardware_manager.SetBodyVelocity(velocity_fBody_);
+  hardware_manager.SetBodyVelocity(velocity_fBody_);
 }
 
 void rob::RobotManager::SenseLogic() {
