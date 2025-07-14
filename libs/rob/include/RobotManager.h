@@ -36,6 +36,7 @@ class RobotManager {
   void GoHome();
   void InitializeHome(Eigen::Vector3d pose_home);
   void SetPath(std::vector<Eigen::Vector3d> path);
+  void SetCameraPose(Eigen::Vector3d pose_camera);
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
 
@@ -87,4 +88,4 @@ class RobotManager {
 };
 }  // namespace rob
 
-#endif  // ROBOT_MANAGER_H
+#endif  // ROBOT_MANAGER_Hjohn gai
