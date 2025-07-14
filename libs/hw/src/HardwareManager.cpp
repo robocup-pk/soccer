@@ -44,12 +44,6 @@ std::optional<double> hw::HardwareManager::NewGyroAngularVelocity() {
 }
 
 std::optional<Eigen::Vector3d> hw::HardwareManager::NewCameraData() {
-  if(new_camera_data) {
-    new_camera_data = false;
-    std::cout << "[hw::HardwareManager::NewCameraPose] Camera pose: "
-              << camera_data.transpose() << std::endl;
-    return camera_data;
-  }
   // if (camera_driver.NewDataAvailable()) return camera_driver.GetPose();
   return std::nullopt;
 }
@@ -66,10 +60,4 @@ void hw::HardwareManager::InitializeSerialPort() {
   shared_serial_port->SetFlowControl(LibSerial::FlowControl::FLOW_CONTROL_NONE);
   std::cout << "[hw::HardwareManager::InitializeSerialPort] Opened Serial Port: "
             << cfg::RobotConstants::shared_serial_port_name << std::endl;
-}
-
-void hw::HardwareManager::SetCameraPose(Eigen::Vector3d pose_camera) {
-  camera_data = pose_camera;
-  new_camera_data = true;
-  std::cout << "[hw::HardwareManager::SetCameraPose] Camera pose set to: " << pose_camera.transpose() << std::endl;
 }

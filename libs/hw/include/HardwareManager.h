@@ -26,7 +26,6 @@ class HardwareManager {
   // Control
   void SetBodyVelocity(Eigen::Vector3d velocity_fBody);
   void SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm);
-  void SetCameraPose(Eigen::Vector3d pose_camera);
 
   // Serial Comms
   void InitializeSerialPort();
@@ -46,7 +45,6 @@ class HardwareManager {
   bool new_camera_data = false;
 
   std::shared_ptr<kin::RobotModel> robot_model;
-  Eigen::Vector3d camera_data;
 
   // Serial port
   std::shared_ptr<LibSerial::SerialPort> shared_serial_port;

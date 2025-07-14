@@ -247,9 +247,3 @@ rob::RobotManager::~RobotManager() {
   if (sense_thread.joinable()) sense_thread.join();
   if (control_thread.joinable()) control_thread.join();
 }
-
-void rob::RobotManager::SetCameraPose(Eigen::Vector3d pose_camera) {
-  hardware_manager.SetCameraPose(pose_camera);
-  std::cout << "[rob::RobotManager::SetCameraPose] Set camera pose: "
-            << pose_camera.transpose() << std::endl;
-}
