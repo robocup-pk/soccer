@@ -194,6 +194,7 @@ TEST_F(StateEstimatorTest, TestMotionWithInitialPose) {
       state_estimator->NewCameraData(pose_cam);
     }
 
+    state_estimator->NewGyroData(velocity_fWorld[2]);
     ++iteration;
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
