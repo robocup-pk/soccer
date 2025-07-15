@@ -53,20 +53,20 @@ void hw::MotorDriver::SendWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
   shared_serial_port->DrainWriteBuffer();
   util::WaitMs(1);
 
-  std::cout << "[DEBUG] Sending " << buffer.size() << " bytes:" << std::endl;
-  std::cout << "Header: 0x" << std::hex << (int)buffer[0] << std::dec << " ('" << (char)buffer[0]
-            << "')" << std::endl;
+  // std::cout << "[DEBUG] Sending " << buffer.size() << " bytes:" << std::endl;
+  // std::cout << "Header: 0x" << std::hex << (int)buffer[0] << std::dec << " ('" << (char)buffer[0]
+  //           << "')" << std::endl;
 
-  for (int motor = 0; motor < 4; motor++) {
-    int32_t speed_value;
-    std::memcpy(&speed_value, &buffer[1 + motor * 4], sizeof(int32_t));
+  // for (int motor = 0; motor < 4; motor++) {
+  //   int32_t speed_value;
+  //   std::memcpy(&speed_value, &buffer[1 + motor * 4], sizeof(int32_t));
 
-    std::cout << "Motor " << motor << ": " << speeds_rpm[motor] << " -> bytes: ";
-    for (int i = 0; i < 4; i++) {
-      std::cout << "0x" << std::hex << (int)buffer[1 + motor * 4 + i] << " ";
-    }
-    std::cout << std::dec << "(reconstructed: " << speed_value << ")" << std::endl;
-  }
+  //   std::cout << "Motor " << motor << ": " << speeds_rpm[motor] << " -> bytes: ";
+  //   for (int i = 0; i < 4; i++) {
+  //     std::cout << "0x" << std::hex << (int)buffer[1 + motor * 4 + i] << " ";
+  //   }
+  //   std::cout << std::dec << "(reconstructed: " << speed_value << ")" << std::endl;
+  // }
 }
 
 Eigen::Vector4d hw::MotorDriver::GetMotorsRpms() {
@@ -85,14 +85,14 @@ Eigen::Vector4d hw::MotorDriver::GetMotorsRpms() {
 
   std::vector<int> rpm(4);
   std::vector<uint8_t> buffer(20);
-  std::cout << "a\n";
+  // std::cout << "a\n";
 
   {
     std::unique_lock<std::mutex> lock(shared_serial_port_mutex);
 
     size_t available_bytes = shared_serial_port->GetNumberOfBytesAvailable();
-    std::cout << "[hw::MotorDriver::GetMotorRpms] Bytes Available: " << available_bytes
-              << std::endl;
+    // std::cout << "[hw::MotorDriver::GetMotorRpms] Bytes Available: " << available_bytes
+              // << std::endl;
 
     // Need at least 21 bytes for complete response packet
     if (available_bytes < 21) {
@@ -110,7 +110,7 @@ Eigen::Vector4d hw::MotorDriver::GetMotorsRpms() {
       shared_serial_port->ReadByte(byte, 10);
       if (byte == 'x') {
         found_header = true;
-        std::cout << "[hw::MotorDriver::GetMotorRpms] Found header 'x'" << std::endl;
+        // std::cout << "[hw::MotorDriver::GetMotorRpms] Found header 'x'" << std::endl;
         break;
       }
       std::cout << "[SYNC] Discarded byte: '" << (char)byte << "' (0x" << std::hex << (int)byte
@@ -134,7 +134,7 @@ Eigen::Vector4d hw::MotorDriver::GetMotorsRpms() {
     shared_serial_port->Read(buffer, 20, 50);
     // Note: Read() returns void in this libserial version, so we can't check bytes_read
 
-    std::cout << "[hw::MotorDriver::GetMotorRpms] Successfully read 21-byte packet" << std::endl;
+    // std::cout << "[hw::MotorDriver::GetMotorRpms] Successfully read 21-byte packet" << std::endl;
   }
 
   // Extract motor RPMs (first 16 bytes of payload)
@@ -147,7 +147,7 @@ Eigen::Vector4d hw::MotorDriver::GetMotorsRpms() {
 
   if (VerifyRpms(rpm)) {
     new_data_available = true;
-    std::cout << "[hw::MotorDriver::GetMotorRpms] SUCCESS - Motors: " << rpm[0] << " " << rpm[1]
+    std::cout << "[hw::MotorDriver::GetMotorRpms] RPMS: " << rpm[0] << " " << rpm[1]
               << " " << rpm[2] << " " << rpm[3] << ", Gyro (mdeg/s): " << gyro_mdeg_ps
               << std::endl;
     return Eigen::Vector4d(rpm[0], rpm[1], rpm[2], rpm[3]);

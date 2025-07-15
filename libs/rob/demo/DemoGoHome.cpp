@@ -25,8 +25,8 @@ int main(int argc, char* argv[]) {
 
   // ROBOT
   rob::RobotManager robot_manager;
-  // robot_manager.InitializeHome(Eigen::Vector3d(1.5, 1, 1));
-  // robot_manager.GoHome();
+  robot_manager.InitializeHome(Eigen::Vector3d(1, 1, 0));
+  robot_manager.GoHome();
 
   while (1) {
     // soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();

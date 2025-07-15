@@ -17,6 +17,12 @@ hw::HardwareManager::HardwareManager() {
 
 void hw::HardwareManager::SetBodyVelocity(Eigen::Vector3d velocity_fBody) {
   Eigen::Vector4d wheel_speeds_rpm = robot_model->RobotVelocityToWheelSpeedsRpm(velocity_fBody);
+  
+  std::cout << "[hw::HardwareManager::SetBodyVelocity] Body Velocity: "
+            << velocity_fBody.transpose() << " m/s" << std::endl;
+  
+  std::cout << "[hw::HardwareManager::SetBodyVelocity] Wheel Speeds RPM: "
+            << wheel_speeds_rpm.transpose() << std::endl;
   SetWheelSpeedsRpm(wheel_speeds_rpm);
   gyro_driver->SetAngularVelocityRadps(velocity_fBody[2]);
 }
