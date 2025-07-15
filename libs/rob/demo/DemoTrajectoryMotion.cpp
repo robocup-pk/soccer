@@ -1,6 +1,7 @@
 // cpp std libs
 #include <iostream>
 #include <chrono>
+#include <limits>
 
 // self libs
 #include "GLSimulation.h"
@@ -23,31 +24,32 @@ int main(int argc, char* argv[]) {
   // gl_simulation.InitGameObjects(soccer_objects);
 
   // ROBOT
+  rob::RobotManager robot_manager;
+
   std::vector<Eigen::Vector3d> path;
   path.push_back(Eigen::Vector3d(0, 0, 0));
-  path.push_back(Eigen::Vector3d(-2, 0, 0));
-  // path.push_back(Eigen::Vector3d(-1, 1, 0));
-  // path.push_back(Eigen::Vector3d(0, 1, 0));
-  // path.push_back(Eigen::Vector3d(0, 0, 0));
+  path.push_back(Eigen::Vector3d(-1, 0, 0));
+  path.push_back(Eigen::Vector3d(0, 0, 0));
 
-  rob::RobotManager robot_manager;
-  robot_manager.SetPath(path);
-
-  double t_start = util::GetCurrentTime();
+  robot_manager.SetPath(path, util::GetCurrentTime());
 
   std::vector<Eigen::Vector3d> path2;
-  path2.push_back(Eigen::Vector3d(-1, 0, 0));
-  path2.push_back(Eigen::Vector3d(0, 0, 0));
+  path2.push_back(Eigen::Vector3d(-0.5, 0, 0));
+  path2.push_back(Eigen::Vector3d(0.5, 0, 0));
+  robot_manager.SetPath(path2, util::GetCurrentTime() + 6);
 
-  bool replan = true;
+  double replan_time = -std::numeric_limits<double>::max();
+
   while (1) {
     double t = util::GetCurrentTime();
     soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();
 
-    if (t > 5 + t_start && replan) {
-      robot_manager.SetPath(path2);
-      replan = false;
-    }
+    // if (replan_time + 9 < t) {
+    //   replan_time = t;
+    //   std::cout << "[DemoTrajectoryMotion::Main] Replan at " << replan_time << std::endl;
+    //   robot_manager.SetPath(path);//, t_start_s);
+    //   replan_time = 10000000;
+    // }
 
     // // Simulation
     // if (!gl_simulation.RunSimulationStep(soccer_objects, util::CalculateDt())) {

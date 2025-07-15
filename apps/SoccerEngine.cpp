@@ -1,7 +1,7 @@
 // cpp std libs
+#include <algorithm>
 #include <iostream>
 #include <chrono>
-#include <algorithm>
 #include <vector>
 #include <cmath>
 
@@ -43,6 +43,9 @@ void ProcessInput(GLFWwindow* gl_window, rob::RobotManager& robot_manager) {
     velocity_fBody.normalize();
     robot_manager.SetBodyVelocity(velocity_fBody);
   }
+
+  velocity_fBody.x() = 0;
+  velocity_fBody.y() = 0;
 }
 
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {

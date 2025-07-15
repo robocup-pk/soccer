@@ -1,31 +1,46 @@
 #include <iostream>
 
 #include "SystemConfig.h"
-
 #include "Trajectory3D.h"
 
-ctrl::Trajectory3D::Trajectory3D(Eigen::Vector3d pose_start, Eigen::Vector3d pose_end,
-                                 double t_start_s, double t_end_s) {
-  this->pose_start = pose_start;
-  this->pose_end = pose_end;
-  this->t_start_s = t_start_s;
-  this->t_finish_s = t_end_s;
-
-  distance_m_rad = pose_end - pose_start;
-  total_time_s = t_finish_s - t_start_s;
-
-  std::pair<bool, std::optional<Eigen::Vector3d>> traj_t_acc =
-      IsFeasible(distance_m_rad, total_time_s);
-
-  if (!traj_t_acc.first) {
-    std::cout << "[ctrl::Trajectory3D::Trajectory3D] Trajectory not feasible. Try different params"
-              << std::endl;
-    return;
+std::pair<bool, std::optional<Eigen::Vector3d>> ctrl::Trajectory3D::IsFeasibleNonZeroVelocity(
+    Eigen::Vector3d distance_m_rad, double total_time_s, Eigen::Vector3d v0) {
+  std::cout << "[ctrl::Trajectory3D::IsFeasibleNonZeroVelocity] distance: " << distance_m_rad.transpose() << ". v0: " << v0.transpose() << ". total_time_s: " << total_time_s << std::endl;
+  // Condition 1: a * h < v^2 / 2
+  for (int i = 0; i < 3; ++i) {
+    std::cout << "A\n"; 
+    if (cfg::SystemConfig::max_acc_m_radpsps[i] * std::fabs(distance_m_rad[i]) < v0[i] * v0[i] / 2)
+      return {false, std::nullopt};
   }
 
-  t_acc_s = traj_t_acc.second.value();
-  v_max = cfg::SystemConfig::max_acceleration_mpsps_radpsps.cwiseProduct(t_acc_s).cwiseProduct(
-      distance_m_rad.cwiseSign());
+  // Condition 2: a < a_max
+  // for (int i = 0; i < 3; ++i) {
+  //   std::cout << "B\n";
+  //   double a =
+  //       2 * distance_m_rad[i] - total_time_s * v0[i] +
+  //       std::sqrt(4 * std::pow(distance_m_rad[i], 2) - 4 * distance_m_rad[i] * v0[i] * total_time_s +
+  //                 2 * std::pow(v0[i], 2) * std::pow(total_time_s, 2));
+  //   if (a > cfg::SystemConfig::max_acc_m_radpsps[i]) return {false, std::nullopt};
+  // }
+
+  // Condition 3: disciminant
+  Eigen::Vector3d disc;
+  for (int i = 0; i < 3; ++i) {
+    std::cout << "C\n";
+    disc[i] = std::pow(cfg::SystemConfig::max_acc_m_radpsps[i], 2) * std::pow(total_time_s, 2) -
+              4 * cfg::SystemConfig::max_acc_m_radpsps[i] * std::fabs(distance_m_rad[i]) +
+              2 * cfg::SystemConfig::max_acc_m_radpsps[i] * v0[i] * total_time_s - v0[i] * v0[i];
+    if (disc[i] <= 0) return {false, std::nullopt};
+  }
+
+  // It is feasible. Calculate the parameters
+  Eigen::Vector3d v_constant;
+  for (int i = 0; i < 3; ++i) {
+    v_constant[i] =
+        0.5 * (v0[i] + cfg::SystemConfig::max_acc_m_radpsps[i] * total_time_s - std::sqrt(disc[i]));
+  }
+
+  return {true, v_constant};
 }
 
 std::pair<bool, std::optional<Eigen::Vector3d>> ctrl::Trajectory3D::IsFeasible(
@@ -38,8 +53,8 @@ std::pair<bool, std::optional<Eigen::Vector3d>> ctrl::Trajectory3D::IsFeasible(
       continue;
     }
     double abs_dist = std::abs(distance_m_rad[i]);
-    double disc = total_time_s * total_time_s -
-                  4 * abs_dist / cfg::SystemConfig::max_acceleration_mpsps_radpsps[i];
+    double disc =
+        total_time_s * total_time_s - 4 * abs_dist / cfg::SystemConfig::max_acc_m_radpsps[i];
 
     if (disc < 0) return {false, std::nullopt};
     double sqrt_disc = std::sqrt(disc);
@@ -54,50 +69,11 @@ std::pair<bool, std::optional<Eigen::Vector3d>> ctrl::Trajectory3D::IsFeasible(
     if (t_acc[i] < 0) return {false, std::nullopt};
 
     // t_acc is fine. check v_limit = a * t
-    if (cfg::SystemConfig::max_acceleration_mpsps_radpsps[i] * t_acc[i] >
+    if (cfg::SystemConfig::max_acc_m_radpsps[i] * t_acc[i] >
         cfg::SystemConfig::max_velocity_fBody_mps[i]) {
       return {false, std::nullopt};
     }
   }
 
   return {true, t_acc};
-}
-
-Eigen::Vector3d ctrl::Trajectory3D::VelocityAtT(double t_sec) {
-  // t_sec is global
-  if (t_sec < t_start_s || t_sec > t_finish_s) {
-    return Eigen::Vector3d(0, 0, 0);
-  }
-
-  t_sec -= t_start_s;
-  // t_sec is from 0 to total_time_s
-  Eigen::Vector3d velocity_fBody_mps;
-  for (int i = 0; i < 3; ++i) {
-    double sign = (v_max[i] >= 0.0) ? 1.0 : -1.0;
-    if (t_sec < t_acc_s[i]) {
-      velocity_fBody_mps[i] = sign * cfg::SystemConfig::max_acceleration_mpsps_radpsps[i] * t_sec;
-    } else if (t_sec < (total_time_s - t_acc_s[i])) {
-      velocity_fBody_mps[i] = v_max[i];
-    } else {
-      velocity_fBody_mps[i] = v_max[i] - sign *
-                                             cfg::SystemConfig::max_acceleration_mpsps_radpsps[i] *
-                                             (t_sec - total_time_s + t_acc_s[i]);
-    }
-  }
-
-  return velocity_fBody_mps;
-}
-
-void ctrl::Trajectory3D::Print() {
-  std::cout << "Trajectory Info\n";
-  std::cout << "Pose: " << pose_start.transpose() << " -> " << pose_end.transpose() << std::endl;
-  std::cout << "time: " << t_start_s << " -> " << t_finish_s << "\n\n";
-}
-
-Eigen::Vector3d ctrl::Trajectory3D::TotalDistance() {
-  Eigen::Vector3d distance(0, 0, 0);
-  for (double t = t_start_s; t < t_finish_s; t += 0.01) {
-    distance += VelocityAtT(t) * 0.01;
-  }
-  return distance;
 }

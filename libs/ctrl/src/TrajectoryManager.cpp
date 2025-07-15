@@ -7,78 +7,35 @@
   Given a path, it conditionally returns list of trajectories
   Condition is that each of the trajectories is feasible
 */
-bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vector3d> path) {
-  if (path.size() <= 1) return false;
+bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vector3d> path_fWorld,
+                                                         double t_start_s) {
+  if (path_fWorld.size() <= 1) return false;
   Trajectories trajectories;
-  double t_start_s = util::GetCurrentTime();
-  double t_end_s = util::GetCurrentTime();
-  for (int path_index = 1; path_index < path.size(); ++path_index) {
-    Eigen::Vector3d pose_start = path[path_index - 1];
-    Eigen::Vector3d pose_end = path[path_index];
+  double t_end_s = t_start_s;
+  std::cout << "[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] t_start: " << t_start_s
+            << std::endl;
+  for (int path_index = 1; path_index < path_fWorld.size(); ++path_index) {
+    Eigen::Vector3d pose_start = path_fWorld[path_index - 1];
+    Eigen::Vector3d pose_end = path_fWorld[path_index];
     Eigen::Vector3d distance_m_rad = pose_end - pose_start;
     double total_time_s = 4.0;  // TODO: Should be dynamic
-    if (!ctrl::Trajectory3D::IsFeasible(distance_m_rad, total_time_s).first) return false;
+    if (!ctrl::Trajectory3D::IsFeasible(distance_m_rad, total_time_s).first) {
+      std::cout << "[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Not feasible. Pose: "
+                << pose_start.transpose() << " to " << pose_end.transpose() << std::endl;
+      return false;
+    }
     // Create Trajectory
     t_start_s = t_end_s;
     t_end_s += total_time_s;
-    trajectories.push(
-        std::make_unique<ctrl::Trajectory3D>(pose_start, pose_end, t_start_s, t_end_s));
+    auto traj =
+        std::make_unique<ctrl::TrapezoidalTrajectory3D>(pose_start, pose_end, t_start_s, t_end_s);
+    if (traj) {
+      trajectories.push(std::move(traj));
+    } else
+      return false;
   }
   MergeNewTrajectories(std::move(trajectories));
   return true;
-}
-
-void ctrl::TrajectoryManager::MergeNewTrajectories(Trajectories&& new_trajectories) {
-  if (new_trajectories.empty()) return;
-  double new_traj_t_start_s = new_trajectories.front()->GetTStart();
-
-  // Case 1a: First calls
-  bool first_call = active_trajectories.empty();
-  if (first_call) {
-    // Add all the new trajectories
-    while (!new_trajectories.empty()) {
-      active_trajectories.push(std::move(new_trajectories.front()));
-      new_trajectories.pop();
-    }
-    active_traj_t_finish_s = active_trajectories.back()->GetTFinish();
-    return;
-  }
-  // Case 1b: New trajectories arrive in future (no overlap with active trajectories)
-  bool new_traj_in_future = new_traj_t_start_s >= active_traj_t_finish_s;
-  if (new_traj_in_future) {
-    // Step 1: Make a zero-velocity trajectory
-    active_trajectories.push(
-        std::make_unique<ctrl::Trajectory3D>(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0),
-                                             active_traj_t_finish_s, new_traj_t_start_s));
-    // Add all the the new trajectories to active trajectories
-    while (!new_trajectories.empty()) {
-      active_trajectories.push(std::move(new_trajectories.front()));
-      new_trajectories.pop();
-    }
-    active_traj_t_finish_s = active_trajectories.back()->GetTFinish();
-  }
-
-  // Case 2a: New trajectories overlap with current trajectory
-  // Case 2b: New trajectories overlap with active trajectory
-  bool overlap = active_traj_t_finish_s > new_trajectories.front()->GetTFinish();
-  if (overlap) {
-    // Step 1: Merge happens at t_start of new trajectories
-    double t_merge_s = new_traj_t_start_s;
-
-    // Step 2: Find out the exact trajectory that needs to be merged
-    // FindActiveTrajectoryAtT(t_merge_s);
-
-    // Step 3: Find out where you need to change the sign of velocity
-    // min_dist = force stop....
-    // if required is smaller than min_dist --> then we change sign
-    // active_merged_traj...current_pose <=====> new_traj pose_end
-
-    // Step 4:
-
-    // Step 5:
-
-    // TODO: when you have to change the sign of velocity. HARD
-  }
 }
 
 Eigen::Vector3d ctrl::TrajectoryManager::GetVelocityAtT(double current_time_s) {
@@ -92,14 +49,14 @@ void ctrl::TrajectoryManager::Print() {
   // }
 }
 
-std::pair<bool, Eigen::Vector3d> ctrl::TrajectoryManager::Update() {
+std::pair<bool, Eigen::Vector3d> ctrl::TrajectoryManager::Update(Eigen::Vector3d pose_est) {
   // Step 1: Get current time
   double current_time_s = util::GetCurrentTime();
 
   // Step 2: Did active trajectories finish?. Motion is finished
   if (current_time_s >= active_traj_t_finish_s) {
-    std::cout << "[ctrl::TrajectoryManager::Update] Finished motion. t_finish_s = "
-              << active_traj_t_finish_s << std::endl;
+    // std::cout << "[ctrl::TrajectoryManager::Update] Finished motion. t_finish_s = "
+    //           << active_traj_t_finish_s << std::endl;
     current_trajectory = nullptr;
     return std::make_pair(true, Eigen::Vector3d(0, 0, 0));  // finished motion
   }
@@ -113,7 +70,17 @@ std::pair<bool, Eigen::Vector3d> ctrl::TrajectoryManager::Update() {
     active_trajectories.pop();
     current_trajectory->Print();
   }
-
   // Step 4: Get reference velocity from current trajectory
-  return std::make_pair(false, GetVelocityAtT(current_time_s));
+  Eigen::Vector3d velocity_fWorld = GetVelocityAtT(current_time_s);
+  Eigen::Vector3d velocity_fBody = util::RotateAboutZ(velocity_fWorld, -pose_est[2]);
+
+  static int num_ = 0;
+  std::cout << std::fixed << std::setprecision(3);
+  // velocity_fBody.y() = 0.0;
+  // if (num_ % 50 == 0)
+  // std::cout << "[ctrl::TrajectoryManager::Update] velocity_fWorld: " <<
+  // velocity_fWorld.transpose() << ". velocity_fBody: " << velocity_fBody.transpose()
+  //           << std::endl;
+  // num_++;
+  return std::make_pair(false, velocity_fBody);
 }

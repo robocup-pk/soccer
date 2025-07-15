@@ -11,31 +11,22 @@ class Trajectory3D {
  public:
   static std::pair<bool, std::optional<Eigen::Vector3d>> IsFeasible(Eigen::Vector3d distance_m,
                                                                     double total_time_s);
+  static std::pair<bool, std::optional<Eigen::Vector3d>> IsFeasibleNonZeroVelocity(
+      Eigen::Vector3d distance_m, double total_time_s, Eigen::Vector3d v0);
 
-  Trajectory3D(Eigen::Vector3d pose_start, Eigen::Vector3d pose_end, double t_start_s,
-               double t_end_s);
-
-  Eigen::Vector3d VelocityAtT(double t);
+  virtual Eigen::Vector3d VelocityAtT(double t) = 0;
 
   // Helpers
-  void Print();
-  Eigen::Vector3d TotalDistance();
+  virtual void Print() = 0;
+  virtual Eigen::Vector3d TotalDistance() = 0;
 
-  inline double GetTStart() { return t_start_s; }
-  inline double GetTFinish() { return t_finish_s; }
+  virtual void SetTFinish(double t_finish_s) = 0;
+  virtual double GetTStart() = 0;
+  virtual double GetTFinish() = 0;
+  virtual Eigen::Vector3d GetPoseStart() = 0;
+  virtual Eigen::Vector3d GetPoseEnd() = 0;
 
- private:
-  Eigen::Vector3d pose_start;
-  Eigen::Vector3d pose_end;
-  double t_start_s;
-  double t_finish_s;
-
-  double total_time_s;
-  Eigen::Vector3d distance_m_rad;
-
-  // Trajectory limits
-  Eigen::Vector3d t_acc_s;
-  Eigen::Vector3d v_max;  // computed
+  virtual ~Trajectory3D() = default;
 };
 
 }  // namespace ctrl

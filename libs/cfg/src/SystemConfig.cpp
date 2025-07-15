@@ -2,8 +2,7 @@
 
 // Limits
 const Eigen::Vector3d cfg::SystemConfig::max_velocity_fBody_mps = Eigen::Vector3d(1, 1, 1);
-const Eigen::Vector3d cfg::SystemConfig::max_acceleration_mpsps_radpsps =
-    Eigen::Vector3d(0.3, 0.3, 0.3);
+const Eigen::Vector3d cfg::SystemConfig::max_acc_m_radpsps = Eigen::Vector3d(0.3, 0.3, 0.3);
 
 // Wall
 const float cfg::SystemConfig::wall_velocity_damping_factor = 0.9;

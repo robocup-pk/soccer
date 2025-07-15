@@ -9,6 +9,7 @@
 #include "HardwareManager.h"
 #include "MotionController.h"
 #include "TrajectoryManager.h"
+#include "Utils.h"
 
 namespace rob {
 
@@ -35,7 +36,7 @@ class RobotManager {
   void AddGoal(const Eigen::Vector3d& goal);
   void GoHome();
   void InitializeHome(Eigen::Vector3d pose_home);
-  void SetPath(std::vector<Eigen::Vector3d> path);
+  void SetPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
 
@@ -61,6 +62,7 @@ class RobotManager {
   std::thread control_thread;
   std::thread sense_thread;
   std::mutex robot_state_mutex;
+  std::mutex robot_path_mutex;
 
   std::atomic<bool> rob_manager_running = false;
   double control_loop_frequency_hz = 50;
