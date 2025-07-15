@@ -51,7 +51,7 @@ TEST_F(RobotModelTest, StraightForward) {
   // To go straight forward, we need to solve for the required wheel speeds
   Eigen::Vector3d desired_velocity(0.1, 0.0, 0.0);  // 0.1 m/s forward, no lateral, no rotation
 
-  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsMps(desired_velocity);
+  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
 
   // Front left should equal rear left
   EXPECT_NEAR(wheel_speeds(0), wheel_speeds(1), tolerance);
@@ -73,7 +73,7 @@ TEST_F(RobotModelTest, StraightForward) {
 TEST_F(RobotModelTest, StraightLeft) {
   Eigen::Vector3d desired_velocity(0.0, 0.1, 0.0);  // 0.1 m/s left, no forward, no rotation
 
-  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsMps(desired_velocity);
+  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
 
   // Front left be opposite to rear left
   EXPECT_NEAR(wheel_speeds(0), -wheel_speeds(1), tolerance);
@@ -93,7 +93,7 @@ TEST_F(RobotModelTest, StraightLeft) {
 TEST_F(RobotModelTest, StraightRight) {
   Eigen::Vector3d desired_velocity(0.0, -0.1, 0.0);  // 0.1 m/s right, no forward, no rotation
 
-  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsMps(desired_velocity);
+  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
 
   // Verify forward kinematics
   Eigen::Vector3d actual_velocity = robot_model->WheelSpeedsRadpsToRobotVelocity(
@@ -109,7 +109,7 @@ TEST_F(RobotModelTest, StraightBackward) {
   Eigen::Vector3d desired_velocity(-0.1, 0.0, 0.0);  // 0.1 m/s backward, no lateral, no
                                                      // rotation
 
-  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsMps(desired_velocity);
+  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
 
   // Verify forward kinematics
   Eigen::Vector3d actual_velocity = robot_model->WheelSpeedsRadpsToRobotVelocity(
@@ -124,7 +124,7 @@ TEST_F(RobotModelTest, StraightBackward) {
 TEST_F(RobotModelTest, TurnCounterClockwise) {
   Eigen::Vector3d desired_velocity(0.0, 0.0, 0.5);  // No translation, 0.5 rad/s CCW rotation
 
-  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsMps(desired_velocity);
+  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
 
   // Verify forward kinematics
   Eigen::Vector3d actual_velocity = robot_model->WheelSpeedsRadpsToRobotVelocity(
@@ -139,7 +139,7 @@ TEST_F(RobotModelTest, TurnCounterClockwise) {
 TEST_F(RobotModelTest, TurnClockwise) {
   Eigen::Vector3d desired_velocity(0.0, 0.0, -0.5);  // No translation, 0.5 rad/s CW rotation
 
-  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsMps(desired_velocity);
+  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
 
   // Verify forward kinematics
   Eigen::Vector3d actual_velocity = robot_model->WheelSpeedsRadpsToRobotVelocity(
@@ -154,7 +154,7 @@ TEST_F(RobotModelTest, TurnClockwise) {
 TEST_F(RobotModelTest, DiagonalMotion) {
   Eigen::Vector3d desired_velocity(0.1, 0.1, 0.0);  // Forward + left, no rotation
 
-  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsMps(desired_velocity);
+  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
 
   // Verify forward kinematics
   Eigen::Vector3d actual_velocity = robot_model->WheelSpeedsRadpsToRobotVelocity(
@@ -169,7 +169,7 @@ TEST_F(RobotModelTest, DiagonalMotion) {
 TEST_F(RobotModelTest, ForwardWhileTurning) {
   Eigen::Vector3d desired_velocity(0.1, 0.0, 0.3);  // Forward + CCW rotation
 
-  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsMps(desired_velocity);
+  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
 
   // Verify forward kinematics
   Eigen::Vector3d actual_velocity = robot_model->WheelSpeedsRadpsToRobotVelocity(
@@ -184,7 +184,7 @@ TEST_F(RobotModelTest, ForwardWhileTurning) {
 TEST_F(RobotModelTest, ZeroMotion) {
   Eigen::Vector3d desired_velocity(0.0, 0.0, 0.0);  // No motion
 
-  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsMps(desired_velocity);
+  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
 
   // All wheel speeds should be zero
   for (int i = 0; i < wheel_speeds.size(); ++i) {
@@ -228,7 +228,7 @@ TEST_F(RobotModelTest, RoundTripConsistency) {
   // Start with robot velocity, convert to wheel speeds, then back to robot velocity
   Eigen::Vector3d original_velocity(0.05, 0.03, 0.2);
 
-  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsMps(original_velocity);
+  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(original_velocity);
   Eigen::Vector3d recovered_velocity = robot_model->WheelSpeedsRadpsToRobotVelocity(
       std::vector<double>(wheel_speeds.data(), wheel_speeds.data() + wheel_speeds.size()));
 
@@ -242,7 +242,7 @@ TEST_F(RobotModelTest, RoundTripConsistency) {
 TEST_F(RobotModelTest, UnitsConsistency) {
   // Test that wheel radius is properly embedded in Jacobians
   Eigen::Vector3d robot_vel(1.0, 0.0, 0.0);  // 1 m/s forward
-  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsMps(robot_vel);
+  Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(robot_vel);
 
   // For 1 m/s robot velocity and 0.05m wheel radius,
   // wheel surface speed should be 1 m/s, so angular speed = 1/0.05 = 20 rad/s

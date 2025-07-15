@@ -18,6 +18,7 @@ class MotorDriver {
   void SendWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm);
 
   Eigen::Vector4d GetMotorsRpms();
+  double GetAngularVelocityRadps();
 
   bool NewDataAvailable();
 
@@ -34,6 +35,7 @@ class MotorDriver {
 
   std::vector<MotorModel> motors;
   Eigen::Vector4d motors_rpms;
+  int gyro_mdeg_ps;
 
   std::shared_ptr<LibSerial::SerialPort> shared_serial_port;
   std::mutex shared_serial_port_mutex;

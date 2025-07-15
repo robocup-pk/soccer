@@ -17,6 +17,12 @@ hw::HardwareManager::HardwareManager() {
 
 void hw::HardwareManager::SetBodyVelocity(Eigen::Vector3d velocity_fBody) {
   Eigen::Vector4d wheel_speeds_rpm = robot_model->RobotVelocityToWheelSpeedsRpm(velocity_fBody);
+  
+  std::cout << "[hw::HardwareManager::SetBodyVelocity] Body Velocity: "
+            << velocity_fBody.transpose() << " m/s" << std::endl;
+  
+  std::cout << "[hw::HardwareManager::SetBodyVelocity] Wheel Speeds RPM: "
+            << wheel_speeds_rpm.transpose() << std::endl;
   SetWheelSpeedsRpm(wheel_speeds_rpm);
   gyro_driver->SetAngularVelocityRadps(velocity_fBody[2]);
 }
@@ -34,13 +40,33 @@ std::optional<Eigen::Vector4d> hw::HardwareManager::NewMotorsRpms() {
   return std::nullopt;
 }
 
+double ComputeGyroAngle(double angular_velocity_radps) {
+  static double angle_rad = 0.0;
+  static auto prev_time = std::chrono::steady_clock::now();
+
+  auto now = std::chrono::steady_clock::now();
+  std::chrono::duration<double> dt = now - prev_time;
+  prev_time = now;
+
+  angle_rad += angular_velocity_radps * dt.count();
+  return angle_rad;
+}
+
 std::optional<double> hw::HardwareManager::NewGyroAngularVelocity() {
+  double w_radps = motor_driver->GetAngularVelocityRadps();
+  std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Data: " << w_radps << std::endl;
+
+  double angle = ComputeGyroAngle(w_radps);
+  std::cout << "[Integrated Angle] " << angle << " rad (" << angle * 180.0 / M_PI << " deg)"
+            << std::endl;
+
+  return w_radps;
   // double w_radps = gyro_driver->GetAngularVelocityRadps();
   // if (gyro_driver->NewDataAvailable()) {
   //   gyro_driver->new_data_available = false;
   //   return w_radps;
   // }
-  return std::nullopt;
+  // return std::nullopt;
 }
 
 std::optional<Eigen::Vector3d> hw::HardwareManager::NewCameraData() {
@@ -48,7 +74,14 @@ std::optional<Eigen::Vector3d> hw::HardwareManager::NewCameraData() {
   return std::nullopt;
 }
 
-hw::HardwareManager::~HardwareManager() { robot_model = nullptr; }
+hw::HardwareManager::~HardwareManager() { 
+  // Properly close the serial port before destruction
+  if (shared_serial_port && shared_serial_port->IsOpen()) {
+    std::cout << "[hw::HardwareManager::~HardwareManager] Closing serial port..." << std::endl;
+    shared_serial_port->Close();
+  }
+  robot_model = nullptr; 
+}
 
 void hw::HardwareManager::InitializeSerialPort() {
   shared_serial_port = std::make_shared<LibSerial::SerialPort>();

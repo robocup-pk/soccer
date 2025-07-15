@@ -75,7 +75,7 @@ void est::StateEstimator::NewMotorsData(Eigen::Vector4d wheel_speeds_rpm) {
   // Predict Pose
   pose_est[0] += velocity_fWorld[0] * dt;
   pose_est[1] += velocity_fWorld[1] * dt;
-  pose_est[2] = util::WrapAngle(pose_est[2] + velocity_fWorld[2] * dt);
+  // pose_est[2] = util::WrapAngle(pose_est[2] + velocity_fWorld[2] * dt);
 
   // Predict Covariance
   state_cov = phi * state_cov * phi.transpose() + process_cov;

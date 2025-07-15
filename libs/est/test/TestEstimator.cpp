@@ -102,11 +102,13 @@ TEST_F(StateEstimatorTest, TestForwardMotionWithCameraAgain) {
 
 TEST_F(StateEstimatorTest, TestForwardMotionDeadReckoning) {
   double t_sec = 1;
+  Eigen::Vector3d pose_init(0, 0, 0);
   state_estimator->initialized_pose = true;
 
   // GROUND TRUTH
   Eigen::Vector3d velocity_fBody(1, 0, 0);
-  Eigen::Vector3d pose_true = velocity_fBody * t_sec;
+  Eigen::Vector3d velocity_fWorld = util::RotateAboutZ(velocity_fBody, 0);
+  Eigen::Vector3d pose_true = pose_init + velocity_fWorld * t_sec;
 
   // ESTIMATION
   hardware_manager->SetBodyVelocity(velocity_fBody);
@@ -152,6 +154,8 @@ TEST_F(StateEstimatorTest, TestForwardMotionDeadReckoningWithRotation) {
 
     std::optional<Eigen::Vector4d> motors_rpms = hardware_manager->NewMotorsRpms();
     if (motors_rpms.has_value()) state_estimator->NewMotorsData(motors_rpms.value());
+    state_estimator->NewGyroData(velocity_fWorld[2]);
+    
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
@@ -190,6 +194,7 @@ TEST_F(StateEstimatorTest, TestMotionWithInitialPose) {
       state_estimator->NewCameraData(pose_cam);
     }
 
+    state_estimator->NewGyroData(velocity_fWorld[2]);
     ++iteration;
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
