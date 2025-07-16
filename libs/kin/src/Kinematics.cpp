@@ -205,22 +205,22 @@ void kin::HandleBallSticking(state::SoccerObject& robot, state::SoccerObject& ba
 
 void kin::UpdateAttachedBallPosition(state::SoccerObject& robot, state::SoccerObject& ball) {
   Eigen::Vector3d robot_center = robot.GetCenterPosition();
-  float robot_rotation = robot.position[2] - M_PI / 2.0f;
+  float robot_rotation = robot.position[2];
 
   // Use flat surface distance for D-shaped robot
   float robot_radius = std::min(robot.size[0], robot.size[1]) / 2.0f;
   float ball_radius = ball.size[0] / 2.0f;
 
   // Attachment distance for flat surface contact
-  float attachment_distance = robot_radius * 0.6f + ball_radius * 0.4f;
+  float attachment_distance = robot_radius * 0.8f + ball_radius;
 
   // Calculate front position using unit vector
   float front_x = robot_center.x() + attachment_distance * cos(robot_rotation);
-  float front_y = robot_center.y() + attachment_distance * (-sin(robot_rotation));
+  float front_y = robot_center.y() + attachment_distance * sin(robot_rotation);
 
-  // Position ball so it appears attached to flat surface
+  // Position ball center at attachment point (not corner-based)
   ball.position[0] = front_x - ball.size[0] / 2.0f;
-  ball.position[1] = front_y + ball.size[1] / 2.0f;
+  ball.position[1] = front_y - ball.size[1] / 2.0f;
   ball.position[2] = 0;
   ball.velocity = Eigen::Vector3d(0, 0, 0);
 }
@@ -233,10 +233,10 @@ void kin::DetachBall(state::SoccerObject& ball, float detach_velocity) {
   state::SoccerObject* robot = ball.attached_to;
 
   // Get robot's current orientation for detachment direction
-  float robot_rotation = robot->position[2] - M_PI / 2.0f;
+  float robot_rotation = robot->position[2];
 
   // Calculate front direction vector (same as in IsPointInFrontSector)
-  Eigen::Vector2d front_dir(cos(robot_rotation), -sin(robot_rotation));
+  Eigen::Vector2d front_dir(cos(robot_rotation), sin(robot_rotation));
 
   // Apply detach velocity in the front direction
   float detach_vel_x = detach_velocity * front_dir.x();
