@@ -14,38 +14,48 @@
 #include "RobotManager.h"
 #include "SoccerField.h"
 
-void ProcessInput(GLFWwindow* gl_window, 
-                  std::vector<state::SoccerObject>& soccer_objects) {
+void ProcessInput(GLFWwindow* gl_window, std::vector<state::SoccerObject>& soccer_objects) {
   Eigen::Vector3d velocity_fBody(0, 0, 0);
 
   // STEERING
   bool key_pressed = false;
   if (glfwGetKey(gl_window, GLFW_KEY_W) == GLFW_PRESS) {
     key_pressed = true;
-    velocity_fBody.y() += 1;
+    velocity_fBody.x() += 1;
   }
   if (glfwGetKey(gl_window, GLFW_KEY_S) == GLFW_PRESS) {
     key_pressed = true;
-    velocity_fBody.y() -= 1;
+    velocity_fBody.x() -= 1;
   }
   if (glfwGetKey(gl_window, GLFW_KEY_A) == GLFW_PRESS) {
     key_pressed = true;
-    velocity_fBody.x() -= 1;
+    velocity_fBody.y() += 1;
   }
   if (glfwGetKey(gl_window, GLFW_KEY_D) == GLFW_PRESS) {
     key_pressed = true;
-    velocity_fBody.x() += 1;
+    velocity_fBody.y() -= 1;
   }
-  if(glfwGetKey(gl_window, GLFW_KEY_C) == GLFW_PRESS)
-  {
+  if (glfwGetKey(gl_window, GLFW_KEY_C) == GLFW_PRESS) {
     key_pressed = true;
     velocity_fBody.z() += 1;
   }
-  if(glfwGetKey(gl_window, GLFW_KEY_X) == GLFW_PRESS)
-  {
+  if (glfwGetKey(gl_window, GLFW_KEY_X) == GLFW_PRESS) {
     key_pressed = true;
     velocity_fBody.z() -= 1;
   }
+  if (glfwGetKey(gl_window, GLFW_KEY_K) == GLFW_PRESS) {
+    if (soccer_objects[soccer_objects.size() - 1].is_attached) {
+      kin::DetachBall(soccer_objects[soccer_objects.size() - 1], 0.5f);
+      std::cout << "[ProcessInput] Ball detached from robot" << std::endl;
+    }
+  }
+  if (glfwGetKey(gl_window, GLFW_KEY_J) == GLFW_PRESS) {
+    if (soccer_objects[soccer_objects.size() - 1].is_attached) {
+      kin::DetachBall(soccer_objects[soccer_objects.size() - 1], 0.1f);
+      std::cout << "[ProcessInput] Ball detached from robot" << std::endl;
+    }
+  }
+
   if (key_pressed) {
     velocity_fBody.normalize();
   }
@@ -67,15 +77,15 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     float pixels_per_mm = util::PixelsPerMm();
     double x_mm = xpos / pixels_per_mm;
     double y_mm = ypos / pixels_per_mm;
-    
+
     // 2. Convert from millimeters to meters
     double x_m = x_mm / 1000.0;
     double y_m = y_mm / 1000.0;
-    
+
     // 3. Adjust coordinate system: center at field center, flip Y axis
     double field_width_m = vis::SoccerField::GetInstance().width_mm / 1000.0;
     double field_height_m = vis::SoccerField::GetInstance().height_mm / 1000.0;
-    
+
     double world_x = x_m - (field_width_m / 2.0);   // Center X coordinate
     double world_y = (field_height_m / 2.0) - y_m;  // Center Y coordinate and flip Y axis
 
@@ -104,7 +114,7 @@ int main(int argc, char* argv[]) {
     soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();
     kin::UpdateKinematics(soccer_objects, dt);
     kin::CheckAndResolveCollisions(soccer_objects);
-    robot_manager.UpdateVelocityUsingSoccerObject(soccer_objects);    
+    robot_manager.UpdateVelocityUsingSoccerObject(soccer_objects);
 
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
       std::cout << "[main] Simulation finished" << std::endl;
