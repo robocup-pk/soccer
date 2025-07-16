@@ -228,6 +228,12 @@ bool rob::RobotManager::BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody) 
   }
   return true;
 }
+/*
+  This function is only usedin simulation
+*/
+void rob::RobotManager::UpdateVelocityUsingSoccerObject(std::vector<state::SoccerObject>& soccer_objects) {
+  this->SetBodyVelocity(soccer_objects[0].velocity);
+}
 
 rob::RobotManager::~RobotManager() {
   rob_manager_running.store(false);
