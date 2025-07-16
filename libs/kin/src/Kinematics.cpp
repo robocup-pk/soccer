@@ -212,7 +212,7 @@ void kin::UpdateAttachedBallPosition(state::SoccerObject& robot, state::SoccerOb
   float ball_radius = ball.size[0] / 2.0f;
 
   // Attachment distance for flat surface contact
-  float attachment_distance = robot_radius * 0.8f + ball_radius;
+  float attachment_distance = robot_radius * 0.5f + ball_radius;
 
   // Calculate front position using unit vector
   float front_x = robot_center.x() + attachment_distance * cos(robot_rotation);
@@ -245,22 +245,13 @@ void kin::DetachBall(state::SoccerObject& ball, float detach_velocity) {
   // Debug: Check if velocities make sense
   float velocity_magnitude = sqrt(detach_vel_x * detach_vel_x + detach_vel_y * detach_vel_y);
 
-  // If velocity is too small, ensure minimum movement in front direction
-  if (velocity_magnitude < 0.5f) {
-    // Use a minimum velocity in the front direction
-    float min_velocity = 1.0f;
-    detach_vel_x = min_velocity * front_dir.x();
-    detach_vel_y = min_velocity * front_dir.y();
-  }
-
   // Move ball slightly away from robot before detaching to prevent immediate re-collision
   Eigen::Vector3d robot_center = robot->GetCenterPosition();
-  float separation_distance = 500.0f;  // Distance to separate ball from robot
+  float separation_distance = 0.2f;  // Distance to separate ball from robot
 
   // Position ball in front of robot using the same front direction
   ball.position[0] = robot_center.x() + separation_distance * front_dir.x() - ball.size[0] / 2.0f;
-  ball.position[1] = robot_center.y() + separation_distance * front_dir.y() + ball.size[1] / 2.0f;
-
+  ball.position[1] = robot_center.y() + separation_distance * front_dir.y() - ball.size[1] / 2.0f;
   // Set ball velocity for natural detachment
   ball.velocity[0] = detach_vel_x;
   ball.velocity[1] = detach_vel_y;
@@ -269,4 +260,7 @@ void kin::DetachBall(state::SoccerObject& ball, float detach_velocity) {
   // Clear attachment state
   ball.is_attached = false;
   ball.attached_to = nullptr;
+
+  std::cout << "[DetachBall] Ball detached with velocity: (" << detach_vel_x << ", "
+            << detach_vel_y << ")" << std::endl;
 }
