@@ -53,7 +53,12 @@ double ComputeGyroAngle(double angular_velocity_radps) {
 }
 
 std::optional<double> hw::HardwareManager::NewGyroAngularVelocity() {
+#ifdef BUILD_ON_PI
   double w_radps = motor_driver->GetAngularVelocityRadps();
+#else
+  double w_radps = gyro_driver->GetAngularVelocityRadps();
+#endif
+  
   std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Data: " << w_radps << std::endl;
 
   double angle = ComputeGyroAngle(w_radps);
