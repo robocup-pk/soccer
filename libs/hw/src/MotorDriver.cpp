@@ -159,6 +159,10 @@ Eigen::Vector4d hw::MotorDriver::GetMotorsRpms() {
 }
 
 double hw::MotorDriver::GetAngularVelocityRadps() {
+  if(motor_type == MotorType::MODEL) {
+    return 0.0;  // No gyro data in model mode
+  }
+
   return (gyro_mdeg_ps / 1000.0) * M_PI / 180.0;
 }
 
