@@ -35,6 +35,16 @@ void ProcessInput(GLFWwindow* gl_window,
     key_pressed = true;
     velocity_fBody.x() += 1;
   }
+  if(glfwGetKey(gl_window, GLFW_KEY_C) == GLFW_PRESS)
+  {
+    key_pressed = true;
+    velocity_fBody.z() += 1;
+  }
+  if(glfwGetKey(gl_window, GLFW_KEY_X) == GLFW_PRESS)
+  {
+    key_pressed = true;
+    velocity_fBody.z() -= 1;
+  }
   if (key_pressed) {
     velocity_fBody.normalize();
   }
