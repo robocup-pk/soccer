@@ -104,6 +104,7 @@ void rob::RobotManager::SenseLogic() {
     // Pose shall not be used in control while it is being updated
     std::unique_lock<std::mutex> lock(robot_state_mutex);
     pose_fWorld = state_estimator.GetPose();
+    // std::cout << "Pose: " << pose_fWorld.transpose() << std::endl;
   }
   std::cout << "Pose (est): " << pose_fWorld.transpose() << std::endl;
 

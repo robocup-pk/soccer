@@ -24,7 +24,7 @@ TEST_F(TrajectoryTest, TestIsFeasibleOnlyForwardMotion) {
 
   EXPECT_TRUE(feasible);
 
-  auto traj = ctrl::TrapezoidalTrajectory3D(pose_start, pose_end, t_start_s, t_finish_s);
+  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start_s, t_finish_s);
 
   traj.Print();
 
@@ -47,7 +47,7 @@ TEST_F(TrajectoryTest, TestIsFeasibleOnlyBackwardMotion) {
 
   EXPECT_TRUE(feasible);
 
-  auto traj = ctrl::TrapezoidalTrajectory3D(pose_start, pose_end, t_start_s, t_finish_s);
+  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start_s, t_finish_s);
 
   traj.Print();
 
@@ -70,7 +70,7 @@ TEST_F(TrajectoryTest, TestIsFeasibleSidewaysMotion) {
 
   EXPECT_TRUE(feasible);
 
-  auto traj = ctrl::TrapezoidalTrajectory3D(pose_start, pose_end, t_start_s, t_finish_s);
+  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start_s, t_finish_s);
 
   traj.Print();
 
@@ -93,7 +93,7 @@ TEST_F(TrajectoryTest, TestIsFeasibleDiagonalMotion) {
 
   EXPECT_TRUE(feasible);
 
-  auto traj = ctrl::TrapezoidalTrajectory3D(pose_start, pose_end, t_start_s, t_finish_s);
+  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start_s, t_finish_s);
 
   traj.Print();
 
@@ -116,7 +116,7 @@ TEST_F(TrajectoryTest, TestIsFeasibleDiagonalAndRotationMotion) {
 
   EXPECT_TRUE(feasible);
 
-  auto traj = ctrl::TrapezoidalTrajectory3D(pose_start, pose_end, t_start_s, t_finish_s);
+  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start_s, t_finish_s);
 
   traj.Print();
 

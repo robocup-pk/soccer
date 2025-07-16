@@ -3,77 +3,51 @@
 #include "SystemConfig.h"
 #include "Trajectory3D.h"
 
-std::pair<bool, std::optional<Eigen::Vector3d>> ctrl::Trajectory3D::IsFeasibleNonZeroVelocity(
-    Eigen::Vector3d distance_m_rad, double total_time_s, Eigen::Vector3d v0) {
-  std::cout << "[ctrl::Trajectory3D::IsFeasibleNonZeroVelocity] distance: " << distance_m_rad.transpose() << ". v0: " << v0.transpose() << ". total_time_s: " << total_time_s << std::endl;
-  // Condition 1: a * h < v^2 / 2
-  for (int i = 0; i < 3; ++i) {
-    std::cout << "A\n"; 
-    if (cfg::SystemConfig::max_acc_m_radpsps[i] * std::fabs(distance_m_rad[i]) < v0[i] * v0[i] / 2)
-      return {false, std::nullopt};
-  }
+std::pair<bool, std::optional<Eigen::Vector3d>> ctrl::Trajectory3D::IsFeasible(
+    Eigen::Vector3d h, double T, Eigen::Vector3d v0) {
+  std::cout << "[ctrl::Trajectory3D::IsFeasibleNonZeroVelocity] h: " << h.transpose()
+            << ". v0: " << v0.transpose() << ". T: " << T << std::endl;
+  Eigen::Vector3d t_acc_s(-1, -1, -1);
+  Eigen::Vector3d a = cfg::SystemConfig::max_acc_m_radpsps;
+  Eigen::Vector3d disc;  // Discriminant
 
-  // Condition 2: a < a_max
-  // for (int i = 0; i < 3; ++i) {
-  //   std::cout << "B\n";
-  //   double a =
-  //       2 * distance_m_rad[i] - total_time_s * v0[i] +
-  //       std::sqrt(4 * std::pow(distance_m_rad[i], 2) - 4 * distance_m_rad[i] * v0[i] * total_time_s +
-  //                 2 * std::pow(v0[i], 2) * std::pow(total_time_s, 2));
-  //   if (a > cfg::SystemConfig::max_acc_m_radpsps[i]) return {false, std::nullopt};
-  // }
-
-  // Condition 3: disciminant
-  Eigen::Vector3d disc;
   for (int i = 0; i < 3; ++i) {
-    std::cout << "C\n";
-    disc[i] = std::pow(cfg::SystemConfig::max_acc_m_radpsps[i], 2) * std::pow(total_time_s, 2) -
-              4 * cfg::SystemConfig::max_acc_m_radpsps[i] * std::fabs(distance_m_rad[i]) +
-              2 * cfg::SystemConfig::max_acc_m_radpsps[i] * v0[i] * total_time_s - v0[i] * v0[i];
-    if (disc[i] <= 0) return {false, std::nullopt};
+    if (v0[i] * h[i] >= 0) {
+      // Case 1: No sign change
+      // Feasibility condition:
+      disc[i] = a[i] * a[i] * T * T - 4 * a[i] * std::fabs(h[i]) +
+                2 * a[i] * std::fabs(v0[i]) * T - v0[i] * v0[i];
+      if (disc[i] <= 0) return {false, std::nullopt};
+    } else {
+      // Case 2: Sign change
+      // double distance_1 = v0[i] * v0[i] / (2 * cfg::SystemConfig::max_acc_m_radpsps[i]);
+      // double total_time_1 = std::fabs(v0[i] / cfg::SystemConfig::max_acc_m_radpsps[i]);
+      // distance_m_rad[i] -= distance_1;
+
+      // // Feasibility condition:
+      // // Move from v0 to 0
+
+      // // Then follow the normal trapezoidal
+      // std::cout << "Distance 1: " << distance_1 << ". Distance 2: " << distance_m_rad[i]
+      //           << std::endl;
+      // std::pair<bool, std::optional<double>> traj_t_acc =
+      //     IsFeasible(distance_m_rad[i], total_time_s - total_time_1, i);
+      // if (!traj_t_acc.first) {
+      // std::cout << "[ctrl::Trajectory3D::IsFeasibleNonZeroVelocity] Trajectory not "
+      //              "feasible. Try different params"
+      //           << std::endl;
+      // return;
+      // }
+      // t_acc_s[i] = traj_t_acc.second.value();
+    }
   }
 
   // It is feasible. Calculate the parameters
-  Eigen::Vector3d v_constant;
+  Eigen::Vector3d v_cruise;
   for (int i = 0; i < 3; ++i) {
-    v_constant[i] =
-        0.5 * (v0[i] + cfg::SystemConfig::max_acc_m_radpsps[i] * total_time_s - std::sqrt(disc[i]));
+    v_cruise[i] = 0.5 * (a[i] * T + std::fabs(v0[i]) - std::sqrt(disc[i]));
+    // Take care of the sign here
+    if (h[i] < 0) v_cruise[i] *= -1;
   }
-
-  return {true, v_constant};
-}
-
-std::pair<bool, std::optional<Eigen::Vector3d>> ctrl::Trajectory3D::IsFeasible(
-    Eigen::Vector3d distance_m_rad, double total_time_s) {
-  Eigen::Vector3d t_acc(-1, -1, -1);
-
-  for (int i = 0; i < 3; ++i) {
-    if (std::abs(distance_m_rad[i]) < 1e-6) {
-      t_acc[i] = 0.0;  // no motion needed
-      continue;
-    }
-    double abs_dist = std::abs(distance_m_rad[i]);
-    double disc =
-        total_time_s * total_time_s - 4 * abs_dist / cfg::SystemConfig::max_acc_m_radpsps[i];
-
-    if (disc < 0) return {false, std::nullopt};
-    double sqrt_disc = std::sqrt(disc);
-    double t_acc_1 = (total_time_s - sqrt_disc) / 2.0;
-    double t_acc_2 = (total_time_s + sqrt_disc) / 2.0;
-
-    if (t_acc_1 > 0 && t_acc_1 < total_time_s) {
-      t_acc[i] = t_acc_1;
-    } else if (t_acc_2 > 0 && t_acc_2 < total_time_s) {
-      t_acc[i] = t_acc_2;
-    }
-    if (t_acc[i] < 0) return {false, std::nullopt};
-
-    // t_acc is fine. check v_limit = a * t
-    if (cfg::SystemConfig::max_acc_m_radpsps[i] * t_acc[i] >
-        cfg::SystemConfig::max_velocity_fBody_mps[i]) {
-      return {false, std::nullopt};
-    }
-  }
-
-  return {true, t_acc};
+  return {true, v_cruise};
 }

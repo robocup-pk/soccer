@@ -12,23 +12,21 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
   if (path_fWorld.size() <= 1) return false;
   Trajectories trajectories;
   double t_end_s = t_start_s;
-  std::cout << "[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] t_start: " << t_start_s
-            << std::endl;
   for (int path_index = 1; path_index < path_fWorld.size(); ++path_index) {
     Eigen::Vector3d pose_start = path_fWorld[path_index - 1];
     Eigen::Vector3d pose_end = path_fWorld[path_index];
-    Eigen::Vector3d distance_m_rad = pose_end - pose_start;
-    double total_time_s = 4.0;  // TODO: Should be dynamic
-    if (!ctrl::Trajectory3D::IsFeasible(distance_m_rad, total_time_s).first) {
+    Eigen::Vector3d h = pose_end - pose_start;
+    double T = 4.0;  // TODO: Should be dynamic
+    if (!ctrl::Trajectory3D::IsFeasible(h, T).first) {
       std::cout << "[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Not feasible. Pose: "
                 << pose_start.transpose() << " to " << pose_end.transpose() << std::endl;
       return false;
     }
     // Create Trajectory
     t_start_s = t_end_s;
-    t_end_s += total_time_s;
-    auto traj =
-        std::make_unique<ctrl::TrapezoidalTrajectory3D>(pose_start, pose_end, t_start_s, t_end_s);
+    t_end_s += T;
+    auto traj = std::make_unique<ctrl::TrapezoidalTrajectoryVi3D>(pose_start, pose_end, t_start_s,
+                                                                  t_end_s);
     if (traj) {
       trajectories.push(std::move(traj));
     } else
@@ -74,13 +72,5 @@ std::pair<bool, Eigen::Vector3d> ctrl::TrajectoryManager::Update(Eigen::Vector3d
   Eigen::Vector3d velocity_fWorld = GetVelocityAtT(current_time_s);
   Eigen::Vector3d velocity_fBody = util::RotateAboutZ(velocity_fWorld, -pose_est[2]);
 
-  static int num_ = 0;
-  std::cout << std::fixed << std::setprecision(3);
-  // velocity_fBody.y() = 0.0;
-  // if (num_ % 50 == 0)
-  // std::cout << "[ctrl::TrajectoryManager::Update] velocity_fWorld: " <<
-  // velocity_fWorld.transpose() << ". velocity_fBody: " << velocity_fBody.transpose()
-  //           << std::endl;
-  // num_++;
   return std::make_pair(false, velocity_fBody);
 }

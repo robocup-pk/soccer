@@ -6,16 +6,13 @@
 #include <Eigen/Dense>
 
 #include "Trajectory3D.h"
-#include "TrapezoidalTrajectory3D.h"
 
 namespace ctrl {
 
 class TrapezoidalTrajectoryVi3D : public Trajectory3D {
  public:
-  TrapezoidalTrajectoryVi3D(std::unique_ptr<ctrl::Trajectory3D> traj, Eigen::Vector3d v0);
-
   TrapezoidalTrajectoryVi3D(Eigen::Vector3d pose_start, Eigen::Vector3d pose_end, double t_start_s,
-                            double t_end_s, Eigen::Vector3d v0);
+                            double t_end_s, Eigen::Vector3d v0 = Eigen::Vector3d(0, 0, 0));
 
   Eigen::Vector3d VelocityAtT(double t) override;
 
@@ -35,13 +32,15 @@ class TrapezoidalTrajectoryVi3D : public Trajectory3D {
   double t_start_s;
   double t_finish_s;
 
-  double total_time_s;
-  Eigen::Vector3d distance_m_rad;
+  Eigen::Vector3d total_time_1;  // TODO: make it better. just trying to make it work right now
+  double T;
+  Eigen::Vector3d h;
 
   // Trajectory limits
-  Eigen::Vector3d t_acc_s;
-  Eigen::Vector3d t_dec_s;
-  Eigen::Vector3d v_max;
+  Eigen::Vector3d a;
+  Eigen::Vector3d t_a;
+  Eigen::Vector3d t_d;
+  Eigen::Vector3d v_cruise;
   Eigen::Vector3d v0;
 };
 
