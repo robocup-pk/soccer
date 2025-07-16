@@ -265,6 +265,12 @@ bool rob::RobotManager::BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody) 
   }
   return true;
 }
+/*
+  This function is only usedin simulation
+*/
+void rob::RobotManager::UpdateVelocityUsingSoccerObject(std::vector<state::SoccerObject>& soccer_objects) {
+  this->SetBodyVelocity(soccer_objects[0].velocity);
+}
 
 void rob::RobotManager::InitializePose(Eigen::Vector3d& pose_fWorld) {
   std::unique_lock<std::mutex> lock(robot_state_mutex);
