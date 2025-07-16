@@ -46,7 +46,7 @@ class SoccerObject {
   inline float GetRadius() const { return radius_m; }
   inline float GetMass() const { return mass_kg; }
   inline Eigen::Vector3d GetCenterPosition() {
-    return Eigen::Vector3d(position[0] + size[0] / 2, position[1] - size[1] / 2, position[2]);
+    return Eigen::Vector3d(position[0] + size[0] / 2, position[1] + size[1] / 2, position[2]);
   }
 
   bool IsPointInFrontSector(Eigen::Vector2d point);
