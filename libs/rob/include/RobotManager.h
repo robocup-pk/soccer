@@ -4,12 +4,13 @@
 #include <queue>
 #include <mutex>
 #include <atomic>
+#include <vector>
 
 #include "StateEstimator.h"
 #include "HardwareManager.h"
 #include "MotionController.h"
 #include "TrajectoryManager.h"
-#include "Utils.h"
+#include "SoccerObject.h"
 
 namespace rob {
 
@@ -39,6 +40,7 @@ class RobotManager {
   void SetPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
+  void UpdateVelocityUsingSoccerObject(std::vector<state::SoccerObject>& soccer_objects);
 
   Eigen::Vector3d GetPoseInWorldFrame();
   void TryAssignNextGoal();

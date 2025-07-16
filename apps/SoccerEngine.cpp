@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
     soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();
     kin::UpdateKinematics(soccer_objects, dt);
     kin::CheckAndResolveCollisions(soccer_objects);
-    robot_manager.SetBodyVelocity(soccer_objects[0].velocity);    
+    robot_manager.UpdateVelocityUsingSoccerObject(soccer_objects);    
 
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
       std::cout << "[main] Simulation finished" << std::endl;
