@@ -142,6 +142,15 @@ void rob::RobotManager::SenseLogic() {
   }
 }
 
+void rob::RobotManager::SetPath(std::vector<state::Waypoint> path_fWorld, double t_start_s) {
+  std::vector<Eigen::Vector3d> path_fWorld_;
+  for (auto& p : path_fWorld) {
+    Eigen::Vector3d wp(p.x, p.y, p.angle);
+    path_fWorld_.push_back(wp);
+  }
+  SetPath(path_fWorld_, t_start_s);
+}
+
 void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
   bool is_path_valid;
   {
@@ -268,7 +277,8 @@ bool rob::RobotManager::BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody) 
 /*
   This function is only usedin simulation
 */
-void rob::RobotManager::UpdateVelocityUsingSoccerObject(std::vector<state::SoccerObject>& soccer_objects) {
+void rob::RobotManager::UpdateVelocityUsingSoccerObject(
+    std::vector<state::SoccerObject>& soccer_objects) {
   this->SetBodyVelocity(soccer_objects[0].velocity);
 }
 

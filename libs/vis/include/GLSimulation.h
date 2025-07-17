@@ -2,6 +2,7 @@
 #define GL_WINDOW_H
 
 // std
+#include <vector>
 #include <map>
 
 // extern libs
@@ -29,6 +30,7 @@ extern int team_two_selected_player;
 
 class GLSimulation {
  public:
+
   GLSimulation();
   void RegisterCallbacks();
   void InitGameObjects(std::vector<state::SoccerObject>& soccer_objects);
@@ -55,6 +57,8 @@ class GLSimulation {
   std::map<std::string, GameObject> game_objects;
   SpriteRenderer renderer;
 };
+
+void ProcessUserInput(GLFWwindow* window, std::vector<state::SoccerObject>& soccer_objects);
 
 }  // namespace vis
 
