@@ -39,6 +39,9 @@ class RobotManager {
   void InitializeHome(Eigen::Vector3d pose_home);
   void SetPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
 
+  void IntegratePhysics(std::vector<state::SoccerObject>& soccer_objects, float dt);
+  void HandleCollisionFeedback(std::vector<state::SoccerObject>& soccer_objects);
+
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
   void UpdateVelocityUsingSoccerObject(std::vector<state::SoccerObject>& soccer_objects);
 

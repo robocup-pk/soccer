@@ -14,7 +14,8 @@
 #include "RobotManager.h"
 #include "SoccerField.h"
 
-void ProcessInput(GLFWwindow* gl_window, std::vector<state::SoccerObject>& soccer_objects) {
+void ProcessInput(GLFWwindow* gl_window, std::vector<state::SoccerObject>& soccer_objects,
+                  rob::RobotManager& robot_manager) {
   Eigen::Vector3d velocity_fBody(0, 0, 0);
 
   // STEERING
@@ -60,7 +61,7 @@ void ProcessInput(GLFWwindow* gl_window, std::vector<state::SoccerObject>& socce
     velocity_fBody.normalize();
   }
   // Update robot's velocity directly
-  soccer_objects[0].velocity = velocity_fBody;
+  robot_manager.SetBodyVelocity(velocity_fBody);
 }
 
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
@@ -110,11 +111,10 @@ int main(int argc, char* argv[]) {
 
   while (1) {
     float dt = util::CalculateDt();
-    ProcessInput(gl_window, soccer_objects);
-    soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();
-    kin::UpdateKinematics(soccer_objects, dt);
+    ProcessInput(gl_window, soccer_objects, robot_manager);
+    robot_manager.IntegratePhysics(soccer_objects, dt);
     kin::CheckAndResolveCollisions(soccer_objects);
-    robot_manager.UpdateVelocityUsingSoccerObject(soccer_objects);
+    robot_manager.HandleCollisionFeedback(soccer_objects);
 
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
       std::cout << "[main] Simulation finished" << std::endl;

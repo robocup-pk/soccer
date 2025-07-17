@@ -231,8 +231,42 @@ bool rob::RobotManager::BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody) 
 /*
   This function is only usedin simulation
 */
-void rob::RobotManager::UpdateVelocityUsingSoccerObject(std::vector<state::SoccerObject>& soccer_objects) {
+void rob::RobotManager::UpdateVelocityUsingSoccerObject(
+    std::vector<state::SoccerObject>& soccer_objects) {
   this->SetBodyVelocity(soccer_objects[0].velocity);
+}
+
+void rob::RobotManager::IntegratePhysics(std::vector<state::SoccerObject>& soccer_objects,
+                                         float dt) {
+  // Get current robot angle
+  float robot_angle = soccer_objects[0].position[2];
+
+  // Transform body frame velocity to world frame
+  Eigen::Vector3d velocity_fWorld;
+  velocity_fWorld[0] = velocity_fBody[0] * cos(robot_angle) - velocity_fBody[1] * sin(robot_angle);
+  velocity_fWorld[1] = velocity_fBody[0] * sin(robot_angle) + velocity_fBody[1] * cos(robot_angle);
+  velocity_fWorld[2] = velocity_fBody[2];  // Angular velocity same in both frames
+
+  soccer_objects[0].velocity = velocity_fWorld;
+
+  // Let physics system handle the integration
+  for (auto& obj : soccer_objects) {
+    obj.Move(dt);
+  }
+
+  // Update internal position tracking
+  pose_fWorld = soccer_objects[0].position;
+}
+
+void rob::RobotManager::HandleCollisionFeedback(std::vector<state::SoccerObject>& soccer_objects) {
+  Eigen::Vector3d corrected_position = soccer_objects[0].position;
+  Eigen::Vector3d corrected_velocity = soccer_objects[0].velocity;
+
+  // Update estimator with collision-corrected position
+  std::unique_lock<std::mutex> lock(robot_state_mutex);
+  pose_fWorld = corrected_position;
+  this->velocity_fBody = corrected_velocity;
+  state_estimator.SetPose(corrected_position);
 }
 
 rob::RobotManager::~RobotManager() {
