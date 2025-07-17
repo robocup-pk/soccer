@@ -43,7 +43,6 @@ class RobotManager {
   void HandleCollisionFeedback(std::vector<state::SoccerObject>& soccer_objects);
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
-  void UpdateVelocityUsingSoccerObject(std::vector<state::SoccerObject>& soccer_objects);
   void UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects, float dt);
 
   Eigen::Vector3d GetPoseInWorldFrame();
