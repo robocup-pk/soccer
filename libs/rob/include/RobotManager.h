@@ -11,6 +11,8 @@
 #include "MotionController.h"
 #include "TrajectoryManager.h"
 #include "Utils.h"
+#include "SoccerObject.h"
+#include "Waypoint.h"
 
 namespace rob {
 
@@ -38,6 +40,7 @@ class RobotManager {
   void GoHome();
   void InitializeHome(Eigen::Vector3d pose_home);
   void SetPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
+  void SetPath(std::vector<state::Waypoint> path, double t_start_s = util::GetCurrentTime());
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
   void UpdateVelocityUsingSoccerObject(std::vector<state::SoccerObject>& soccer_objects);
@@ -46,6 +49,8 @@ class RobotManager {
   void TryAssignNextGoal();
 
   std::string GetRobotState();
+
+  inline bool FinishedMotion() { return finished_motion; }
 
   ~RobotManager();
 

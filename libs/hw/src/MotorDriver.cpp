@@ -21,9 +21,6 @@ void hw::MotorDriver::SendWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
     for (int i = 0; i < kin::RobotDescription::num_wheels; ++i) {
       motors[i].SetWheelSpeedRpm(wheel_speeds_rpm[i]);
     }
-    std::cout << "[hw::MotorDriver::SendWheelSpeedsRpm] MODEL RPMS: "
-              << wheel_speeds_rpm.transpose() << std::endl;
-
     return;
   }
 

@@ -191,3 +191,18 @@ vis::GLSimulation::~GLSimulation() {
 
   glfwTerminate();
 }
+
+void vis::ProcessUserInput(GLFWwindow* window, std::vector<state::SoccerObject>& soccer_objects) {
+  // --- Ball Movement with WASD ---
+  Eigen::Vector3d& ball_velocity = soccer_objects[0].velocity;
+  ball_velocity = Eigen::Vector3d::Zero();
+  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) ball_velocity[1] = 2.0;
+  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) ball_velocity[1] = -2.0;
+  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) ball_velocity[0] = -2.0;
+  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) ball_velocity[0] = 2.0;
+
+
+
+
+
+}

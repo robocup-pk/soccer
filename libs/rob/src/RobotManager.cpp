@@ -7,6 +7,7 @@
 #include "Utils.h"
 #include "Trajectory3D.h"
 #include "Waypoint.h"
+#include "SoccerObject.h"
 
 rob::RobotManager::RobotManager() {
   std::cout << "[rob::RobotManager::RobotManager]" << std::endl;
@@ -104,15 +105,23 @@ void rob::RobotManager::SenseLogic() {
     // Pose shall not be used in control while it is being updated
     std::unique_lock<std::mutex> lock(robot_state_mutex);
     pose_fWorld = state_estimator.GetPose();
-    std::cout << "Pose: " << pose_fWorld.transpose() << std::endl;
+    // std::cout << "[rob::RobotManager::SenseLogic] Pose (est): " << pose_fWorld.transpose() << std::endl;
   }
-  std::cout << "Pose (est): " << pose_fWorld.transpose() << std::endl;
 
   // Set home pose
   if (!initialized_pose_home && state_estimator.initialized_pose) {
     pose_home_fWorld = state_estimator.GetPoseInit();
     initialized_pose_home = true;
   }
+}
+
+void rob::RobotManager::SetPath(std::vector<state::Waypoint> path_fWorld, double t_start_s) {
+  std::vector<Eigen::Vector3d> path_fWorld_;
+  for (auto& p : path_fWorld) {
+    Eigen::Vector3d wp(p.x, p.y, p.angle);
+    path_fWorld_.push_back(wp);
+  }
+  SetPath(path_fWorld_, t_start_s);
 }
 
 void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
@@ -231,7 +240,8 @@ bool rob::RobotManager::BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody) 
 /*
   This function is only usedin simulation
 */
-void rob::RobotManager::UpdateVelocityUsingSoccerObject(std::vector<state::SoccerObject>& soccer_objects) {
+void rob::RobotManager::UpdateVelocityUsingSoccerObject(
+    std::vector<state::SoccerObject>& soccer_objects) {
   this->SetBodyVelocity(soccer_objects[0].velocity);
 }
 

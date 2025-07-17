@@ -60,8 +60,8 @@ std::pair<bool, Eigen::Vector3d> ctrl::TrajectoryManager::Update(Eigen::Vector3d
 
   // Step 2: Did active trajectories finish?. Motion is finished
   if (current_time_s >= active_traj_t_finish_s) {
-    // std::cout << "[ctrl::TrajectoryManager::Update] Finished motion. t_finish_s = "
-    //           << active_traj_t_finish_s << std::endl;
+    std::cout << "[ctrl::TrajectoryManager::Update] Finished motion. t_finish_s = "
+              << active_traj_t_finish_s << std::endl;
     current_trajectory = nullptr;
     return std::make_pair(true, Eigen::Vector3d(0, 0, 0));  // finished motion
   }
@@ -83,7 +83,7 @@ std::pair<bool, Eigen::Vector3d> ctrl::TrajectoryManager::Update(Eigen::Vector3d
   }
   // Step 4: Get reference velocity from current trajectory
   Eigen::Vector3d velocity_fWorld = GetVelocityAtT(current_time_s);
-  // Eigen::Vector3d velocity_fBody = util::RotateAboutZ(velocity_fWorld, -pose_est[2]);
+  Eigen::Vector3d velocity_fBody = util::RotateAboutZ(velocity_fWorld, -pose_est[2]);
 
-  return std::make_pair(false, velocity_fWorld);
+  return std::make_pair(false, velocity_fBody);
 }
