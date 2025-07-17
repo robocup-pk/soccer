@@ -83,7 +83,7 @@ void kin::ResolveCollisionWithWall(std::vector<state::SoccerObject>& soccer_obje
 
     // Y-axis collision
     if ((top > boundary_y && soccer_object.velocity[1] >= 0) ||
-        (bottom < -boundary_y && soccer_object.velocity[1] =< 0)) {
+        (bottom < -boundary_y && soccer_object.velocity[1] <= 0)) {
       soccer_object.position[1] =
           std::clamp(soccer_object.position[1], -boundary_y, boundary_y - soccer_object.size[1]);
       soccer_object.velocity[1] *= -cfg::SystemConfig::wall_velocity_damping_factor;
