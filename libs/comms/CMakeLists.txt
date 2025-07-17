@@ -19,61 +19,61 @@
 # # 2) Find every .proto under proto/ and its subdirectories
 # file(GLOB_RECURSE PROTO_FILES "${CMAKE_CURRENT_SOURCE_DIR}/proto/*.proto")
 
-# Generate proto sources if any
-if(PROTO_FILES)
-  set(PROTO_SRCS "")
-  set(PROTO_HDRS "")
+# # Generate proto sources if any
+# if(PROTO_FILES)
+#   set(PROTO_SRCS "")
+#   set(PROTO_HDRS "")
   
-  foreach(PROTO_FILE ${PROTO_FILES})
-    file(RELATIVE_PATH REL_PROTO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/proto" "${PROTO_FILE}")
-    get_filename_component(PROTO_NAME "${REL_PROTO_PATH}" NAME_WE)
-    get_filename_component(PROTO_DIR "${REL_PROTO_PATH}" DIRECTORY)
+#   foreach(PROTO_FILE ${PROTO_FILES})
+#     file(RELATIVE_PATH REL_PROTO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/proto" "${PROTO_FILE}")
+#     get_filename_component(PROTO_NAME "${REL_PROTO_PATH}" NAME_WE)
+#     get_filename_component(PROTO_DIR "${REL_PROTO_PATH}" DIRECTORY)
 
-    if("${PROTO_DIR}" STREQUAL "")
-      set(OUTPUT_CC "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_NAME}.pb.cc")
-      set(OUTPUT_H  "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_NAME}.pb.h")
-    else()
-      set(OUTPUT_CC "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_DIR}/${PROTO_NAME}.pb.cc")
-      set(OUTPUT_H  "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_DIR}/${PROTO_NAME}.pb.h")
-      file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_DIR}")
-    endif()
+#     if("${PROTO_DIR}" STREQUAL "")
+#       set(OUTPUT_CC "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_NAME}.pb.cc")
+#       set(OUTPUT_H  "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_NAME}.pb.h")
+#     else()
+#       set(OUTPUT_CC "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_DIR}/${PROTO_NAME}.pb.cc")
+#       set(OUTPUT_H  "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_DIR}/${PROTO_NAME}.pb.h")
+#       file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_DIR}")
+#     endif()
 
-    add_custom_command(
-      OUTPUT ${OUTPUT_CC} ${OUTPUT_H}
-      COMMAND ${Protobuf_PROTOC_EXECUTABLE}
-      ARGS --cpp_out=${CMAKE_CURRENT_BINARY_DIR}
-           --proto_path=${CMAKE_CURRENT_SOURCE_DIR}/proto
-           ${PROTO_FILE}
-      DEPENDS ${PROTO_FILE}
-      COMMENT "Generating protobuf for ${REL_PROTO_PATH}"
-      VERBATIM
-    )
-    list(APPEND PROTO_SRCS ${OUTPUT_CC})
-    list(APPEND PROTO_HDRS ${OUTPUT_H})
-  endforeach()
-endif()
+#     add_custom_command(
+#       OUTPUT ${OUTPUT_CC} ${OUTPUT_H}
+#       COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+#       ARGS --cpp_out=${CMAKE_CURRENT_BINARY_DIR}
+#            --proto_path=${CMAKE_CURRENT_SOURCE_DIR}/proto
+#            ${PROTO_FILE}
+#       DEPENDS ${PROTO_FILE}
+#       COMMENT "Generating protobuf for ${REL_PROTO_PATH}"
+#       VERBATIM
+#     )
+#     list(APPEND PROTO_SRCS ${OUTPUT_CC})
+#     list(APPEND PROTO_HDRS ${OUTPUT_H})
+#   endforeach()
+# endif()
 
-# 4) Build the comms_lib library
-add_library(comms_lib
-  ${COMM_SOURCES}
-  ${PROTO_SRCS}
-  ${PROTO_HDRS}
-)
+# # 4) Build the comms_lib library
+# add_library(comms_lib
+#   ${COMM_SOURCES}
+#   ${PROTO_SRCS}
+#   ${PROTO_HDRS}
+# )
 
-# Include directories
-target_include_directories(comms_lib PUBLIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  "${CMAKE_CURRENT_BINARY_DIR}"       # for generated .pb.h
-  ${Protobuf_INCLUDE_DIRS}
-)
+# # Include directories
+# target_include_directories(comms_lib PUBLIC
+#   "${CMAKE_CURRENT_SOURCE_DIR}/include"
+#   "${CMAKE_CURRENT_BINARY_DIR}"       # for generated .pb.h
+#   ${Protobuf_INCLUDE_DIRS}
+# )
 
-# Link libraries
-target_link_libraries(comms_lib PUBLIC
-  ${Protobuf_LIBRARIES}
-  Threads::Threads
-)
+# # Link libraries
+# target_link_libraries(comms_lib PUBLIC
+#   ${Protobuf_LIBRARIES}
+#   Threads::Threads
+# )
 
-# 5) Examples (if any)
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/CMakeLists.txt")
-  add_subdirectory(examples)
-endif()
+# # 5) Examples (if any)
+# if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/CMakeLists.txt")
+#   add_subdirectory(examples)
+# endif()
