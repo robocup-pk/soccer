@@ -115,6 +115,7 @@ int main(int argc, char* argv[]) {
     robot_manager.IntegratePhysics(soccer_objects, dt);
     kin::CheckAndResolveCollisions(soccer_objects);
     robot_manager.HandleCollisionFeedback(soccer_objects);
+    robot_manager.UpdateKinematics(soccer_objects, dt);
 
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
       std::cout << "[main] Simulation finished" << std::endl;

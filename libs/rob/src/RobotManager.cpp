@@ -249,13 +249,13 @@ void rob::RobotManager::IntegratePhysics(std::vector<state::SoccerObject>& socce
 
   soccer_objects[0].velocity = velocity_fWorld;
 
-  // Let physics system handle the integration
-  for (auto& obj : soccer_objects) {
-    obj.Move(dt);
-  }
+  // // Let physics system handle the integration
+  // for (auto& obj : soccer_objects) {
+  //   obj.Move(dt);
+  // }
 
   // Update internal position tracking
-  pose_fWorld = soccer_objects[0].position;
+  // pose_fWorld = soccer_objects[0].position;
 }
 
 void rob::RobotManager::HandleCollisionFeedback(std::vector<state::SoccerObject>& soccer_objects) {
@@ -267,6 +267,15 @@ void rob::RobotManager::HandleCollisionFeedback(std::vector<state::SoccerObject>
   pose_fWorld = corrected_position;
   this->velocity_fBody = corrected_velocity;
   state_estimator.SetPose(corrected_position);
+}
+
+void rob::RobotManager::UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects,
+                                         float dt) {
+  for (auto& obj : soccer_objects) {
+    obj.Move(dt);
+  }
+
+  pose_fWorld = soccer_objects[0].position;
 }
 
 rob::RobotManager::~RobotManager() {
