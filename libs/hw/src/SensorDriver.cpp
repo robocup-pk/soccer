@@ -23,7 +23,9 @@ void hw::SensorDriver::SetAngularVelocityRadps(double w_radps) {
 
 double hw::SensorDriver::GetAngularVelocityRadps() {
   if (sensor_type == SensorType::MODEL) {
-    return 0.0f;
+    gyro_wradps = gyro.GetAngularVelocityRadps();
+    new_data_available = true;
+    return gyro_wradps;
   }
   return (gyro_mdeg_ps / 1000.0) * M_PI / 180.0;
 }
@@ -68,7 +70,7 @@ std::pair<Eigen::Vector4d, int> hw::SensorDriver::GetSensorsData() {
       motors_rpms[i] = motors[i].GetRpm();
     }
     new_data_available = true;
-    return {motors_rpms, 0};
+    return {motors_rpms, ((gyro_mdeg_ps / 1000.0) * M_PI / 180.0)};
   }
 
   std::vector<int> rpm(4, 0);

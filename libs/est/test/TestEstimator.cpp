@@ -10,6 +10,7 @@
 #include "Utils.h"
 #include "HardwareManager.h"
 #include "RobotModel.h"
+#include "MotorModel.h"
 
 class StateEstimatorTest : public ::testing::Test {
  protected:
@@ -151,7 +152,7 @@ TEST_F(StateEstimatorTest, TestForwardMotionDeadReckoningWithRotation) {
     std::optional<Eigen::Vector4d> motors_rpms = hardware_manager->NewMotorsRpms();
     if (motors_rpms.has_value()) state_estimator->NewMotorsData(motors_rpms.value());
     state_estimator->NewGyroData(velocity_fWorld[2]);
-    
+
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
