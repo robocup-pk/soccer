@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cassert>
 
 #include "Utils.h"
 #include "TrajectoryManager.h"
