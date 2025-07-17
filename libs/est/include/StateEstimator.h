@@ -17,6 +17,7 @@ class StateEstimator {
 
   Eigen::Vector3d GetPose();
   Eigen::Vector3d GetPoseInit();
+  void SetPose(Eigen::Vector3d pose);
 
   ~StateEstimator();
 

@@ -4,13 +4,6 @@
 #include "SystemConfig.h"
 
 void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) {
-  // soccer_objects.push_back(state::SoccerObject(
-  //     "ball",
-  //     Eigen::Vector3d(-cfg::SystemConfig::ball_radius_m, cfg::SystemConfig::ball_radius_m, 0),
-  //     Eigen::Vector2d(cfg::SystemConfig::ball_radius_m * 2, cfg::SystemConfig::ball_radius_m *
-  //     2), cfg::SystemConfig::init_ball_velocity_mps,
-  //     cfg::SystemConfig::init_ball_acceleration_mpsps, 1));
-
   // Robots
   for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
     std::string name = "robot" + std::to_string(i);
@@ -20,6 +13,13 @@ void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) 
                             cfg::SystemConfig::init_robot_velocity_mps,
                             cfg::SystemConfig::init_robot_acceleration_mpsps, 10));
   }
+
+  soccer_objects.push_back(state::SoccerObject(
+      "ball",
+      Eigen::Vector3d(-cfg::SystemConfig::ball_radius_m, cfg::SystemConfig::ball_radius_m, 0),
+      Eigen::Vector2d(cfg::SystemConfig::ball_radius_m * 2, cfg::SystemConfig::ball_radius_m * 2),
+      cfg::SystemConfig::init_ball_velocity_mps, cfg::SystemConfig::init_ball_acceleration_mpsps,
+      1));
 }
 
 bool state::SoccerObject::IsPointInFrontSector(Eigen::Vector2d point) {
@@ -28,7 +28,7 @@ bool state::SoccerObject::IsPointInFrontSector(Eigen::Vector2d point) {
 
   // Calculate front direction using same coordinate system as ball attachment
   float rotation_rad = (position[2]);
-  Eigen::Vector2d front_dir(cos(rotation_rad), -sin(rotation_rad));
+  Eigen::Vector2d front_dir(cos(rotation_rad), sin(rotation_rad));
 
   Eigen::Vector2d to_point = point - robot_center;
   float forward_component = to_point.dot(front_dir);
@@ -38,7 +38,7 @@ bool state::SoccerObject::IsPointInFrontSector(Eigen::Vector2d point) {
   }
 
   float dot_product = to_point.normalized().dot(front_dir);
-  float angle_threshold = cos(M_PI / 6.0f);
+  float angle_threshold = cos(M_PI / 4.0f);
 
   return dot_product > angle_threshold;
 }

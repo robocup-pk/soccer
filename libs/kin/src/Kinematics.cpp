@@ -74,16 +74,16 @@ void kin::ResolveCollisionWithWall(std::vector<state::SoccerObject>& soccer_obje
     double boundary_y = (vis::SoccerField::GetInstance().height_mm / 2.0f) / 1000.0f;
 
     // X-axis collision
-    if ((right > boundary_x && soccer_object.velocity[0] > 0) ||
-        (left < -boundary_x && soccer_object.velocity[0] < 0)) {
+    if ((right >= boundary_x && soccer_object.velocity[0] >= 0) ||
+        (left <= -boundary_x && soccer_object.velocity[0] <= 0)) {
       soccer_object.position[0] =
           std::clamp(soccer_object.position[0], -boundary_x, boundary_x - soccer_object.size[0]);
       soccer_object.velocity[0] *= -cfg::SystemConfig::wall_velocity_damping_factor;
     }
 
     // Y-axis collision
-    if ((top > boundary_y && soccer_object.velocity[1] > 0) ||
-        (bottom < -boundary_y && soccer_object.velocity[1] < 0)) {
+    if ((top > boundary_y && soccer_object.velocity[1] >= 0) ||
+        (bottom < -boundary_y && soccer_object.velocity[1] <= 0)) {
       soccer_object.position[1] =
           std::clamp(soccer_object.position[1], -boundary_y, boundary_y - soccer_object.size[1]);
       soccer_object.velocity[1] *= -cfg::SystemConfig::wall_velocity_damping_factor;
@@ -205,22 +205,22 @@ void kin::HandleBallSticking(state::SoccerObject& robot, state::SoccerObject& ba
 
 void kin::UpdateAttachedBallPosition(state::SoccerObject& robot, state::SoccerObject& ball) {
   Eigen::Vector3d robot_center = robot.GetCenterPosition();
-  float robot_rotation = robot.position[2] - M_PI / 2.0f;
+  float robot_rotation = robot.position[2];
 
   // Use flat surface distance for D-shaped robot
   float robot_radius = std::min(robot.size[0], robot.size[1]) / 2.0f;
   float ball_radius = ball.size[0] / 2.0f;
 
   // Attachment distance for flat surface contact
-  float attachment_distance = robot_radius * 0.6f + ball_radius * 0.4f;
+  float attachment_distance = robot_radius * 0.5f + ball_radius;
 
   // Calculate front position using unit vector
   float front_x = robot_center.x() + attachment_distance * cos(robot_rotation);
-  float front_y = robot_center.y() + attachment_distance * (-sin(robot_rotation));
+  float front_y = robot_center.y() + attachment_distance * sin(robot_rotation);
 
-  // Position ball so it appears attached to flat surface
+  // Position ball center at attachment point (not corner-based)
   ball.position[0] = front_x - ball.size[0] / 2.0f;
-  ball.position[1] = front_y + ball.size[1] / 2.0f;
+  ball.position[1] = front_y - ball.size[1] / 2.0f;
   ball.position[2] = 0;
   ball.velocity = Eigen::Vector3d(0, 0, 0);
 }
@@ -233,10 +233,10 @@ void kin::DetachBall(state::SoccerObject& ball, float detach_velocity) {
   state::SoccerObject* robot = ball.attached_to;
 
   // Get robot's current orientation for detachment direction
-  float robot_rotation = robot->position[2] - M_PI / 2.0f;
+  float robot_rotation = robot->position[2];
 
   // Calculate front direction vector (same as in IsPointInFrontSector)
-  Eigen::Vector2d front_dir(cos(robot_rotation), -sin(robot_rotation));
+  Eigen::Vector2d front_dir(cos(robot_rotation), sin(robot_rotation));
 
   // Apply detach velocity in the front direction
   float detach_vel_x = detach_velocity * front_dir.x();
@@ -245,22 +245,13 @@ void kin::DetachBall(state::SoccerObject& ball, float detach_velocity) {
   // Debug: Check if velocities make sense
   float velocity_magnitude = sqrt(detach_vel_x * detach_vel_x + detach_vel_y * detach_vel_y);
 
-  // If velocity is too small, ensure minimum movement in front direction
-  if (velocity_magnitude < 0.5f) {
-    // Use a minimum velocity in the front direction
-    float min_velocity = 1.0f;
-    detach_vel_x = min_velocity * front_dir.x();
-    detach_vel_y = min_velocity * front_dir.y();
-  }
-
   // Move ball slightly away from robot before detaching to prevent immediate re-collision
   Eigen::Vector3d robot_center = robot->GetCenterPosition();
-  float separation_distance = 500.0f;  // Distance to separate ball from robot
+  float separation_distance = 0.2f;  // Distance to separate ball from robot
 
   // Position ball in front of robot using the same front direction
   ball.position[0] = robot_center.x() + separation_distance * front_dir.x() - ball.size[0] / 2.0f;
-  ball.position[1] = robot_center.y() + separation_distance * front_dir.y() + ball.size[1] / 2.0f;
-
+  ball.position[1] = robot_center.y() + separation_distance * front_dir.y() - ball.size[1] / 2.0f;
   // Set ball velocity for natural detachment
   ball.velocity[0] = detach_vel_x;
   ball.velocity[1] = detach_vel_y;
@@ -269,4 +260,7 @@ void kin::DetachBall(state::SoccerObject& ball, float detach_velocity) {
   // Clear attachment state
   ball.is_attached = false;
   ball.attached_to = nullptr;
+
+  std::cout << "[DetachBall] Ball detached with velocity: (" << detach_vel_x << ", "
+            << detach_vel_y << ")" << std::endl;
 }
