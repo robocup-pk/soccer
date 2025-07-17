@@ -104,7 +104,7 @@ void rob::RobotManager::SenseLogic() {
     // Pose shall not be used in control while it is being updated
     std::unique_lock<std::mutex> lock(robot_state_mutex);
     pose_fWorld = state_estimator.GetPose();
-    // std::cout << "Pose: " << pose_fWorld.transpose() << std::endl;
+    std::cout << "Pose: " << pose_fWorld.transpose() << std::endl;
   }
   std::cout << "Pose (est): " << pose_fWorld.transpose() << std::endl;
 
@@ -118,7 +118,6 @@ void rob::RobotManager::SenseLogic() {
 void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
   bool is_path_valid;
   {
-    std::unique_lock<std::mutex> lock(robot_path_mutex);
     // Print the path
     std::cout << "[rob::RobotManager::SetPath] ";
     for (int i = 0; i < path_fWorld.size() - 1; ++i) {
@@ -129,7 +128,7 @@ void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path_fWorld, double
     // Create trajectories if valid
     is_path_valid = trajectory_manager.CreateTrajectoriesFromPath(path_fWorld, t_start_s);
     std::cout << "[rob::RobotManager::SetPath] Finish creating trajectories. t_finish_s: "
-              << trajectory_manager.active_traj_t_finish_s << "\n";
+              << trajectory_manager.active_traj_t_finish_s << "\n\n";
   }
 
   if (is_path_valid) {

@@ -35,9 +35,10 @@ ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D(Eigen::Vector3d pose_
       t_d[i] = std::fabs(v_cruise[i]) / a[i];
     } else {
       // Case 2: Sign change
-      t_a[i] = v_cruise[i] / a[i];
+      t_1 = std::fabs(v0[i]) / a[i];
+      t_2 = T - t_1;
+      t_a[i] = std::fabs(v_cruise[i]) / a[i];
       t_d[i] = t_a[i];
-      total_time_1[i] = std::fabs(v0[i] / a[i]);
     }
   }
 
@@ -74,18 +75,27 @@ Eigen::Vector3d ctrl::TrapezoidalTrajectoryVi3D::VelocityAtT(double t_sec) {
         v_fWorld[i] = v_cruise[i] + sign * a[i] * t_dec_s;
       }
     } else {
+      std::cout << "sign change\n";
       // Case 2: Sign change
-      // double sign = (v_max[i] >= 0.0) ? 1.0 : -1.0;
-      // if (t_sec < total_time_1[i]) {
-      //   v_fWorld[i] = sign * a[i] * t_sec;
-      // }
-      // if (t_sec < total_time_1[i] + t_a[i]) {
-      //   v_fWorld[i] = sign * a[i] * t_sec;
-      // } else if (t_sec < (total_time_s - t_a[i])) {
-      //   v_fWorld[i] = v_max[i];
-      // } else {
-      //   v_fWorld[i] = v_max[i] - sign * a[i] * (t_sec - total_time_s + t_a[i]);
-      // }
+      int sign = v0[i] > 0 ? -1 : 1;
+      if (t_sec < t_1) {
+        v_fWorld[i] = v0[0] + sign * a[i] * t_sec;
+      } else {
+        // Now we are in the trapezoidal part
+        t_sec -= t_1;
+        std::cout << "t_sec: " << t_sec << std::endl;
+        if (t_sec < t_a[i]) {
+          std::cout << "a\n";
+          v_fWorld[i] = sign * a[i] * t_sec;
+        } else if (t_sec < t_2 - t_d[i]) {
+          std::cout << "b\n";
+          v_fWorld[i] = v_cruise[i];
+        } else {
+          std::cout << "c\n";
+          double t_dec_s = t_sec - (t_2 - t_d[i]);
+          v_fWorld[i] = v_cruise[i] - sign * a[i] * t_dec_s;
+        }
+      }
     }
   }
 

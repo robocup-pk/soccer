@@ -38,6 +38,8 @@ class TrapezoidalTrajectoryVi3D : public Trajectory3D {
 
   // Trajectory limits
   Eigen::Vector3d a;
+  double t_1;
+  double t_2;
   Eigen::Vector3d t_a;
   Eigen::Vector3d t_d;
   Eigen::Vector3d v_cruise;

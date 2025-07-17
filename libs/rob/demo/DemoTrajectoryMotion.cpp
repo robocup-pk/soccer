@@ -24,19 +24,34 @@ int main(int argc, char* argv[]) {
   // gl_simulation.InitGameObjects(soccer_objects);
 
   // ROBOT
-  std::cout << std::fixed << std::setprecision(3);
+  std::cout << std::fixed << std::setprecision(2);
   rob::RobotManager robot_manager;
 
+  std::cout << "First path\n\n";
   std::vector<Eigen::Vector3d> path;
   path.push_back(Eigen::Vector3d(0, 0, 0));
   path.push_back(Eigen::Vector3d(-1, 0, 1));
   path.push_back(Eigen::Vector3d(0, 0, 0));
   robot_manager.SetPath(path, util::GetCurrentTime());
 
-  // std::vector<Eigen::Vector3d> path2;
-  // path2.push_back(Eigen::Vector3d(-0.5, 0, 0));
-  // path2.push_back(Eigen::Vector3d(-1.5, 0, 0));
-  // robot_manager.SetPath(path2, util::GetCurrentTime() + 6);
+  // std::cout << "Second path\n\n";
+  // path.clear();
+  // path.push_back(Eigen::Vector3d(-0.5, 0, 0));
+  // path.push_back(Eigen::Vector3d(-1.5, 0, 0));
+  // robot_manager.SetPath(path, util::GetCurrentTime() + 6);
+
+  // std::cout << "Third path\n\n";
+  // path.clear();
+  // path.push_back(Eigen::Vector3d(0.3, 0, 0));
+  // path.push_back(Eigen::Vector3d(-0.7, 0, 0));
+  // robot_manager.SetPath(path, util::GetCurrentTime() + 10);
+
+  // std::cout << "Fourth path\n\n";
+  // path.clear();
+  // path.push_back(Eigen::Vector3d(-0.2, 0, 0));
+  // path.push_back(Eigen::Vector3d(-1.2, 0, 0));
+  // path.push_back(Eigen::Vector3d(-0.2, 0, 0));
+  // robot_manager.SetPath(path, util::GetCurrentTime() + 12);
 
   double replan_time = -std::numeric_limits<double>::max();
 
@@ -44,12 +59,12 @@ int main(int argc, char* argv[]) {
     double t = util::GetCurrentTime();
     soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();
 
-    if (replan_time + 9 < t) {
-      replan_time = t;
-      std::cout << "[DemoTrajectoryMotion::Main] Replan at " << replan_time << std::endl;
-      robot_manager.SetPath(path);  //, t_start_s);
-      // replan_time = 10000000;
-    }
+    // if (replan_time + 9 < t) {
+    //   replan_time = t;
+    //   std::cout << "[DemoTrajectoryMotion::Main] Replan at " << replan_time << std::endl;
+    //   robot_manager.SetPath(path);  //, t_start_s);
+    //   // replan_time = 10000000;
+    // }
 
     // // Simulation
     // if (!gl_simulation.RunSimulationStep(soccer_objects, util::CalculateDt())) {

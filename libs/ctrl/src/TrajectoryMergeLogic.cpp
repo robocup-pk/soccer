@@ -36,6 +36,7 @@ void ctrl::TrajectoryManager::MergeNewTrajectoriesAtT(Trajectories&& new_traject
 
   // Make a copy of the active trajectories queue
   std::queue<std::unique_ptr<Trajectory3D>> active_trajectories_cpy;
+  std::unique_lock<std::mutex> lock(active_traj_mutex);
   while (!active_trajectories.empty()) {
     // Find the overlapping trajectory
     if (active_trajectories.front()->GetTStart() < new_traj_t_start_s &&
@@ -88,9 +89,14 @@ void ctrl::TrajectoryManager::MergeNewTrajectoriesAtT(Trajectories&& new_traject
 void ctrl::TrajectoryManager::MergeNewTrajectoriesInFuture(Trajectories&& new_trajectories) {
   double t = new_trajectories.front()->GetTStart();
   std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectoryInFuture] t = " << t << std::endl;
-  // Step 1: Make a zero-velocity trajectory
-  active_trajectories.push(std::make_unique<ctrl::TrapezoidalTrajectoryVi3D>(
-      Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0), active_traj_t_finish_s, t));
+  if (t - active_traj_t_finish_s > 0.01) {
+    std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectoryInFuture] Zero-vel traj from t "
+              << active_traj_t_finish_s << " " << t << std::endl;
+    // Step 1: Make a zero-velocity trajectory
+    std::unique_lock<std::mutex> lock(active_traj_mutex);
+    active_trajectories.push(std::make_unique<ctrl::TrapezoidalTrajectoryVi3D>(
+        Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0), active_traj_t_finish_s, t));
+  }
 
   // Step 2: Add all the new trajectories into active trajectories
   MergeNewTrajectoriesFirstCall(std::move(new_trajectories));
@@ -99,9 +105,34 @@ void ctrl::TrajectoryManager::MergeNewTrajectoriesInFuture(Trajectories&& new_tr
 void ctrl::TrajectoryManager::MergeNewTrajectoriesFirstCall(Trajectories&& new_trajectories) {
   std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectoriesFirstCall]" << std::endl;
   // Add all the the new trajectories into active trajectories
+  std::unique_lock<std::mutex> lock(active_traj_mutex);
   while (!new_trajectories.empty()) {
     active_trajectories.push(std::move(new_trajectories.front()));
     new_trajectories.pop();
   }
   active_traj_t_finish_s = active_trajectories.back()->GetTFinish();
+}
+
+Eigen::Vector3d ctrl::TrajectoryManager::FindV0AtT(double t) {
+  if (active_traj_t_finish_s <= t) return Eigen::Vector3d(0, 0, 0);
+  std::queue<std::unique_ptr<Trajectory3D>> active_trajectories_cpy;
+  Eigen::Vector3d v0(0, 0, 0);
+  std::unique_lock<std::mutex> lock(active_traj_mutex);
+  while (!active_trajectories.empty()) {
+    // Find the overlapping trajectory
+    if (active_trajectories.front()->GetTStart() < t &&
+        active_trajectories.front()->GetTFinish() > t) {
+      v0 = active_trajectories.front()->VelocityAtT(t);
+    }
+    // Keep adding the previous active trajectories
+    active_trajectories_cpy.push(std::move(active_trajectories.front()));
+    active_trajectories.pop();
+  }
+  // Add back
+  while (!active_trajectories_cpy.empty()) {
+    active_trajectories.push(std::move(active_trajectories_cpy.front()));
+    active_trajectories_cpy.pop();
+  }
+  active_traj_t_finish_s = active_trajectories.back()->GetTFinish();
+  return v0;
 }

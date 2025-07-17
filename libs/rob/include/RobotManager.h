@@ -62,7 +62,6 @@ class RobotManager {
   std::thread control_thread;
   std::thread sense_thread;
   std::mutex robot_state_mutex;
-  std::mutex robot_path_mutex;
 
   std::atomic<bool> rob_manager_running = false;
   double control_loop_frequency_hz = 50;

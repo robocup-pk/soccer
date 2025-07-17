@@ -2,6 +2,7 @@
 
 #include "Utils.h"
 #include "TrajectoryManager.h"
+#include "SystemConfig.h"
 
 /*
   Given a path, it conditionally returns list of trajectories
@@ -13,25 +14,30 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
   Trajectories trajectories;
   double t_end_s = t_start_s;
   for (int path_index = 1; path_index < path_fWorld.size(); ++path_index) {
-    Eigen::Vector3d pose_start = path_fWorld[path_index - 1];
-    Eigen::Vector3d pose_end = path_fWorld[path_index];
-    Eigen::Vector3d h = pose_end - pose_start;
-    double T = 4.0;  // TODO: Should be dynamic
-    if (!ctrl::Trajectory3D::IsFeasible(h, T).first) {
-      std::cout << "[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Not feasible. Pose: "
-                << pose_start.transpose() << " to " << pose_end.transpose() << std::endl;
-      return false;
-    }
+    Eigen::Vector3d pose_start(path_fWorld[path_index - 1]);
+    Eigen::Vector3d pose_end(path_fWorld[path_index]);
+    Eigen::Vector3d h(pose_end - pose_start);
+    Eigen::Vector3d v0(0, 0, 0);
+    if (path_index == 1) v0 = FindV0AtT(t_start_s);
+
+    double T = 4;
+    //std::max({h[0], h[1], h[2]}) * cfg::SystemConfig::avg_velocity_fBody_mps;
+    // std::cout << "T = " << T << std::endl;
+
     // Create Trajectory
     t_start_s = t_end_s;
     t_end_s += T;
+    std::cout << "[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Added new traj "
+              << path_index << std::endl;
     auto traj = std::make_unique<ctrl::TrapezoidalTrajectoryVi3D>(pose_start, pose_end, t_start_s,
-                                                                  t_end_s);
-    if (traj) {
+                                                                  t_end_s, v0);
+    if (traj)
       trajectories.push(std::move(traj));
-    } else
+    else
       return false;
   }
+  std::cout << "[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Added all new trajs\n"
+            << std::endl;
   MergeNewTrajectories(std::move(trajectories));
   return true;
 }
@@ -60,17 +66,23 @@ std::pair<bool, Eigen::Vector3d> ctrl::TrajectoryManager::Update(Eigen::Vector3d
   }
 
   // CHECK: You are about to update current trajectory but there is no active trajectory left
-  assert(!(current_trajectory == nullptr && active_trajectories.empty()));
+  {
+    std::unique_lock<std::mutex> lock(active_traj_mutex);
+    assert(!(current_trajectory == nullptr && active_trajectories.empty()));
+  }
 
   // Step 3: Update the current trajectory
   if (current_trajectory == nullptr || current_time_s >= current_trajectory->GetTFinish()) {
-    current_trajectory = std::move(active_trajectories.front());
-    active_trajectories.pop();
+    {
+      std::unique_lock<std::mutex> lock(active_traj_mutex);
+      current_trajectory = std::move(active_trajectories.front());
+      active_trajectories.pop();
+    }
     current_trajectory->Print();
   }
   // Step 4: Get reference velocity from current trajectory
   Eigen::Vector3d velocity_fWorld = GetVelocityAtT(current_time_s);
-  Eigen::Vector3d velocity_fBody = util::RotateAboutZ(velocity_fWorld, -pose_est[2]);
+  // Eigen::Vector3d velocity_fBody = util::RotateAboutZ(velocity_fWorld, -pose_est[2]);
 
-  return std::make_pair(false, velocity_fBody);
+  return std::make_pair(false, velocity_fWorld);
 }

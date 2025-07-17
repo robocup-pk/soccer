@@ -2,7 +2,7 @@
 #define TRAJECTORY_MANAGER_H
 
 #include <queue>
-
+#include <mutex>
 #include <Eigen/Dense>
 
 #include "Trajectory3D.h"
@@ -22,6 +22,8 @@ class TrajectoryManager {
   std::pair<bool, Eigen::Vector3d> Update(Eigen::Vector3d pose_est);
 
   // Merge Logic
+
+  Eigen::Vector3d FindV0AtT(double t);
   void MergeNewTrajectoriesFirstCall(Trajectories&& new_trajectories);
   void MergeNewTrajectoriesInFuture(Trajectories&& new_trajectories);
   void MergeNewTrajectoriesAtT(Trajectories&& new_trajectories);
@@ -35,6 +37,7 @@ class TrajectoryManager {
 
  private:
   std::unique_ptr<ctrl::Trajectory3D> current_trajectory;
+  std::mutex active_traj_mutex;
 };
 
 }  // namespace ctrl

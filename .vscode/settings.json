@@ -115,7 +115,8 @@
     "glad.h": "c",
     "stdfloat": "cpp",
     "execution": "cpp",
-    "print": "cpp"
+    "print": "cpp",
+    "dense": "cpp"
   },
   "C_Cpp.default.compilerPath": "/usr/bin/gcc"
 }
