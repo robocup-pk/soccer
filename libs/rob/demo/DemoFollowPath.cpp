@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
   // ROBOT
   std::vector<Eigen::Vector3d> path;
   path.push_back(Eigen::Vector3d(0, 0, 0));
-  path.push_back(Eigen::Vector3d(-1.763, 0, 0));
+  // path.push_back(Eigen::Vector3d(-1.763, 0, 0));
   // path.push_back(Eigen::Vector3d(0, 0, 90 * M_PI / 180));
   // path.push_back(Eigen::Vector3d(0, 1, 90 * M_PI / 180));
   // path.push_back(Eigen::Vector3d(0, 1, 0 * M_PI / 180));

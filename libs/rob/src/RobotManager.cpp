@@ -9,6 +9,7 @@
 #include "Waypoint.h"
 
 rob::RobotManager::RobotManager() {
+  std::cout << "[rob::RobotManager::RobotManager]" << std::endl;
   previous_robot_state = RobotState::IDLE;
   robot_state = RobotState::IDLE;
   start_time_idle_s = util::GetCurrentTime();
@@ -74,9 +75,7 @@ void rob::RobotManager::ControlLogic() {
           motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
       break;
     case RobotState::AUTONOMOUS_DRIVING:
-      double t_sec = util::GetCurrentTime();
-      finished_motion = trajectory_manager.Update(t_sec);
-      velocity_fBody_ = trajectory_manager.GetVelocityAtT(t_sec);
+      std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
       break;
   }
 
@@ -90,7 +89,6 @@ void rob::RobotManager::ControlLogic() {
     robot_state = RobotState::IDLE;
   }
 
-  // velocity_fBody[0] = 0;
   hardware_manager.SetBodyVelocity(velocity_fBody_);
 }
 
@@ -98,34 +96,15 @@ void rob::RobotManager::SenseLogic() {
   std::optional<Eigen::Vector4d> motors_rpms = hardware_manager.NewMotorsRpms();
   std::optional<double> w_radps = hardware_manager.NewGyroAngularVelocity();
   std::optional<Eigen::Vector3d> pose_from_camera = hardware_manager.NewCameraData();
+  if (motors_rpms.has_value()) state_estimator.NewMotorsData(motors_rpms.value());
+  if (w_radps.has_value()) state_estimator.NewGyroData(w_radps.value());
+  if (pose_from_camera.has_value()) state_estimator.NewCameraData(pose_from_camera.value());
 
   {
-    if (motors_rpms.has_value()) state_estimator.NewMotorsData(motors_rpms.value());
-    if (w_radps.has_value()) state_estimator.NewGyroData(w_radps.value());
-
-    // TODO: This is not needed right now, but is useful for the physical robot
-    // When both motors and gyro fail
-    // if (!(motors_rpms.has_value() && w_radps.has_value())) {
-    //   std::cout
-    //       << "[rob::RobotManager::SenseLogic] No motors or gyro data. Please check the sensors"
-    //       << std::endl;
-    //   num_sensor_readings_failed++;
-    //   if (num_sensor_readings_failed > 10) {
-    //     std::cout << "[rob::RobotManager::SenseLogic] Error! Too many sensor readings failed. "
-    //                  "Shutting down the robot manager"
-    //               << std::endl;
-    //     rob_manager_running.store(false);
-    //     return;
-    //   }
-    // } else {
-    //   num_sensor_readings_failed = 0;
-    // }
-
-    if (pose_from_camera.has_value()) state_estimator.NewCameraData(pose_from_camera.value());
-
     // Pose shall not be used in control while it is being updated
     std::unique_lock<std::mutex> lock(robot_state_mutex);
     pose_fWorld = state_estimator.GetPose();
+    std::cout << "Pose: " << pose_fWorld.transpose() << std::endl;
   }
   std::cout << "Pose (est): " << pose_fWorld.transpose() << std::endl;
 
@@ -136,21 +115,28 @@ void rob::RobotManager::SenseLogic() {
   }
 }
 
-void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path) {
-  // for (int i = 0; i < path.size(); ++i) {
-  //   AddGoal(path[i]);
-  // }
-  bool is_path_valid = trajectory_manager.CreateTrajectoriesFromPath(path);
+void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
+  bool is_path_valid;
+  {
+    // Print the path
+    std::cout << "[rob::RobotManager::SetPath] ";
+    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
+      std::cout << path_fWorld[i].transpose() << " -> ";
+    }
+    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
+
+    // Create trajectories if valid
+    is_path_valid = trajectory_manager.CreateTrajectoriesFromPath(path_fWorld, t_start_s);
+    std::cout << "[rob::RobotManager::SetPath] Finish creating trajectories. t_finish_s: "
+              << trajectory_manager.active_traj_t_finish_s << "\n\n";
+  }
+
   if (is_path_valid) {
     std::unique_lock<std::mutex> lock(robot_state_mutex);
     robot_state = RobotState::AUTONOMOUS_DRIVING;
   } else {
     std::cout << "[rob::RobotManager::SetPath] Give path is invalid. Failed to create "
                  "trajectories\nPath: ";
-    for (int i = 0; i < path.size() - 1; ++i) {
-      std::cout << path[i].transpose() << " -> ";
-    }
-    std::cout << path[path.size() - 1].transpose() << std::endl;
   }
 }
 
