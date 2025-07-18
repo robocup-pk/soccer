@@ -261,3 +261,34 @@ void vis::ProcessInput(GLFWwindow* gl_window, std::vector<state::SoccerObject>& 
   // velocity_fBody_rob1.normalize();
   soccer_objects[0].velocity = velocity_fBody_rob1;
 }
+
+void vis::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+  if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+
+    // Get window dimensions
+    int window_width, window_height;
+    glfwGetWindowSize(window, &window_width, &window_height);
+
+    // Convert from pixel coordinates to world coordinates (meters)
+    // 1. Convert pixels to millimeters
+    float pixels_per_mm = util::PixelsPerMm();
+    double x_mm = xpos / pixels_per_mm;
+    double y_mm = ypos / pixels_per_mm;
+
+    // 2. Convert from millimeters to meters
+    double x_m = x_mm / 1000.0;
+    double y_m = y_mm / 1000.0;
+
+    // 3. Adjust coordinate system: center at field center, flip Y axis
+    double field_width_m = vis::SoccerField::GetInstance().width_mm / 1000.0;
+    double field_height_m = vis::SoccerField::GetInstance().height_mm / 1000.0;
+
+    double world_x = x_m - (field_width_m / 2.0);   // Center X coordinate
+    double world_y = (field_height_m / 2.0) - y_m;  // Center Y coordinate and flip Y axis
+
+    std::cout << "[MouseClick] Pixel: (" << xpos << ", " << ypos << ")" << std::endl;
+    std::cout << "[MouseClick] World: (" << world_x << ", " << world_y << ") meters" << std::endl;
+  }
+}
