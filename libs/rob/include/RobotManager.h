@@ -49,6 +49,7 @@ class RobotManager {
   // void UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects, float dt);
 
   Eigen::Vector3d GetPoseInWorldFrame() const;
+  void SetPoseInWorldFrame(Eigen::Vector3d& pose_fWorld);
   Eigen::Vector3d GetVelocityInWorldFrame() const;
   void TryAssignNextGoal();
 

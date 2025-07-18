@@ -236,6 +236,12 @@ bool rob::RobotManager::BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody) 
   return true;
 }
 
+void rob::RobotManager::SetPoseInWorldFrame(Eigen::Vector3d& pose_fWorld) {
+  std::unique_lock<std::mutex> lock(robot_state_mutex);
+  this->pose_fWorld = pose_fWorld;
+  state_estimator.SetPose(pose_fWorld);
+}
+
 rob::RobotManager::~RobotManager() {
   rob_manager_running.store(false);
   if (sense_thread.joinable()) sense_thread.join();

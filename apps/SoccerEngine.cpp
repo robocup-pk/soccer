@@ -13,6 +13,7 @@
 #include "Coordinates.h"
 #include "RobotManager.h"
 #include "SoccerField.h"
+#include "AutoRef.h"
 
 int main(int argc, char* argv[]) {
   // TODO: Game State
@@ -28,8 +29,15 @@ int main(int argc, char* argv[]) {
   // Robot(s)
   std::vector<rob::RobotManager> robot_managers(cfg::SystemConfig::num_robots);
 
+  // Initializing Robot Managers Positions using SoccerObjects to avoid conflicts
+  for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
+    robot_managers[i].SetPoseInWorldFrame(soccer_objects[i].position);
+  }
+
   while (1) {
     float dt = util::CalculateDt();
+
+    vis::ProcessInput(gl_window, robot_managers);
 
     // Update SoccerObjects using robot managers
     for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
@@ -48,6 +56,8 @@ int main(int argc, char* argv[]) {
     // Step: Rule checking on current soccer objects
     // 1. Kinematics (Collisions, Max speeds)
     // kin::CheckAndResolveCollisions(soccer_objects);
+    ref::CheckCollisions(soccer_objects);
+    ref::CheckForGoals(soccer_objects);
     // 2.
     // 3.
 
