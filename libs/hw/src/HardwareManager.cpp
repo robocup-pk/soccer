@@ -17,12 +17,6 @@ hw::HardwareManager::HardwareManager() {
 
 void hw::HardwareManager::SetBodyVelocity(Eigen::Vector3d velocity_fBody) {
   Eigen::Vector4d wheel_speeds_rpm = robot_model->RobotVelocityToWheelSpeedsRpm(velocity_fBody);
-  
-  std::cout << "[hw::HardwareManager::SetBodyVelocity] Body Velocity: "
-            << velocity_fBody.transpose() << " m/s" << std::endl;
-  
-  std::cout << "[hw::HardwareManager::SetBodyVelocity] Wheel Speeds RPM: "
-            << wheel_speeds_rpm.transpose() << std::endl;
   SetWheelSpeedsRpm(wheel_speeds_rpm);
   gyro_driver->SetAngularVelocityRadps(velocity_fBody[2]);
 }
@@ -58,13 +52,7 @@ std::optional<double> hw::HardwareManager::NewGyroAngularVelocity() {
 #else
   double w_radps = gyro_driver->GetAngularVelocityRadps();
 #endif
-  
-  std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Data: " << w_radps << std::endl;
-
   double angle = ComputeGyroAngle(w_radps);
-  std::cout << "[Integrated Angle] " << angle << " rad (" << angle * 180.0 / M_PI << " deg)"
-            << std::endl;
-
   return w_radps;
   // double w_radps = gyro_driver->GetAngularVelocityRadps();
   // if (gyro_driver->NewDataAvailable()) {

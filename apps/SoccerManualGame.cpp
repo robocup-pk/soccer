@@ -56,16 +56,9 @@ int main(int argc, char* argv[]) {
   GLFWwindow* gl_window = gl_simulation.GetRawGLFW();
   glfwSetMouseButtonCallback(gl_window, MouseButtonCallback);
 
-  // Robot(s)
-  std::vector<rob::RobotManager> robot_managers(cfg::SystemConfig::num_robots);
-
   while (1) {
     float dt = util::CalculateDt();
-
-    // Update SoccerObjects using robot managers
-    for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
-      soccer_objects[i] = robot_managers[i];
-    }
+    vis::ProcessInput(gl_window, soccer_objects);
 
     // Step 1: Use SoccerObjects to Compute Plan
     // std::vector<std::vector<Eigen::Vector3d>> plan = algos::ComputePlan(soccer_objects);
@@ -78,9 +71,14 @@ int main(int argc, char* argv[]) {
     // Referee
     // Step: Rule checking on current soccer objects
     // 1. Kinematics (Collisions, Max speeds)
-    // kin::CheckAndResolveCollisions(soccer_objects);
+    kin::UpdateKinematics(soccer_objects, dt);
+    kin::CheckAndResolveCollisions(soccer_objects);
     // 2.
     // 3.
+
+    // for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
+    //   soccer_objects[i] = robot_managers[i];
+    // }
 
     // Step: Simulation
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {

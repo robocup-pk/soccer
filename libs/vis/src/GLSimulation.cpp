@@ -2,6 +2,7 @@
 #include <iostream>
 #include <filesystem>
 #include <algorithm>
+#include <cassert>
 
 // self libs
 #include "Kinematics.h"
@@ -162,18 +163,11 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
           GameObject(soccer_object.name, soccer_object.position, soccer_object.size,
                      soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
                      ResourceManager::GetTexture("ball"), Eigen::Vector3d(1.0, 1.0, 1.0));
-    } else if (soccer_object.name.find("robot") != std::string::npos) {
-      if (soccer_object.name == "robot1") {
-        game_objects[soccer_object.name] =
-            GameObject(soccer_object.name, soccer_object.position, soccer_object.size,
-                       soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
-                       ResourceManager::GetTexture("ball"), Eigen::Vector3d(1.0, 1.0, 1.0));
-      } else {
-        game_objects[soccer_object.name] =
-            GameObject(soccer_object.name, soccer_object.position, soccer_object.size,
-                       soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
-                       ResourceManager::GetTexture("face"), Eigen::Vector3d(1.0, 1.0, 1.0));
-      }
+    } else {
+      game_objects[soccer_object.name] =
+          GameObject(soccer_object.name, soccer_object.position, soccer_object.size,
+                     soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
+                     ResourceManager::GetTexture("face"), Eigen::Vector3d(1.0, 1.0, 1.0));
     }
   }
 }
@@ -190,4 +184,80 @@ vis::GLSimulation::~GLSimulation() {
   }
 
   glfwTerminate();
+}
+
+void vis::ProcessInput(GLFWwindow* gl_window, std::vector<rob::RobotManager>& robot_managers) {
+  Eigen::Vector3d velocity_fBody_rob1(0, 0, 0);
+  Eigen::Vector3d velocity_fBody_rob2(0, 0, 0);
+
+  // Robot 1 (WSAD)
+  if (glfwGetKey(gl_window, GLFW_KEY_W) == GLFW_PRESS) velocity_fBody_rob1.y() += 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_S) == GLFW_PRESS) velocity_fBody_rob1.y() -= 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_A) == GLFW_PRESS) velocity_fBody_rob1.x() -= 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_D) == GLFW_PRESS) velocity_fBody_rob1.x() += 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_C) == GLFW_PRESS) velocity_fBody_rob1.z() += 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_X) == GLFW_PRESS) velocity_fBody_rob1.z() -= 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_K) == GLFW_PRESS) robot_managers[0].KickBall();
+  if (glfwGetKey(gl_window, GLFW_KEY_P) == GLFW_PRESS) robot_managers[0].PassBall();
+  if (glfwGetKey(gl_window, GLFW_KEY_H) == GLFW_PRESS) robot_managers[0].GoHome();
+
+  // Robot 2 (Arrow keys)
+  if (robot_managers.size() > 2) {
+    if (glfwGetKey(gl_window, GLFW_KEY_UP) == GLFW_PRESS) velocity_fBody_rob2.x() += 1;
+    if (glfwGetKey(gl_window, GLFW_KEY_DOWN) == GLFW_PRESS) velocity_fBody_rob2.x() -= 1;
+    if (glfwGetKey(gl_window, GLFW_KEY_LEFT) == GLFW_PRESS) velocity_fBody_rob2.y() += 1;
+    if (glfwGetKey(gl_window, GLFW_KEY_RIGHT) == GLFW_PRESS) velocity_fBody_rob2.y() -= 1;
+    if (glfwGetKey(gl_window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) velocity_fBody_rob2.z() += 1;
+    if (glfwGetKey(gl_window, GLFW_KEY_SLASH) == GLFW_PRESS) velocity_fBody_rob2.z() -= 1;
+    if (glfwGetKey(gl_window, GLFW_KEY_L) == GLFW_PRESS) robot_managers[1].KickBall();
+    if (glfwGetKey(gl_window, GLFW_KEY_SEMICOLON) == GLFW_PRESS) robot_managers[1].PassBall();
+    if (glfwGetKey(gl_window, GLFW_KEY_M) == GLFW_PRESS) robot_managers[1].GoHome();
+    velocity_fBody_rob2.normalize();
+    robot_managers[1].SetBodyVelocity(velocity_fBody_rob2);
+  }
+
+  velocity_fBody_rob1.normalize();
+  robot_managers[0].SetBodyVelocity(velocity_fBody_rob1);
+}
+
+void vis::ProcessInput(GLFWwindow* gl_window, std::vector<state::SoccerObject>& soccer_objects) {
+  Eigen::Vector3d velocity_fBody_rob1(0, 0, 0);
+  Eigen::Vector3d velocity_fBody_rob2(0, 0, 0);
+
+  // Robot 1 (WSAD)
+  if (glfwGetKey(gl_window, GLFW_KEY_W) == GLFW_PRESS) velocity_fBody_rob1.y() += 1.5;
+  if (glfwGetKey(gl_window, GLFW_KEY_S) == GLFW_PRESS) velocity_fBody_rob1.y() -= 1.5;
+  if (glfwGetKey(gl_window, GLFW_KEY_A) == GLFW_PRESS) velocity_fBody_rob1.x() -= 1.5;
+  if (glfwGetKey(gl_window, GLFW_KEY_D) == GLFW_PRESS) velocity_fBody_rob1.x() += 1.5;
+  if (glfwGetKey(gl_window, GLFW_KEY_C) == GLFW_PRESS) velocity_fBody_rob1.z() += 1.5;
+  if (glfwGetKey(gl_window, GLFW_KEY_X) == GLFW_PRESS) velocity_fBody_rob1.z() -= 1.5;
+  if (glfwGetKey(gl_window, GLFW_KEY_K) == GLFW_PRESS) {
+    if (soccer_objects[soccer_objects.size() - 1].is_attached &&
+        soccer_objects[soccer_objects.size() - 1].attached_to == &soccer_objects[0]) {
+      kin::DetachBall(soccer_objects[soccer_objects.size() - 1], 6.5);
+    }
+  }
+
+  // Robot 2 (Arrow keys)
+  if (soccer_objects.size() > 2) {
+    if (glfwGetKey(gl_window, GLFW_KEY_UP) == GLFW_PRESS) velocity_fBody_rob2.y() += 1.5;
+    if (glfwGetKey(gl_window, GLFW_KEY_DOWN) == GLFW_PRESS) velocity_fBody_rob2.y() -= 1.5;
+    if (glfwGetKey(gl_window, GLFW_KEY_LEFT) == GLFW_PRESS) velocity_fBody_rob2.x() -= 1.5;
+    if (glfwGetKey(gl_window, GLFW_KEY_RIGHT) == GLFW_PRESS) velocity_fBody_rob2.x() += 1.5;
+    if (glfwGetKey(gl_window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) velocity_fBody_rob2.z() += 1.5;
+    if (glfwGetKey(gl_window, GLFW_KEY_SLASH) == GLFW_PRESS) velocity_fBody_rob2.z() -= 1.5;
+    if (glfwGetKey(gl_window, GLFW_KEY_L) == GLFW_PRESS) {
+      if (soccer_objects[soccer_objects.size() - 1].is_attached &&
+          soccer_objects[soccer_objects.size() - 1].attached_to == &soccer_objects[1]) {
+        kin::DetachBall(soccer_objects[soccer_objects.size() - 1], 6.5);
+      }
+    }
+    // if (glfwGetKey(gl_window, GLFW_KEY_SEMICOLON) == GLFW_PRESS) soccer_objects[1].PassBall();
+    // if (glfwGetKey(gl_window, GLFW_KEY_M) == GLFW_PRESS) soccer_objects[1].GoHome();
+    // velocity_fBody_rob2.normalize();
+    soccer_objects[1].velocity = velocity_fBody_rob2;
+  }
+
+  // velocity_fBody_rob1.normalize();
+  soccer_objects[0].velocity = velocity_fBody_rob1;
 }
