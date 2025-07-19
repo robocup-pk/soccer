@@ -31,7 +31,9 @@ void hw::HardwareManager::SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
 }
 
 std::optional<Eigen::Vector4d> hw::HardwareManager::NewMotorsRpms() {
-  auto [motor_rpms, gyro_temp] = sensor_driver->GetSensorsData();
+  auto [motor_rpms, gyro_data] = sensor_driver->GetSensorsData();
+
+  sensor_driver->SetAngularVelocityRadps(gyro_data);
 
   if (sensor_driver->NewDataAvailable()) {
     sensor_driver->new_data_available = false;
@@ -56,7 +58,10 @@ std::optional<double> hw::HardwareManager::NewGyroAngularVelocity() {
   double w_radps = sensor_driver->GetAngularVelocityRadps();
   std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Data: " << w_radps << std::endl;
 
-  double angle = ComputeGyroAngle(w_radps);
+  double angle = ComputeGyroAngle(w_radps) * 180.0 / M_PI;  // Convert to degrees
+
+  std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Angle(Degree): " << angle
+            << std::endl;
   return w_radps;
 }
 

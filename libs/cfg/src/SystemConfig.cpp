@@ -2,7 +2,7 @@
 
 // Limits
 const double cfg::SystemConfig::avg_velocity_fBody_mps = 0.5;
-const Eigen::Vector3d cfg::SystemConfig::max_velocity_fBody_mps = Eigen::Vector3d(1, 1, 1);
+const Eigen::Vector3d cfg::SystemConfig::max_velocity_fBody_mps = Eigen::Vector3d(1, 1, 5);
 const Eigen::Vector3d cfg::SystemConfig::max_acc_m_radpsps = Eigen::Vector3d(0.5, 0.5, 0.5);
 
 // Wall
