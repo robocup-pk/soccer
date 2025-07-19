@@ -106,6 +106,7 @@ void rob::RobotManager::SenseLogic() {
     pose_fWorld = state_estimator.GetPose();
   }
 
+  // Print pose every few seconds
   static int num = 0;
   ++num;
   if (num % 200 == 0)
@@ -236,10 +237,9 @@ bool rob::RobotManager::BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody) 
   return true;
 }
 
-void rob::RobotManager::SetPoseInWorldFrame(Eigen::Vector3d& pose_fWorld) {
+void rob::RobotManager::InitializePose(Eigen::Vector3d& pose_fWorld) {
   std::unique_lock<std::mutex> lock(robot_state_mutex);
-  this->pose_fWorld = pose_fWorld;
-  state_estimator.SetPose(pose_fWorld);
+  state_estimator.InitializePose(pose_fWorld);
 }
 
 rob::RobotManager::~RobotManager() {

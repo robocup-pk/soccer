@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
 
   // Initializing Robot Managers Positions using SoccerObjects to avoid conflicts
   for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
-    robot_managers[i].SetPoseInWorldFrame(soccer_objects[i].position);
+    robot_managers[i].InitializePose(soccer_objects[i].position);
   }
 
   while (1) {

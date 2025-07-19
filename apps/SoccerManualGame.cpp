@@ -29,27 +29,12 @@ int main(int argc, char* argv[]) {
     float dt = util::CalculateDt();
     vis::ProcessInput(gl_window, soccer_objects);
 
-    // Step 1: Use SoccerObjects to Compute Plan
-    // std::vector<std::vector<Eigen::Vector3d>> plan = algos::ComputePlan(soccer_objects);
-
-    // Step 2: Send plan to robot managers
-    // for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
-    //   robot_managers[i].SetPath(plan[i]);
-    // }
-
-    // Referee
-    // Step: Rule checking on current soccer objects
+    // Rule checking on current soccer objects
     // 1. Kinematics (Collisions, Max speeds)
     kin::UpdateKinematics(soccer_objects, dt);
     kin::CheckAndResolveCollisions(soccer_objects);
-    // 2.
-    // 3.
 
-    // for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
-    //   soccer_objects[i] = robot_managers[i];
-    // }
-
-    // Step: Simulation
+    // Simulation
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
       std::cout << "[main] Simulation finished" << std::endl;
       break;

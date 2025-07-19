@@ -72,25 +72,16 @@ Eigen::Vector4d hw::MotorDriver::GetMotorsRpms() {
       motors_rpms[i] = motors[i].GetRpm();
     }
     new_data_available = true;
-    // std::cout << "[hw::MotorDriver::GetMotorsRpms] MODEL RPMS: " << motors_rpms.transpose()
-    //           << std::endl;
     return motors_rpms;
   }
 
-  // Get encoder ticks using serial
+  // Get wheel speeds using serial
   // First Byte
-
   std::vector<int> rpm(4);
   std::vector<uint8_t> buffer(20);
-  // std::cout << "a\n";
-
   {
     std::unique_lock<std::mutex> lock(shared_serial_port_mutex);
-
     size_t available_bytes = shared_serial_port->GetNumberOfBytesAvailable();
-    // std::cout << "[hw::MotorDriver::GetMotorRpms] Bytes Available: " << available_bytes
-              // << std::endl;
-
     // Need at least 21 bytes for complete response packet
     if (available_bytes < 21) {
       return Eigen::Vector4d();
@@ -107,31 +98,21 @@ Eigen::Vector4d hw::MotorDriver::GetMotorsRpms() {
       shared_serial_port->ReadByte(byte, 10);
       if (byte == 'x') {
         found_header = true;
-        // std::cout << "[hw::MotorDriver::GetMotorRpms] Found header 'x'" << std::endl;
         break;
       }
-      std::cout << "[SYNC] Discarded byte: '" << (char)byte << "' (0x" << std::hex << (int)byte
-                << std::dec << ")" << std::endl;
     }
 
     if (!found_header) {
-      std::cout << "[hw::MotorDriver::GetMotorRpms] No header found, flushing buffer" << std::endl;
       shared_serial_port->FlushInputBuffer();
       return Eigen::Vector4d();
     }
 
     // Check if we have enough bytes for the complete payload (20 bytes)
     if (shared_serial_port->GetNumberOfBytesAvailable() < 20) {
-      std::cout << "[hw::MotorDriver::GetMotorRpms] Incomplete packet: need 20 bytes, have "
-                << shared_serial_port->GetNumberOfBytesAvailable() << std::endl;
       return Eigen::Vector4d();
     }
-
     // Read the 20-byte payload (16 bytes motors + 4 bytes gyro)
     shared_serial_port->Read(buffer, 20, 50);
-    // Note: Read() returns void in this libserial version, so we can't check bytes_read
-
-    // std::cout << "[hw::MotorDriver::GetMotorRpms] Successfully read 21-byte packet" << std::endl;
   }
 
   // Extract motor RPMs (first 16 bytes of payload)
@@ -144,9 +125,6 @@ Eigen::Vector4d hw::MotorDriver::GetMotorsRpms() {
 
   if (VerifyRpms(rpm)) {
     new_data_available = true;
-    std::cout << "[hw::MotorDriver::GetMotorRpms] RPMS: " << rpm[0] << " " << rpm[1]
-              << " " << rpm[2] << " " << rpm[3] << ", Gyro (mdeg/s): " << gyro_mdeg_ps
-              << std::endl;
     return Eigen::Vector4d(rpm[0], rpm[1], rpm[2], rpm[3]);
   } else {
     std::cout << "[hw::MotorDriver::GetMotorRpms] INVALID RPMs: " << rpm[0] << " " << rpm[1] << " "

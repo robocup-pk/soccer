@@ -260,7 +260,4 @@ void kin::DetachBall(state::SoccerObject& ball, float detach_velocity) {
   // Clear attachment state
   ball.is_attached = false;
   ball.attached_to = nullptr;
-
-  std::cout << "[DetachBall] Ball detached with velocity: (" << detach_vel_x << ", "
-            << detach_vel_y << ")" << std::endl;
 }

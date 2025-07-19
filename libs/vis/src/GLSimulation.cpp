@@ -104,9 +104,6 @@ vis::GLSimulation::GLSimulation() {
   glViewport(0, 0, util::MmToPixels(SoccerField::GetInstance().width_mm),
              util::MmToPixels(SoccerField::GetInstance().height_mm));
 #endif
-
-  std::cout << "Window Size: " << util::MmToPixels(SoccerField::GetInstance().width_mm) << " "
-            << util::MmToPixels(SoccerField::GetInstance().height_mm) << std::endl;
   RegisterCallbacks();
 }
 
@@ -282,8 +279,5 @@ void vis::MouseButtonCallback(GLFWwindow* window, int button, int action, int mo
 
     double world_x = x_m - (field_width_m / 2.0);   // Center X coordinate
     double world_y = (field_height_m / 2.0) - y_m;  // Center Y coordinate and flip Y axis
-
-    std::cout << "[MouseClick] Pixel: (" << xpos << ", " << ypos << ")" << std::endl;
-    std::cout << "[MouseClick] World: (" << world_x << ", " << world_y << ") meters" << std::endl;
   }
 }
