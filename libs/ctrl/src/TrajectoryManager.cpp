@@ -82,7 +82,7 @@ std::pair<bool, Eigen::Vector3d> ctrl::TrajectoryManager::Update(Eigen::Vector3d
   }
   // Step 4: Get reference velocity from current trajectory
   Eigen::Vector3d velocity_fWorld = GetVelocityAtT(current_time_s);
-  // Eigen::Vector3d velocity_fBody = util::RotateAboutZ(velocity_fWorld, -pose_est[2]);
+  Eigen::Vector3d velocity_fBody = util::RotateAboutZ(velocity_fWorld, -pose_est[2]);
 
-  return std::make_pair(false, velocity_fWorld);
+  return std::make_pair(false, velocity_fBody);
 }

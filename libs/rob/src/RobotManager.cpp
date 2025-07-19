@@ -71,8 +71,9 @@ void rob::RobotManager::ControlLogic() {
       // finished_motion = true;
       break;
     case RobotState::GOING_HOME:
-      std::tie(finished_motion, velocity_fBody_) =
-          motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
+      std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
+      // std::tie(finished_motion, velocity_fBody_) =
+      //     motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
       break;
     case RobotState::AUTONOMOUS_DRIVING:
       std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
@@ -206,6 +207,13 @@ void rob::RobotManager::GoHome() {
     return;
   }
   std::unique_lock<std::mutex> lock(robot_state_mutex);
+  std::vector<Eigen::Vector3d> path;
+  path.push_back(pose_fWorld);
+  path.push_back(pose_home_fWorld);
+  bool is_path_valid = trajectory_manager.CreateTrajectoriesFromPath(path);
+  if (!is_path_valid) {
+    std::cout << "[rob::RobotManager::GoHome] Can't go home. Path invalid\n";
+  }
   robot_state = RobotState::GOING_HOME;
 }
 

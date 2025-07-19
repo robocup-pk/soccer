@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
   std::cout << "First path\n\n";
   std::vector<Eigen::Vector3d> path;
   path.push_back(Eigen::Vector3d(0, 0, 0));
-  path.push_back(Eigen::Vector3d(-1, 0, 1));
+  path.push_back(Eigen::Vector3d(-1, 0, 0));
   path.push_back(Eigen::Vector3d(0, 0, 0));
   robot_manager.SetPath(path, util::GetCurrentTime());
 
