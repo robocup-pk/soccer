@@ -6,7 +6,7 @@ const Eigen::Vector3d cfg::SystemConfig::max_velocity_fBody_mps = Eigen::Vector3
 const Eigen::Vector3d cfg::SystemConfig::max_acc_m_radpsps = Eigen::Vector3d(0.5, 0.5, 0.5);
 
 // Wall
-const float cfg::SystemConfig::wall_velocity_damping_factor = 0.9;
+const float cfg::SystemConfig::wall_velocity_damping_factor = 0.3;
 
 // Ball config
 const float cfg::SystemConfig::ball_radius_m = 0.05;  // actual radius of golf ball 0.021335 m

@@ -40,7 +40,7 @@ class HardwareManager {
   std::string motor_driver_port = "/dev/ttyUSB0";
   std::string gyro_driver_port = "/dev/ttyUSB1";
 
-  bool new_encoder_ticks = false;
+  bool new_motor_data = false;
   bool new_gyro_data = false;
   bool new_camera_data = false;
 

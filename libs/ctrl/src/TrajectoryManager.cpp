@@ -19,11 +19,10 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
     Eigen::Vector3d pose_end(path_fWorld[path_index]);
     Eigen::Vector3d h(pose_end - pose_start);
     Eigen::Vector3d v0(0, 0, 0);
+    double T = 4;
     if (path_index == 1) v0 = FindV0AtT(t_start_s);
 
-    double T = 4;
     //std::max({h[0], h[1], h[2]}) * cfg::SystemConfig::avg_velocity_fBody_mps;
-    // std::cout << "T = " << T << std::endl;
 
     // Create Trajectory
     t_start_s = t_end_s;
@@ -60,8 +59,8 @@ std::pair<bool, Eigen::Vector3d> ctrl::TrajectoryManager::Update(Eigen::Vector3d
 
   // Step 2: Did active trajectories finish?. Motion is finished
   if (current_time_s >= active_traj_t_finish_s) {
-    // std::cout << "[ctrl::TrajectoryManager::Update] Finished motion. t_finish_s = "
-    //           << active_traj_t_finish_s << std::endl;
+    std::cout << "[ctrl::TrajectoryManager::Update] Finished motion. t_finish_s = "
+              << active_traj_t_finish_s << std::endl;
     current_trajectory = nullptr;
     return std::make_pair(true, Eigen::Vector3d(0, 0, 0));  // finished motion
   }

@@ -7,7 +7,7 @@ void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) 
   // Robots
   for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
     std::string name = "robot" + std::to_string(i);
-    Eigen::Vector3d robot_position_m(0, 0, 0);
+    Eigen::Vector3d robot_position_m(0, i * 1, 0);
     soccer_objects.push_back(
         state::SoccerObject(name, robot_position_m, cfg::SystemConfig::robot_size_m,
                             cfg::SystemConfig::init_robot_velocity_mps,
@@ -16,7 +16,7 @@ void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) 
 
   soccer_objects.push_back(state::SoccerObject(
       "ball",
-      Eigen::Vector3d(-cfg::SystemConfig::ball_radius_m, cfg::SystemConfig::ball_radius_m, 0),
+      Eigen::Vector3d(-cfg::SystemConfig::ball_radius_m + 1, cfg::SystemConfig::ball_radius_m, 0),
       Eigen::Vector2d(cfg::SystemConfig::ball_radius_m * 2, cfg::SystemConfig::ball_radius_m * 2),
       cfg::SystemConfig::init_ball_velocity_mps, cfg::SystemConfig::init_ball_acceleration_mpsps,
       1));
@@ -41,4 +41,42 @@ bool state::SoccerObject::IsPointInFrontSector(Eigen::Vector2d point) {
   float angle_threshold = cos(M_PI / 4.0f);
 
   return dot_product > angle_threshold;
+}
+
+state::SoccerObject::SoccerObject(std::string name_, Eigen::Vector3d position_,
+                                  Eigen::Vector2d size_, Eigen::Vector3d velocity_,
+                                  Eigen::Vector3d acceleration_, float mass_kg_)
+    : name(name_),
+      position(position_),
+      size(size_),
+      velocity(velocity_),
+      acceleration(acceleration_),
+      mass_kg(mass_kg_) {}
+
+state::SoccerObject::SoccerObject(const rob::RobotManager& robot_manager) {
+  position = robot_manager.GetPoseInWorldFrame();  // TODO: Center position
+  velocity = robot_manager.GetVelocityInWorldFrame();
+}
+
+state::SoccerObject& state::SoccerObject::operator=(const rob::RobotManager& robot_manager) {
+  // Center position
+  position = robot_manager.GetPoseInWorldFrame();
+  position[0] += size[0] / 2;
+  position[0] -= size[1] / 2;
+  velocity = robot_manager.GetVelocityInWorldFrame();
+  return *this;
+}
+
+void state::SoccerObject::Move(float dt) {
+  // TODO: Improve
+  if (name == "ball" && is_attached) return;
+  velocity += acceleration * dt;
+  float friction = 0.9f;
+  velocity -= velocity * friction * dt;
+  position += velocity * dt;
+  position[2] = util::WrapAngle(position[2]);
+}
+
+Eigen::Vector3d state::SoccerObject::GetCenterPosition() {
+  return Eigen::Vector3d(position[0] + size[0] / 2, position[1] + size[1] / 2, position[2]);
 }

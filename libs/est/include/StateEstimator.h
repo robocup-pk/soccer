@@ -11,9 +11,11 @@ class StateEstimator {
  public:
   StateEstimator();
 
-  void NewMotorsData(Eigen::Vector4d ticks);
+  void NewMotorsData(Eigen::Vector4d wheel_speeds_rpm);
   void NewGyroData(double w_radps);
   void NewCameraData(Eigen::Vector3d pose_meas);
+
+  void InitializePose(Eigen::Vector3d pose_fWorld_init);
 
   Eigen::Vector3d GetPose();
   Eigen::Vector3d GetPoseInit();

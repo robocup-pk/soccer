@@ -10,7 +10,6 @@
 #include "HardwareManager.h"
 #include "MotionController.h"
 #include "TrajectoryManager.h"
-#include "SoccerObject.h"
 
 namespace rob {
 
@@ -32,6 +31,10 @@ class RobotManager {
   void ControlLogic();
   void SenseLogic();
 
+  // Actions
+  void KickBall();
+  void PassBall();
+
   // Used by the outside world
   void SetBodyVelocity(Eigen::Vector3d& velocity_fBody);
   void AddGoal(const Eigen::Vector3d& goal);
@@ -39,13 +42,15 @@ class RobotManager {
   void InitializeHome(Eigen::Vector3d pose_home);
   void SetPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
 
-  void IntegratePhysics(std::vector<state::SoccerObject>& soccer_objects, float dt);
-  void HandleCollisionFeedback(std::vector<state::SoccerObject>& soccer_objects);
+  // void IntegratePhysics(std::vector<state::SoccerObject>& soccer_objects, float dt);
+  // void HandleCollisionFeedback(std::vector<state::SoccerObject>& soccer_objects);
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
-  void UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects, float dt);
+  // void UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects, float dt);
 
-  Eigen::Vector3d GetPoseInWorldFrame();
+  Eigen::Vector3d GetPoseInWorldFrame() const;
+  void InitializePose(Eigen::Vector3d& pose_fWorld);
+  Eigen::Vector3d GetVelocityInWorldFrame() const;
   void TryAssignNextGoal();
 
   std::string GetRobotState();

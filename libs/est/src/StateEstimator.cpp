@@ -138,3 +138,8 @@ Eigen::Vector3d est::StateEstimator::GetPoseInit() { return pose_init; }
 void est::StateEstimator::SetPose(Eigen::Vector3d pose) { this->pose_est = pose; }
 
 est::StateEstimator::~StateEstimator() { robot_model = nullptr; }
+
+void est::StateEstimator::InitializePose(Eigen::Vector3d pose_fWorld_init) {
+  pose_init = pose_fWorld_init;
+  initialized_pose = true;
+}

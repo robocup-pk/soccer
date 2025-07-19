@@ -39,7 +39,6 @@ TEST_F(StateEstimatorTest, TestForwardMotionWithCamera) {
   double start_time_s = util::GetCurrentTime();
   double elapsed_time_s = util::GetCurrentTime() - start_time_s;
   int iteration = 0;
-  Eigen::Vector4d ticks;
 
   while (elapsed_time_s < t_sec) {
     elapsed_time_s = util::GetCurrentTime() - start_time_s;
@@ -73,8 +72,7 @@ TEST_F(StateEstimatorTest, TestForwardMotionWithCameraAgain) {
   // START THE MOTORS
   hardware_manager->SetBodyVelocity(velocity_fBody);
 
-  // NOW PERFORM ESTIMATION. Encoder ticks at 100 Hz
-  Eigen::Vector4d ticks;
+  // NOW PERFORM ESTIMATION. Wheel Speeds at 100 Hz
   double start_time = util::GetCurrentTime();
   double elapsed_time_s = 0;
 
@@ -114,7 +112,6 @@ TEST_F(StateEstimatorTest, TestForwardMotionDeadReckoning) {
   hardware_manager->SetBodyVelocity(velocity_fBody);
   double start_time = util::GetCurrentTime();
   double elapsed_time_s = 0;
-  Eigen::Vector4d ticks;
 
   while (elapsed_time_s < t_sec) {
     elapsed_time_s = util::GetCurrentTime() - start_time;
@@ -142,7 +139,6 @@ TEST_F(StateEstimatorTest, TestForwardMotionDeadReckoningWithRotation) {
   // ESTIMATION
   double start_time = util::GetCurrentTime();
   double elapsed_time_s = 0;
-  Eigen::Vector4d ticks;
 
   while (elapsed_time_s < t_sec) {
     elapsed_time_s = util::GetCurrentTime() - start_time;
@@ -180,7 +176,6 @@ TEST_F(StateEstimatorTest, TestMotionWithInitialPose) {
   hardware_manager->SetBodyVelocity(velocity_fBody);
   double start_time = util::GetCurrentTime();
   double elapsed_time_s = 0;
-  Eigen::Vector4d ticks;
 
   int iteration = 0;
   while (elapsed_time_s < t_sec) {
@@ -220,7 +215,6 @@ TEST_F(StateEstimatorTest, TestMotionWithAllSensors) {
   hardware_manager->SetBodyVelocity(velocity_fBody);
   double start_time = util::GetCurrentTime();
   double elapsed_time_s = 0;
-  Eigen::Vector4d ticks;
 
   int iteration = 0;
   while (elapsed_time_s < t_sec) {
