@@ -194,6 +194,12 @@ void vis::ProcessInput(GLFWwindow* gl_window, std::vector<rob::RobotManager>& ro
   if (glfwGetKey(gl_window, GLFW_KEY_D) == GLFW_PRESS) velocity_fBody_rob1.x() += 1;
   if (glfwGetKey(gl_window, GLFW_KEY_C) == GLFW_PRESS) velocity_fBody_rob1.z() += 1;
   if (glfwGetKey(gl_window, GLFW_KEY_X) == GLFW_PRESS) velocity_fBody_rob1.z() -= 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_K) == GLFW_PRESS) {
+    robot_managers[0].KickBall();
+  }
+  if (glfwGetKey(gl_window, GLFW_KEY_J) == GLFW_PRESS) {
+    robot_managers[0].PassBall();
+  }
 
   // Robot 2 (Arrow keys)
   if (robot_managers.size() > 1) {
@@ -203,6 +209,9 @@ void vis::ProcessInput(GLFWwindow* gl_window, std::vector<rob::RobotManager>& ro
     if (glfwGetKey(gl_window, GLFW_KEY_RIGHT) == GLFW_PRESS) velocity_fBody_rob2.x() += 1;
     if (glfwGetKey(gl_window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) velocity_fBody_rob2.z() += 1;
     if (glfwGetKey(gl_window, GLFW_KEY_SLASH) == GLFW_PRESS) velocity_fBody_rob2.z() -= 1;
+    if (glfwGetKey(gl_window, GLFW_KEY_L) == GLFW_PRESS) {
+      robot_managers[1].KickBall();
+    }
 
     velocity_fBody_rob2.normalize();
     robot_managers[1].SetBodyVelocity(velocity_fBody_rob2);

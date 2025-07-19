@@ -250,6 +250,12 @@ void rob::RobotManager::InitializePose(Eigen::Vector3d& pose_fWorld) {
   state_estimator.InitializePose(pose_fWorld);
 }
 
+rob::RobotAction rob::RobotManager::GetRobotAction() { return robot_action; }
+
+void rob::RobotManager::SetRobotAction(RobotAction action) {
+  robot_action = action;
+}
+
 rob::RobotManager::~RobotManager() {
   rob_manager_running.store(false);
   if (sense_thread.joinable()) sense_thread.join();

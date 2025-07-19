@@ -57,6 +57,10 @@ void ref::CheckCollisions(std::vector<state::SoccerObject>& soccer_objects) {
     if (ref::IsOutsidePlayingField(obj) && !obj.is_attached) {
       std::cout << "[ref::CheckCollisions] Robot " << obj.name << " is outside the playing field"
                 << std::endl;
+      if(obj.name == "ball"){
+        obj.velocity = Eigen::Vector3d::Zero();
+        obj.position = Eigen::Vector3d::Zero();
+      }
     }
   }
 }
@@ -116,10 +120,16 @@ void ref::CheckForGoals(std::vector<state::SoccerObject>& soccer_objects) {
       if (goal_scored) {
         if (obj.is_attached) {
           obj.is_attached = false;
+          state::SoccerObject* robot = obj.attached_to;
+          if (robot) {
+            robot->is_attached = false;
+            robot->attached_to = nullptr;
+          }
           obj.attached_to = nullptr;
         }
 
         obj.position = Eigen::Vector3d::Zero();
+        obj.velocity = Eigen::Vector3d::Zero();
 
         std::cout << "[ref::CheckForGoals] Ball position reset to origin after goal." << std::endl;
       }
