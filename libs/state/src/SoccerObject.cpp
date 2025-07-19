@@ -2,6 +2,7 @@
 #include "Coordinates.h"
 #include "SoccerObject.h"
 #include "SystemConfig.h"
+#include "Kinematics.h"
 
 void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) {
   // Robots
@@ -58,12 +59,23 @@ state::SoccerObject::SoccerObject(const rob::RobotManager& robot_manager) {
   velocity = robot_manager.GetVelocityInWorldFrame();
 }
 
-state::SoccerObject& state::SoccerObject::operator=(const rob::RobotManager& robot_manager) {
+state::SoccerObject& state::SoccerObject::operator=(rob::RobotManager& robot_manager) {
   // Center position
   position = robot_manager.GetPoseInWorldFrame();
   position[0] += size[0] / 2;
   position[0] -= size[1] / 2;
   velocity = robot_manager.GetVelocityInWorldFrame();
+  if (robot_manager.GetRobotAction() == rob::RobotAction::PASS_BALL && this->name != "ball" &&
+      this->attached_to) {
+    kin::DetachBall(*this->attached_to, 1.0f);
+  }
+
+  if (robot_manager.GetRobotAction() == rob::RobotAction::KICK_BALL && this->name != "ball" &&
+      this->attached_to) {
+    kin::DetachBall(*this->attached_to, 6.5f);
+  }
+
+  robot_manager.SetRobotAction(rob::RobotAction::MOVE);
   return *this;
 }
 

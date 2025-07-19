@@ -199,6 +199,8 @@ bool kin::IsBallInFrontOfRobot(state::SoccerObject& robot, state::SoccerObject& 
 void kin::HandleBallSticking(state::SoccerObject& robot, state::SoccerObject& ball) {
   ball.is_attached = true;
   ball.attached_to = &robot;
+  robot.is_attached = true;
+  robot.attached_to = &ball;
 
   UpdateAttachedBallPosition(robot, ball);
 }
@@ -259,5 +261,7 @@ void kin::DetachBall(state::SoccerObject& ball, float detach_velocity) {
 
   // Clear attachment state
   ball.is_attached = false;
+  robot->is_attached = false;
+  robot->attached_to = nullptr;
   ball.attached_to = nullptr;
 }

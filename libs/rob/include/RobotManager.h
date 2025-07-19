@@ -22,6 +22,12 @@ enum class RobotState {
   GOING_HOME
 };
 
+enum class RobotAction {
+  KICK_BALL,
+  PASS_BALL,
+  MOVE  // Normal Action State
+};
+
 class RobotManager {
  public:
   RobotManager();
@@ -41,6 +47,8 @@ class RobotManager {
   void GoHome();
   void InitializeHome(Eigen::Vector3d pose_home);
   void SetPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
+  RobotAction GetRobotAction();
+  void SetRobotAction(RobotAction action);
 
   // void IntegratePhysics(std::vector<state::SoccerObject>& soccer_objects, float dt);
   // void HandleCollisionFeedback(std::vector<state::SoccerObject>& soccer_objects);
@@ -60,6 +68,8 @@ class RobotManager {
  private:
   RobotState previous_robot_state;
   RobotState robot_state;
+
+  RobotAction robot_action;
 
   Eigen::Vector3d pose_fWorld;
   Eigen::Vector3d velocity_fBody;

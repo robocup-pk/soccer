@@ -61,6 +61,7 @@ int main(int argc, char* argv[]) {
     // 2.
     // 3.
 
+    soccer_objects[soccer_objects.size() - 1].Move(dt);  // Move the ball
     // Step: Simulation
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
       std::cout << "[main] Simulation finished" << std::endl;
