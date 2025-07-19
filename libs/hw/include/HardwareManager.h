@@ -21,6 +21,7 @@ class HardwareManager {
   std::optional<Eigen::Vector4d> NewMotorsRpms();
   std::optional<double> NewGyroAngularVelocity();
   std::optional<Eigen::Vector3d> NewCameraData();
+  void NewCameraData(Eigen::Vector3d pose_from_camera);
 
   // Control
   void SetBodyVelocity(Eigen::Vector3d velocity_fBody);
@@ -35,6 +36,7 @@ class HardwareManager {
 
  private:
   // std::unique_ptr<CameraDriver> camera_driver;
+  Eigen::Vector3d camera_data;
 
   bool new_sensor_data = false;
   bool new_camera_data = false;

@@ -99,7 +99,11 @@ void rob::RobotManager::SenseLogic() {
   std::optional<Eigen::Vector3d> pose_from_camera = hardware_manager.NewCameraData();
   if (motors_rpms.has_value()) state_estimator.NewMotorsData(motors_rpms.value());
   if (w_radps.has_value()) state_estimator.NewGyroData(w_radps.value());
-  if (pose_from_camera.has_value()) state_estimator.NewCameraData(pose_from_camera.value());
+  if (pose_from_camera.has_value()) {
+    std::cout << "[rob::RobotManager::SenseLogic] Pose from camera: "
+              << pose_from_camera.value().transpose() << std::endl;
+    state_estimator.NewCameraData(pose_from_camera.value());
+  }
 
   {
     // Pose shall not be used in control while it is being updated
@@ -260,4 +264,8 @@ rob::RobotManager::~RobotManager() {
   rob_manager_running.store(false);
   if (sense_thread.joinable()) sense_thread.join();
   if (control_thread.joinable()) control_thread.join();
+}
+
+void rob::RobotManager::NewCameraData(Eigen::Vector3d pose_from_camera) {
+  hardware_manager.NewCameraData(pose_from_camera);
 }
