@@ -1,3 +1,4 @@
+#include <cassert>
 #include <iostream>
 
 #include "TrajectoryManager.h"
@@ -118,6 +119,14 @@ Eigen::Vector3d ctrl::TrajectoryManager::FindV0AtT(double t) {
   std::queue<std::unique_ptr<Trajectory3D>> active_trajectories_cpy;
   Eigen::Vector3d v0(0, 0, 0);
   std::unique_lock<std::mutex> lock(active_traj_mutex);
+
+  // Is T in current trajectory?
+  if (t < active_trajectories.front()->GetTStart()) {
+    // Return v0 at T
+    assert(t > current_trajectory->GetTStart() && t <= current_trajectory->GetTFinish());
+    return current_trajectory->VelocityAtT(t);
+  }
+
   while (!active_trajectories.empty()) {
     // Find the overlapping trajectory
     if (active_trajectories.front()->GetTStart() < t &&

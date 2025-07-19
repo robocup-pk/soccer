@@ -75,7 +75,6 @@ Eigen::Vector3d ctrl::TrapezoidalTrajectoryVi3D::VelocityAtT(double t_sec) {
         v_fWorld[i] = v_cruise[i] + sign * a[i] * t_dec_s;
       }
     } else {
-      std::cout << "sign change\n";
       // Case 2: Sign change
       int sign = v0[i] > 0 ? -1 : 1;
       if (t_sec < t_1) {
@@ -83,15 +82,11 @@ Eigen::Vector3d ctrl::TrapezoidalTrajectoryVi3D::VelocityAtT(double t_sec) {
       } else {
         // Now we are in the trapezoidal part
         t_sec -= t_1;
-        std::cout << "t_sec: " << t_sec << std::endl;
         if (t_sec < t_a[i]) {
-          std::cout << "a\n";
           v_fWorld[i] = sign * a[i] * t_sec;
         } else if (t_sec < t_2 - t_d[i]) {
-          std::cout << "b\n";
           v_fWorld[i] = v_cruise[i];
         } else {
-          std::cout << "c\n";
           double t_dec_s = t_sec - (t_2 - t_d[i]);
           v_fWorld[i] = v_cruise[i] - sign * a[i] * t_dec_s;
         }
@@ -99,8 +94,6 @@ Eigen::Vector3d ctrl::TrapezoidalTrajectoryVi3D::VelocityAtT(double t_sec) {
     }
   }
 
-  std::cout << "[ctrl::TrapezoidalTrajectoryVi3D::VelocityAtT] v_fWorld = " << v_fWorld.transpose()
-            << ". t = " << t_sec << std::endl;
   return v_fWorld;
 }
 
