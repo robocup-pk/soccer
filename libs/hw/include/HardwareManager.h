@@ -36,8 +36,7 @@ class HardwareManager {
  private:
   // std::unique_ptr<CameraDriver> camera_driver;
 
-  bool new_motor_data = false;
-  bool new_gyro_data = false;
+  bool new_sensor_data = false;
   bool new_camera_data = false;
 
   std::unique_ptr<SensorDriver> sensor_driver;

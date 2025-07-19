@@ -23,9 +23,7 @@ void hw::SensorDriver::SetAngularVelocityRadps(double w_radps) {
 
 double hw::SensorDriver::GetAngularVelocityRadps() {
   if (sensor_type == SensorType::MODEL) {
-    gyro_wradps = gyro.GetAngularVelocityRadps();
-    new_data_available = true;
-    return gyro_wradps;
+    return 0.0f;
   }
   return (gyro_mdeg_ps / 1000.0) * M_PI / 180.0;
 }
