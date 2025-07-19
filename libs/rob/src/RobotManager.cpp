@@ -20,7 +20,7 @@ rob::RobotManager::RobotManager() {
   rob_manager_running.store(true);
 
   // TODO: remove when we have the camera system ready
-  state_estimator.initialized_pose = true;
+  state_estimator.initialized_pose = false;
 
   sense_thread = std::thread(&RobotManager::SenseLoop, this);
   control_thread = std::thread(&RobotManager::ControlLoop, this);
@@ -99,11 +99,7 @@ void rob::RobotManager::SenseLogic() {
   std::optional<Eigen::Vector3d> pose_from_camera = hardware_manager.NewCameraData();
   if (motors_rpms.has_value()) state_estimator.NewMotorsData(motors_rpms.value());
   if (w_radps.has_value()) state_estimator.NewGyroData(w_radps.value());
-  if (pose_from_camera.has_value()) {
-    std::cout << "[rob::RobotManager::SenseLogic] Pose from camera: "
-              << pose_from_camera.value().transpose() << std::endl;
-    state_estimator.NewCameraData(pose_from_camera.value());
-  }
+  if (pose_from_camera.has_value()) state_estimator.NewCameraData(pose_from_camera.value());
 
   {
     // Pose shall not be used in control while it is being updated
@@ -112,11 +108,11 @@ void rob::RobotManager::SenseLogic() {
   }
 
   // Print pose every few seconds
-  static int num = 0;
-  ++num;
-  if (num % 200 == 0)
-    std::cout << "[rob::RobotManager::SenseLogic] Pose (est): " << pose_fWorld.transpose()
-              << std::endl;
+  // static int num = 0;
+  // ++num;
+  // if (num % 200 == 0)
+  //   std::cout << "[rob::RobotManager::SenseLogic] Pose (est): " << pose_fWorld.transpose()
+  //             << std::endl;
 
   // Set home pose
   if (!initialized_pose_home && state_estimator.initialized_pose) {
