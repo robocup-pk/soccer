@@ -66,8 +66,16 @@ std::optional<double> hw::HardwareManager::NewGyroAngularVelocity() {
 }
 
 std::optional<Eigen::Vector3d> hw::HardwareManager::NewCameraData() {
+  if (new_camera_data) {
+    return camera_data;
+  }
   // if (camera_driver.NewDataAvailable()) return camera_driver.GetPose();
   return std::nullopt;
+}
+
+void hw::HardwareManager::NewCameraData(Eigen::Vector3d pose_from_camera) {
+  camera_data = pose_from_camera;
+  new_camera_data = true;
 }
 
 hw::HardwareManager::~HardwareManager() {

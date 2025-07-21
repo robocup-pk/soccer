@@ -49,6 +49,7 @@ class RobotManager {
   void SetPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
+  void NewCameraData(Eigen::Vector3d pose_from_camera);
 
   // void IntegratePhysics(std::vector<state::SoccerObject>& soccer_objects, float dt);
   // void HandleCollisionFeedback(std::vector<state::SoccerObject>& soccer_objects);

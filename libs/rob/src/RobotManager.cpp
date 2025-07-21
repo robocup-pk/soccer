@@ -20,7 +20,7 @@ rob::RobotManager::RobotManager() {
   rob_manager_running.store(true);
 
   // TODO: remove when we have the camera system ready
-  state_estimator.initialized_pose = true;
+  state_estimator.initialized_pose = false;
 
   sense_thread = std::thread(&RobotManager::SenseLoop, this);
   control_thread = std::thread(&RobotManager::ControlLoop, this);
@@ -108,11 +108,11 @@ void rob::RobotManager::SenseLogic() {
   }
 
   // Print pose every few seconds
-  static int num = 0;
-  ++num;
-  if (num % 200 == 0)
-    std::cout << "[rob::RobotManager::SenseLogic] Pose (est): " << pose_fWorld.transpose()
-              << std::endl;
+  // static int num = 0;
+  // ++num;
+  // if (num % 200 == 0)
+  //   std::cout << "[rob::RobotManager::SenseLogic] Pose (est): " << pose_fWorld.transpose()
+  //             << std::endl;
 
   // Set home pose
   if (!initialized_pose_home && state_estimator.initialized_pose) {
@@ -260,4 +260,8 @@ rob::RobotManager::~RobotManager() {
   rob_manager_running.store(false);
   if (sense_thread.joinable()) sense_thread.join();
   if (control_thread.joinable()) control_thread.join();
+}
+
+void rob::RobotManager::NewCameraData(Eigen::Vector3d pose_from_camera) {
+  hardware_manager.NewCameraData(pose_from_camera);
 }
