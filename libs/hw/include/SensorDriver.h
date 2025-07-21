@@ -23,8 +23,10 @@ class SensorDriver {
   void SendWheelSpeedRpm(Eigen::Vector4d& wheel_speeds_rpm);
   std::pair<Eigen::Vector4d, int> GetSensorsData();
   bool VerifyRpms(std::vector<int> rpms);
+  void CalibrateGyro();
 
   bool new_data_available = true;
+  bool gyro_calibrated;
 
  private:
 #ifdef BUILD_ON_PI
@@ -40,6 +42,9 @@ class SensorDriver {
   std::vector<SensorModel> motors;
   Eigen::Vector4d motors_rpms;
   int gyro_mdeg_ps;
+
+  int num_of_iterations_for_gyro;
+  double bias_in_gyro;
 
   std::shared_ptr<LibSerial::SerialPort> shared_serial_port;
   std::mutex shared_serial_port_mutex;

@@ -16,6 +16,7 @@ rob::RobotManager::RobotManager() {
   velocity_fBody << 0, 0, 0;
   initialized_pose_home = false;
   finished_motion = true;
+  gyro_callibrated = false;
   num_sensor_readings_failed = 0;
   rob_manager_running.store(true);
 
@@ -51,8 +52,21 @@ void rob::RobotManager::ControlLoop() {
 
 void rob::RobotManager::ControlLogic() {
   Eigen::Vector3d velocity_fBody_;
+  if (!gyro_callibrated && robot_state != RobotState::CALIBRATING_GYRO) {
+    robot_state = RobotState::CALIBRATING_GYRO;
+  }
 
   switch (robot_state) {
+    case RobotState::CALIBRATING_GYRO:
+      if (hardware_manager.CalibrateGyro()) {
+        gyro_callibrated = true;
+        robot_state = RobotState::IDLE;
+        std::cout << "[rob::RobotManager::ControlLogic] Gyro calibrated successfully." << std::endl;
+      } else {
+        std::cout << "[rob::RobotManager::ControlLogic] Gyro calibration failed. Retrying..." << std::endl;
+      }
+      velocity_fBody_ = Eigen::Vector3d::Zero();
+      break;
     case RobotState::IDLE:
       velocity_fBody_ = velocity_fBody;
       break;
@@ -220,6 +234,8 @@ void rob::RobotManager::GoHome() {
 std::string rob::RobotManager::GetRobotState() {
   std::unique_lock<std::mutex> lock(robot_state_mutex);
   switch (robot_state) {
+    case RobotState::CALIBRATING_GYRO:
+      return "CALIBRATING_GYRO";
     case RobotState::IDLE:
       return "IDLE";
     case RobotState::DRIVING_TO_POINT:
@@ -252,9 +268,7 @@ void rob::RobotManager::InitializePose(Eigen::Vector3d& pose_fWorld) {
 
 rob::RobotAction rob::RobotManager::GetRobotAction() { return robot_action; }
 
-void rob::RobotManager::SetRobotAction(RobotAction action) {
-  robot_action = action;
-}
+void rob::RobotManager::SetRobotAction(RobotAction action) { robot_action = action; }
 
 rob::RobotManager::~RobotManager() {
   rob_manager_running.store(false);

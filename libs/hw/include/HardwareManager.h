@@ -31,6 +31,7 @@ class HardwareManager {
   void InitializeSerialPort();
 
   double ComputeGyroAngle(double angular_velocity_radps);
+  bool CalibrateGyro();
 
   ~HardwareManager();
 
@@ -40,6 +41,7 @@ class HardwareManager {
 
   bool new_sensor_data = false;
   bool new_camera_data = false;
+  bool gyro_calibrated = false;
 
   std::unique_ptr<SensorDriver> sensor_driver;
   std::shared_ptr<kin::RobotModel> robot_model;

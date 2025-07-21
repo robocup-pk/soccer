@@ -78,6 +78,22 @@ void hw::HardwareManager::NewCameraData(Eigen::Vector3d pose_from_camera) {
   new_camera_data = true;
 }
 
+bool hw::HardwareManager::CalibrateGyro() {
+  if (gyro_calibrated) {
+    std::cout << "[hw::HardwareManager::CalibrateGyro] Gyro already calibrated." << std::endl;
+    return true;
+  }
+
+  if (sensor_driver->gyro_calibrated) {
+    gyro_calibrated = true;
+    std::cout << "[hw::HardwareManager::CalibrateGyro] Gyro calibration successful." << std::endl;
+    return true;
+  } else {
+    std::cout << "[hw::HardwareManager::CalibrateGyro] Gyro calibration failed." << std::endl;
+    return false;
+  }
+}
+
 hw::HardwareManager::~HardwareManager() {
   // Properly close the serial port before destruction
   if (shared_serial_port && shared_serial_port->IsOpen()) {

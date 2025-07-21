@@ -19,7 +19,8 @@ enum class RobotState {
   INTERPOLATING_TO_POINT,
   MANUAL_DRIVING,
   AUTONOMOUS_DRIVING,
-  GOING_HOME
+  GOING_HOME,
+  CALIBRATING_GYRO
 };
 
 enum class RobotAction {
@@ -89,6 +90,7 @@ class RobotManager {
   double sense_loop_frequency_hz = 100;
 
   bool finished_motion;
+  bool gyro_callibrated;
 
   // For driving to point
   Eigen::Vector3d pose_destination;
