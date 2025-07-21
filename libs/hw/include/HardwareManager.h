@@ -10,8 +10,7 @@
 #include <libserial/SerialPort.h>
 
 #include "RobotModel.h"
-#include "MotorDriver.h"
-#include "GyroDriver.h"
+#include "SensorDriver.h"
 
 namespace hw {
 class HardwareManager {
@@ -30,20 +29,17 @@ class HardwareManager {
   // Serial Comms
   void InitializeSerialPort();
 
+  double ComputeGyroAngle(double angular_velocity_radps);
+
   ~HardwareManager();
 
  private:
-  std::unique_ptr<MotorDriver> motor_driver;
-  std::unique_ptr<GyroDriver> gyro_driver;
   // std::unique_ptr<CameraDriver> camera_driver;
 
-  std::string motor_driver_port = "/dev/ttyUSB0";
-  std::string gyro_driver_port = "/dev/ttyUSB1";
-
-  bool new_motor_data = false;
-  bool new_gyro_data = false;
+  bool new_sensor_data = false;
   bool new_camera_data = false;
 
+  std::unique_ptr<SensorDriver> sensor_driver;
   std::shared_ptr<kin::RobotModel> robot_model;
 
   // Serial port

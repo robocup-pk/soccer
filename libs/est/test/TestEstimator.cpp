@@ -10,6 +10,7 @@
 #include "Utils.h"
 #include "HardwareManager.h"
 #include "RobotModel.h"
+#include "SensorModel.h"
 
 class StateEstimatorTest : public ::testing::Test {
  protected:
@@ -22,7 +23,7 @@ class StateEstimatorTest : public ::testing::Test {
   std::unique_ptr<est::StateEstimator> state_estimator;
   std::unique_ptr<hw::HardwareManager> hardware_manager;
   Eigen::Vector3d tolerance;
-  std::vector<hw::MotorModel> motors = std::vector<hw::MotorModel>(4);
+  std::vector<hw::SensorModel> motors = std::vector<hw::SensorModel>(4);
   std::vector<double> wheel_speeds_radps = std::vector<double>(4);
 };
 
@@ -151,7 +152,7 @@ TEST_F(StateEstimatorTest, TestForwardMotionDeadReckoningWithRotation) {
     std::optional<Eigen::Vector4d> motors_rpms = hardware_manager->NewMotorsRpms();
     if (motors_rpms.has_value()) state_estimator->NewMotorsData(motors_rpms.value());
     state_estimator->NewGyroData(velocity_fWorld[2]);
-    
+
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
