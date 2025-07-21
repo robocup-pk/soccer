@@ -79,10 +79,10 @@ std::pair<Eigen::Vector4d, int> hw::SensorDriver::GetSensorsData() {
     size_t available_bytes = shared_serial_port->GetNumberOfBytesAvailable();
 
     if (available_bytes < 21) {
-      std::cout << "[hw::SensorDriver::GetSensorsData] Not enough data available: "
-                << available_bytes << " bytes, need at least 21" << std::endl;
-      std::cout << "[hw::SensorDriver::GetSensorsData] Available Bytes: " << available_bytes
-                << std::endl;
+      // std::cout << "[hw::SensorDriver::GetSensorsData] Not enough data available: "
+      //           << available_bytes << " bytes, need at least 21" << std::endl;
+      // std::cout << "[hw::SensorDriver::GetSensorsData] Available Bytes: " << available_bytes
+      //           << std::endl;
       return {Eigen::Vector4d(), 0};
     }
 
@@ -96,7 +96,7 @@ std::pair<Eigen::Vector4d, int> hw::SensorDriver::GetSensorsData() {
       shared_serial_port->ReadByte(byte, 10);
       if (byte == 'x') {
         found_header = true;
-        std::cout << "[hw::SensorDriver::GetSensorsData] Found header 'x'" << std::endl;
+        // std::cout << "[hw::SensorDriver::GetSensorsData] Found header 'x'" << std::endl;
         break;
       }
       std::cout << "[SYNC] Discarded byte: '" << (char)byte << "' (0x" << std::hex << (int)byte
