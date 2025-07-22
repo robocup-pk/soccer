@@ -301,3 +301,4 @@ void kin::ApplyKickToBall(state::SoccerObject& ball, const Eigen::Vector2d& kick
 Eigen::Vector2d kin::PredictBallPosition(const state::SoccerObject& ball, double prediction_time) {
   return global_ball_model.PredictPosition(ball.position, ball.velocity, prediction_time);
 }
+
