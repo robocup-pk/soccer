@@ -30,7 +30,6 @@ class HardwareManager {
   // Serial Comms
   void InitializeSerialPort();
 
-  double ComputeGyroAngle(double angular_velocity_radps);
   bool IsGyroCalibrated();
   void CalibrateGyro();
 
