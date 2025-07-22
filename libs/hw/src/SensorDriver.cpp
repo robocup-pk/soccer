@@ -168,7 +168,8 @@ void hw::SensorDriver::CalibrateGyro() {
   if (!gyro_calibrated && count < num_of_iterations_for_gyro) {
     sum += gyro_mdeg_ps;
     count++;
-    ;
+    std::cout << "[hw::SensorDriver::CalibrateGyro] Calibration iteration: " << count
+              << ", Gyro mdeg/s: " << gyro_mdeg_ps << std::endl;
   } else {
     bias_in_gyro = sum / static_cast<double>(num_of_iterations_for_gyro);
     gyro_calibrated = true;

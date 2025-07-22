@@ -58,10 +58,11 @@ std::optional<double> hw::HardwareManager::NewGyroAngularVelocity() {
   double w_radps = sensor_driver->GetAngularVelocityRadps();
   std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Data: " << w_radps << std::endl;
 
-  double angle = ComputeGyroAngle(w_radps) * 180.0 / M_PI;  // Convert to degrees
-
-  std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Angle(Degree): " << angle
-            << std::endl;
+  if (sensor_driver->gyro_calibrated) {
+    double angle = ComputeGyroAngle(w_radps) * 180.0 / M_PI;  // Convert to degrees
+    std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Angle(Degree): " << angle
+              << std::endl;
+  }
   return w_radps;
 }
 

@@ -52,21 +52,8 @@ void rob::RobotManager::ControlLoop() {
 
 void rob::RobotManager::ControlLogic() {
   Eigen::Vector3d velocity_fBody_;
-  if (!gyro_callibrated && robot_state != RobotState::CALIBRATING_GYRO) {
-    robot_state = RobotState::CALIBRATING_GYRO;
-  }
 
   switch (robot_state) {
-    case RobotState::CALIBRATING_GYRO:
-      if (hardware_manager.CalibrateGyro()) {
-        gyro_callibrated = true;
-        robot_state = RobotState::IDLE;
-        std::cout << "[rob::RobotManager::ControlLogic] Gyro calibrated successfully." << std::endl;
-      } else {
-        std::cout << "[rob::RobotManager::ControlLogic] Gyro calibration failed. Retrying..." << std::endl;
-      }
-      velocity_fBody_ = Eigen::Vector3d::Zero();
-      break;
     case RobotState::IDLE:
       velocity_fBody_ = velocity_fBody;
       break;
