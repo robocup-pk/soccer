@@ -78,37 +78,84 @@ int main(int argc, char* argv[]) {
             std::cout << "[Demo] Demo started - robot at (-0.5, -0.5), ball at (0.5, 0.5)" << std::endl;
         }
         
-        // Step 1: Create path with proper theta values for kick demonstration  
+        // Step 1: Use actual RRT algorithm to plan path to ball
         if (demo_started && !path_planned) {
-            std::cout << "[Demo] Creating path with RRT waypoints (x,y,theta) for trajectory following..." << std::endl;
+            std::cout << "[Demo] Using real RRT algorithm to plan path to ball..." << std::endl;
             
-            // Create path with theta values - RRT provides (x, y, theta)
-            rrt_path.clear();
-            rrt_path.push_back(state::Waypoint(-500, -500, 0));           // Start position
-            rrt_path.push_back(state::Waypoint(0, 0, M_PI/4));           // Middle with 45° orientation  
-            rrt_path.push_back(state::Waypoint(500, 500, M_PI/4));       // Ball position, oriented toward ball
+            // Fix coordinate system for RRT - use positions within field bounds
+            double field_width_mm = vis::SoccerField::GetInstance().width_mm;   // ~4076mm
+            double field_height_mm = vis::SoccerField::GetInstance().height_mm; // ~2900mm
             
-            // Convert RRT waypoints to Eigen::Vector3d path for TrajectoryManager
-            std::vector<Eigen::Vector3d> trajectory_path;
-            for (const auto& wp : rrt_path) {
-                // Convert from offset mm to world meters, keep theta
-                double world_x = wp.x / 1000.0;
-                double world_y = wp.y / 1000.0;
-                double theta = wp.angle;
-                trajectory_path.push_back(Eigen::Vector3d(world_x, world_y, theta));
+            std::cout << "[Debug] Field dimensions: " << field_width_mm << "x" << field_height_mm << " mm" << std::endl;
+            
+            // Convert robot and ball positions to RRT coordinate system (0 to field_size)
+            // Robot at (-0.5, -0.5) -> RRT coords  
+            double robot_rrt_x = field_width_mm/2 + (-500);  // Center + offset
+            double robot_rrt_y = field_height_mm/2 + (-500);
+            
+            // Ball at (0.5, 0.5) -> RRT coords
+            double ball_rrt_x = field_width_mm/2 + 500;
+            double ball_rrt_y = field_height_mm/2 + 500;
+            
+            // Ensure coordinates are within bounds
+            robot_rrt_x = std::max(100.0, std::min(robot_rrt_x, field_width_mm - 100));
+            robot_rrt_y = std::max(100.0, std::min(robot_rrt_y, field_height_mm - 100)); 
+            ball_rrt_x = std::max(100.0, std::min(ball_rrt_x, field_width_mm - 100));
+            ball_rrt_y = std::max(100.0, std::min(ball_rrt_y, field_height_mm - 100));
+            
+            state::Waypoint start_wp(robot_rrt_x, robot_rrt_y, 0);
+            state::Waypoint goal_wp(ball_rrt_x, ball_rrt_y, 0);
+            
+            std::cout << "[Debug] RRT start: (" << start_wp.x << ", " << start_wp.y << ")" << std::endl;
+            std::cout << "[Debug] RRT goal: (" << goal_wp.x << ", " << goal_wp.y << ")" << std::endl;
+            
+            // Call actual RRT algorithm
+            rrt_path = algos::FindSinglePath(start_wp, goal_wp);
+            
+            if (!rrt_path.empty()) {
+                std::cout << "[Demo] ✅ RRT algorithm found path with " << rrt_path.size() << " waypoints!" << std::endl;
+                
+                // Convert RRT path to trajectory waypoints with theta values
+                std::vector<Eigen::Vector3d> trajectory_path;
+                
+                for (size_t i = 0; i < rrt_path.size(); ++i) {
+                    // Convert from RRT coordinates back to world coordinates
+                    double world_x = (rrt_path[i].x - field_width_mm/2) / 1000.0;
+                    double world_y = (rrt_path[i].y - field_height_mm/2) / 1000.0;
+                    
+                    // Calculate theta: direction to next waypoint (or to ball for last waypoint)
+                    double theta = 0;
+                    if (i < rrt_path.size() - 1) {
+                        // Direction to next waypoint
+                        double dx = rrt_path[i+1].x - rrt_path[i].x;
+                        double dy = rrt_path[i+1].y - rrt_path[i].y;
+                        theta = std::atan2(dy, dx);
+                    } else {
+                        // Last waypoint: face toward ball
+                        double ball_x = (ball_rrt_x - field_width_mm/2) / 1000.0;
+                        double ball_y = (ball_rrt_y - field_height_mm/2) / 1000.0;
+                        double dx = ball_x - world_x;
+                        double dy = ball_y - world_y;
+                        theta = std::atan2(dy, dx);
+                    }
+                    
+                    trajectory_path.push_back(Eigen::Vector3d(world_x, world_y, theta));
+                    
+                    std::cout << "  RRT Waypoint " << i << ": RRT(" << rrt_path[i].x << ", " << rrt_path[i].y 
+                              << ") -> World(" << world_x << ", " << world_y << ", θ=" << theta << " rad)" << std::endl;
+                }
+                
+                // Use RobotManager's SetPath with TrapezoidalTrajectoryVi3D
+                robot_manager.SetPath(trajectory_path, util::GetCurrentTime());
+                
+                path_planned = true;
+                path_executed = false;
+            } else {
+                std::cout << "[Demo] ❌ RRT algorithm failed to find path! Retrying..." << std::endl;
+                // Reset and try again
+                demo_started = false;
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
             }
-            
-            // Use RobotManager's SetPath with TrapezoidalTrajectoryVi3D
-            std::cout << "[Demo] Setting trajectory path with " << trajectory_path.size() << " waypoints:" << std::endl;
-            for (size_t i = 0; i < trajectory_path.size(); ++i) {
-                std::cout << "  Waypoint " << i << ": World(" << trajectory_path[i].x() << ", " 
-                          << trajectory_path[i].y() << ", θ=" << trajectory_path[i].z() << " rad)" << std::endl;
-            }
-            
-            robot_manager.SetPath(trajectory_path, util::GetCurrentTime());
-            
-            path_planned = true;
-            path_executed = false; // Will be set when trajectory is complete
         }
         
         // Step 2: Check if trajectory execution is complete
