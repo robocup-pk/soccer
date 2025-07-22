@@ -6,9 +6,18 @@
 #include "Coordinates.h"
 #include "SoccerField.h"
 
+// Global ball model instance
+kin::BallModel kin::global_ball_model;
+
 void kin::UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects, float dt) {
+  // First update ball physics with advanced model
+  UpdateBallPhysics(soccer_objects, dt);
+  
+  // Then update all other objects with basic physics
   for (state::SoccerObject& soccer_object : soccer_objects) {
-    soccer_object.Move(dt);
+    if (soccer_object.name != "ball") {  // Skip ball, handled above
+      soccer_object.Move(dt);
+    }
   }
 }
 
@@ -264,4 +273,31 @@ void kin::DetachBall(state::SoccerObject& ball, float detach_velocity) {
   robot->is_attached = false;
   robot->attached_to = nullptr;
   ball.attached_to = nullptr;
+}
+
+// New BallModel integration functions
+void kin::UpdateBallPhysics(std::vector<state::SoccerObject>& soccer_objects, float dt) {
+  for (state::SoccerObject& obj : soccer_objects) {
+    if (obj.name == "ball") {
+      // Only update physics if ball is not attached to robot
+      if (!obj.is_attached) {
+        global_ball_model.UpdatePhysics(obj.position, obj.velocity, obj.acceleration, dt);
+      }
+      break;  // Assuming only one ball
+    }
+  }
+}
+
+void kin::ApplyKickToBall(state::SoccerObject& ball, const Eigen::Vector2d& kick_direction, double kick_power) {
+  // Detach ball if it's attached to a robot
+  if (ball.is_attached) {
+    DetachBall(ball, 0.0f);  // Detach without extra velocity, kick will provide it
+  }
+  
+  // Apply kick using the ball model
+  global_ball_model.ApplyKick(ball.velocity, kick_direction, kick_power);
+}
+
+Eigen::Vector2d kin::PredictBallPosition(const state::SoccerObject& ball, double prediction_time) {
+  return global_ball_model.PredictPosition(ball.position, ball.velocity, prediction_time);
 }

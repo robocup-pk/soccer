@@ -9,3 +9,6 @@ target_link_libraries(demo_follow_path PRIVATE state_lib vis_lib cfg_lib rob_lib
 
 add_executable(demo_trajectory_motion DemoTrajectoryMotion.cpp)
 target_link_libraries(demo_trajectory_motion PRIVATE state_lib vis_lib cfg_lib rob_lib)
+
+add_executable(demo_ball_physics_and_kicking DemoBallPhysicsAndKicking.cpp)
+target_link_libraries(demo_ball_physics_and_kicking PRIVATE state_lib vis_lib cfg_lib rob_lib)

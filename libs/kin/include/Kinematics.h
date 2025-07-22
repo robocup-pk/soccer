@@ -4,6 +4,7 @@
 #include <map>
 
 #include "SoccerObject.h"
+#include "BallModel.h"
 
 namespace kin {
 
@@ -28,6 +29,14 @@ void UpdateAttachedBallPosition(state::SoccerObject& robot, state::SoccerObject&
 
 // Ball Detachment with positioning
 void DetachBall(state::SoccerObject& ball, float detach_velocity = 2.0f);
+
+// New BallModel integration functions
+void UpdateBallPhysics(std::vector<state::SoccerObject>& soccer_objects, float dt);
+void ApplyKickToBall(state::SoccerObject& ball, const Eigen::Vector2d& kick_direction, double kick_power);
+Eigen::Vector2d PredictBallPosition(const state::SoccerObject& ball, double prediction_time);
+
+// Global ball model instance
+extern BallModel global_ball_model;
 
 }  // namespace kin
 
