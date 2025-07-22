@@ -7,7 +7,7 @@ std::mt19937 rng(std::random_device{}());
 std::uniform_real_distribution<double> x_distribution =
     std::uniform_real_distribution<double>(0, vis::SoccerField::GetInstance().width_mm/2);
 std::uniform_real_distribution<double> y_distribution =
-    std::uniform_real_distribution<double>(0, vis::SoccerField::GetInstance().height_mm/2);
+    std::uniform_real_distribution<double>(0, vis::SoccerField::GetInstance().width_mm);
 double step_size = 1;
 }  // namespace algos
 
