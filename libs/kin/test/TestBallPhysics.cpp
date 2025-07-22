@@ -2,6 +2,7 @@
 #include <vector>
 #include "BallModel.h"
 #include "Kinematics.h"
+#include "Kick.h"
 #include "SoccerObject.h"
 
 // Test case 1: Basic ball physics with no external forces
@@ -66,7 +67,7 @@ void TestSoccerObjectIntegration() {
     ball.position = Eigen::Vector3d(0, 0, 0);
     ball.velocity = Eigen::Vector3d(0, 0, 0);
     ball.acceleration = Eigen::Vector3d(0, 0, 0);
-    ball.size = Eigen::Vector3d(0.043, 0.043, 0.043);  // FIFA ball diameter
+    ball.size = Eigen::Vector2d(0.043, 0.043);  // FIFA ball diameter
     ball.mass_kg = 0.43;  // FIFA ball mass
     soccer_objects.push_back(ball);
     
@@ -75,7 +76,7 @@ void TestSoccerObjectIntegration() {
     robot.name = "robot_0";
     robot.position = Eigen::Vector3d(-0.1, 0, 0);  // 10cm from ball
     robot.velocity = Eigen::Vector3d(0, 0, 0);
-    robot.size = Eigen::Vector3d(0.2, 0.2, 0.1);
+    robot.size = Eigen::Vector2d(0.2, 0.2);
     robot.mass_kg = 2.5;
     soccer_objects.push_back(robot);
     
