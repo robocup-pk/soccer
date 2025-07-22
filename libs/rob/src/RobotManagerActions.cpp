@@ -1,5 +1,6 @@
 #include "RobotManager.h"
 #include "Kinematics.h"
+#include "Kick.h"
 #include <cmath>
 #include <iostream>
 
@@ -31,42 +32,27 @@ void rob::RobotManager::ExecuteKickAction(std::vector<state::SoccerObject>& socc
         return;
     }
     
-    // Check if ball is close enough to kick
-    Eigen::Vector3d ball_center = ball->GetCenterPosition();
-    Eigen::Vector3d robot_center = robot->GetCenterPosition();
+    // Use the enhanced SSL RoboCup kick function
+    double kick_power = 3.0;  // m/s kick velocity (SSL typical: 2-4 m/s)
     
-    double distance = std::sqrt(std::pow(ball_center.x() - robot_center.x(), 2) + 
-                               std::pow(ball_center.y() - robot_center.y(), 2));
+    std::cout << "[ExecuteKickAction] Attempting SSL kick with power: " << kick_power << " m/s" << std::endl;
     
-    std::cout << "[ExecuteKickAction] Robot pos: (" << robot_center.x() << ", " << robot_center.y() 
-              << "), Ball pos: (" << ball_center.x() << ", " << ball_center.y() 
-              << "), Distance: " << distance << "m" << std::endl;
+    // Store ball velocity before kick for comparison
+    Eigen::Vector3d old_velocity = ball->velocity;
     
-    // Only kick if ball is close (within kicking range)
-    if (distance < 0.3) {  // 30cm kicking range
-        // Calculate kick direction based on robot orientation
-        double robot_angle = robot->position[2];
-        Eigen::Vector2d kick_direction(std::cos(robot_angle), std::sin(robot_angle));
+    // Use the new enhanced kick function with SSL constraints
+    bool kick_successful = kin::Kick(*robot, *ball, kick_power, false);
+    
+    if (kick_successful) {
+        std::cout << "[ExecuteKickAction] SSL kick successful! Ball velocity changed from (" 
+                  << old_velocity.x() << ", " << old_velocity.y() << ") to (" 
+                  << ball->velocity.x() << ", " << ball->velocity.y() << ")" << std::endl;
         
-        std::cout << "[ExecuteKickAction] KICKING! Robot angle: " << robot_angle 
-                  << " rad, Kick direction: (" << kick_direction.x() << ", " << kick_direction.y() 
-                  << "), Power: 3.0 m/s" << std::endl;
-        
-        // Store ball velocity before kick for comparison
-        Eigen::Vector3d old_velocity = ball->velocity;
-        
-        // Apply kick with SSL realistic power
-        double kick_power = 3.0;  // m/s kick velocity (SSL typical: 2-4 m/s)
-        kin::ApplyKickToBall(*ball, kick_direction, kick_power);
-        
-        std::cout << "[ExecuteKickAction] Ball velocity changed from (" << old_velocity.x() << ", " 
-                  << old_velocity.y() << ") to (" << ball->velocity.x() << ", " << ball->velocity.y() << ")" << std::endl;
-        
-        // Reset action after kicking
+        // Reset action after successful kick
         robot_action = RobotAction::MOVE;
     } else {
-        std::cout << "[ExecuteKickAction] Ball too far away! Distance: " << distance 
-                  << "m (need < 0.3m)" << std::endl;
+        std::cout << "[ExecuteKickAction] SSL kick failed - constraints not met" << std::endl;
+        // Don't reset action, robot will try again on next cycle
     }
 }
 
@@ -86,23 +72,37 @@ void rob::RobotManager::ExecutePassAction(std::vector<state::SoccerObject>& socc
     
     if (!ball || !robot) return;
     
-    // Check if ball is close enough to pass
-    Eigen::Vector3d ball_center = ball->GetCenterPosition();
+    // For passing, we temporarily override robot orientation to face target
+    // Store original orientation
+    double original_orientation = robot->position[2];
+    
+    // Calculate direction to target
     Eigen::Vector3d robot_center = robot->GetCenterPosition();
+    Eigen::Vector2d pass_direction = target_position - Eigen::Vector2d(robot_center.x(), robot_center.y());
+    double target_angle = std::atan2(pass_direction.y(), pass_direction.x());
     
-    double distance = std::sqrt(std::pow(ball_center.x() - robot_center.x(), 2) + 
-                               std::pow(ball_center.y() - robot_center.y(), 2));
+    // Temporarily set robot orientation toward target
+    robot->position[2] = target_angle;
     
-    if (distance < 0.3) {  // 30cm passing range
-        // Calculate pass direction toward target
-        Eigen::Vector2d pass_direction = target_position - Eigen::Vector2d(robot_center.x(), robot_center.y());
-        pass_direction.normalize();
-        
-        // Apply pass with lighter power than kick
-        double pass_power = 2.0;  // m/s pass velocity (SSL typical pass speed)
-        kin::ApplyKickToBall(*ball, pass_direction, pass_power);
-        
-        // Reset action after passing
+    // Use enhanced kick function with pass power (lighter than kick)
+    double pass_power = 2.0;  // m/s pass velocity (SSL typical pass speed)
+    
+    std::cout << "[ExecutePassAction] Attempting SSL pass toward target (" 
+              << target_position.x() << ", " << target_position.y() << ") with power: " 
+              << pass_power << " m/s" << std::endl;
+    
+    // Use the new enhanced kick function with SSL constraints
+    bool pass_successful = kin::Kick(*robot, *ball, pass_power, false);
+    
+    // Restore original orientation
+    robot->position[2] = original_orientation;
+    
+    if (pass_successful) {
+        std::cout << "[ExecutePassAction] SSL pass successful!" << std::endl;
+        // Reset action after successful pass
         robot_action = RobotAction::MOVE;
+    } else {
+        std::cout << "[ExecutePassAction] SSL pass failed - constraints not met" << std::endl;
+        // Don't reset action, robot will try again on next cycle
     }
 }
