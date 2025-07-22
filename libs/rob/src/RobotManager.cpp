@@ -11,7 +11,7 @@
 rob::RobotManager::RobotManager() {
   std::cout << "[rob::RobotManager::RobotManager]" << std::endl;
   previous_robot_state = RobotState::IDLE;
-  robot_state = RobotState::IDLE;
+  robot_state = RobotState::CALIBRATING;
   start_time_idle_s = util::GetCurrentTime();
   velocity_fBody << 0, 0, 0;
   initialized_pose_home = false;
@@ -53,6 +53,14 @@ void rob::RobotManager::ControlLogic() {
   Eigen::Vector3d velocity_fBody_;
 
   switch (robot_state) {
+    case RobotState::CALIBRATING:
+      velocity_fBody_ = Eigen::Vector3d::Zero();
+      if (hardware_manager.IsGyroCalibrated()) {
+        robot_state = RobotState::IDLE;
+        std::cout << "[rob::RobotManager::ControlLogic] Gyro is calibrated. Going to IDLE state."
+                  << std::endl;
+      }
+      break;
     case RobotState::IDLE:
       velocity_fBody_ = velocity_fBody;
       break;
