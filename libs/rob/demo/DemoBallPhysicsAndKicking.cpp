@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
   std::cout << "1. The robot will move close to the ball" << std::endl;
   std::cout << "2. After 3 seconds, the robot will kick the ball" << std::endl;
   std::cout << "3. Watch the ball move with realistic physics!" << std::endl;
-  std::cout << "4. Press SPACE to kick again, ENTER to reset ball position" << std::endl;
+  std::cout << "4. Press SPACE or 1 to kick again, ENTER to reset ball position" << std::endl;
   std::cout << "5. Press ESC to exit" << std::endl;
 
   // Main simulation loop
@@ -86,8 +86,9 @@ int main(int argc, char* argv[]) {
     // Handle input
     vis::ProcessInput(gl_simulation.GetRawGLFW(), soccer_objects);
     
-    // Check for manual kick (spacebar)
-    if (glfwGetKey(gl_simulation.GetRawGLFW(), GLFW_KEY_SPACE) == GLFW_PRESS) {
+    // Check for manual kick (spacebar or 1 key)
+    if (glfwGetKey(gl_simulation.GetRawGLFW(), GLFW_KEY_SPACE) == GLFW_PRESS || 
+        glfwGetKey(gl_simulation.GetRawGLFW(), GLFW_KEY_1) == GLFW_PRESS) {
       if (!space_pressed_last_frame) {
         std::cout << "[Demo] Manual kick triggered!" << std::endl;
         robot_manager.KickBall();
@@ -118,6 +119,7 @@ int main(int argc, char* argv[]) {
     
     // Execute robot actions (including kicks)
     if (robot_manager.GetRobotAction() == rob::RobotAction::KICK_BALL) {
+      std::cout << "[Demo] Executing kick action!" << std::endl;
       robot_manager.ExecuteKickAction(soccer_objects);
     }
     
@@ -146,12 +148,14 @@ int main(int argc, char* argv[]) {
     // Print ball info periodically
     static double last_print_time = 0;
     if (current_time - last_print_time > 1.0) {  // Print every second
+      std::cout << "[Debug] Soccer objects found:" << std::endl;
       for (const auto& obj : soccer_objects) {
+        std::cout << "  - Name: '" << obj.name << "', Position: (" << obj.position[0] << ", " << obj.position[1] << ")" << std::endl;
         if (obj.name == "ball") {
           double speed = std::sqrt(obj.velocity[0]*obj.velocity[0] + obj.velocity[1]*obj.velocity[1]);
           std::cout << "[Demo] Ball position: (" << obj.position[0] << ", " << obj.position[1] 
-                    << "), Speed: " << speed << " m/s" << std::endl;
-          break;
+                    << "), Speed: " << speed << " m/s, Velocity: (" << obj.velocity[0] << ", " 
+                    << obj.velocity[1] << ", " << obj.velocity[2] << ")" << std::endl;
         }
       }
       last_print_time = current_time;
