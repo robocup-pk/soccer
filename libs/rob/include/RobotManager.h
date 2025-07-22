@@ -12,6 +12,11 @@
 #include "TrajectoryManager.h"
 #include "RobotPositions.h"
 
+// Forward declarations
+namespace state {
+  class SoccerObject;
+}
+
 namespace rob {
 
 enum class RobotState {
@@ -42,6 +47,11 @@ class RobotManager {
   // Actions
   void KickBall();
   void PassBall();
+  
+  // Action execution methods (for integration with soccer objects)
+  void ExecuteKickAction(std::vector<state::SoccerObject>& soccer_objects);
+  void ExecutePassAction(std::vector<state::SoccerObject>& soccer_objects, 
+                        const Eigen::Vector2d& target_position);
 
   // Used by the outside world
   void SetBodyVelocity(Eigen::Vector3d& velocity_fBody);
