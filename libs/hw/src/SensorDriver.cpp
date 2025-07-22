@@ -18,6 +18,7 @@ hw::SensorDriver::SensorDriver(std::shared_ptr<LibSerial::SerialPort> shared_ser
   gyro_calibrated = false;
   num_of_iterations_for_gyro = 500;
   bias_in_gyro = 0.0;
+  reset_gyro_calibration = false;
 }
 
 void hw::SensorDriver::SetAngularVelocityRadps(double w_radps) {
@@ -165,6 +166,13 @@ void hw::SensorDriver::CalibrateGyro() {
   static int count = 0;
   static int sum = 0;
 
+  if (reset_gyro_calibration) {
+    count = 0;
+    sum = 0;
+    reset_gyro_calibration = false;
+    std::cout << "[hw::SensorDriver::CalibrateGyro] Resetting gyro calibration." << std::endl;
+  }
+
   if (!gyro_calibrated && count < num_of_iterations_for_gyro) {
     sum += gyro_mdeg_ps;
     count++;
@@ -174,4 +182,16 @@ void hw::SensorDriver::CalibrateGyro() {
     bias_in_gyro = sum / static_cast<double>(num_of_iterations_for_gyro);
     gyro_calibrated = true;
   }
+}
+
+bool hw::SensorDriver::IsGyroCalibrated() { return gyro_calibrated; }
+
+void hw::SensorDriver::SetGyroOnCalibration() {
+  if (sensor_type == SensorType::MODEL) {
+    gyro_calibrated = true;
+    return;
+  }
+  gyro_calibrated = false;
+  reset_gyro_calibration = true;
+  std::cout << "[hw::SensorDriver::SetGyroOnCalibration] Gyro calibration started." << std::endl;
 }

@@ -65,3 +65,15 @@ double util::CalculateDt() {
   last_time = current_time;
   return dt;
 }
+
+double util::ComputeAnglefromGyroData(double angular_velocity_radps) {
+  static double angle_rad = 0.0;
+  static auto prev_time = std::chrono::steady_clock::now();
+
+  auto now = std::chrono::steady_clock::now();
+  std::chrono::duration<double> dt = now - prev_time;
+  prev_time = now;
+
+  angle_rad += angular_velocity_radps * dt.count();
+  return angle_rad;
+}

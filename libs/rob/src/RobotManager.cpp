@@ -16,7 +16,6 @@ rob::RobotManager::RobotManager() {
   velocity_fBody << 0, 0, 0;
   initialized_pose_home = false;
   finished_motion = true;
-  gyro_callibrated = false;
   num_sensor_readings_failed = 0;
   rob_manager_running.store(true);
 
@@ -221,8 +220,6 @@ void rob::RobotManager::GoHome() {
 std::string rob::RobotManager::GetRobotState() {
   std::unique_lock<std::mutex> lock(robot_state_mutex);
   switch (robot_state) {
-    case RobotState::CALIBRATING_GYRO:
-      return "CALIBRATING_GYRO";
     case RobotState::IDLE:
       return "IDLE";
     case RobotState::DRIVING_TO_POINT:
@@ -265,4 +262,14 @@ rob::RobotManager::~RobotManager() {
 
 void rob::RobotManager::NewCameraData(Eigen::Vector3d pose_from_camera) {
   hardware_manager.NewCameraData(pose_from_camera);
+}
+
+void rob::RobotManager::CalibrateGyro() { hardware_manager.CalibrateGyro(); }
+
+bool rob::RobotManager::IsGyroCalibrated() {
+  if (!hardware_manager.IsGyroCalibrated()) {
+    std::cout << "[rob::RobotManager::IsGyroCalibrated] Gyro is not calibrated." << std::endl;
+    return false;
+  }
+  return true;
 }

@@ -24,20 +24,24 @@ class SensorDriver {
   std::pair<Eigen::Vector4d, int> GetSensorsData();
   bool VerifyRpms(std::vector<int> rpms);
   void CalibrateGyro();
+  bool IsGyroCalibrated();
+  void SetGyroOnCalibration();
 
   bool new_data_available = true;
-  bool gyro_calibrated;
-
- private:
-#ifdef BUILD_ON_PI
+  
+  private:
+  #ifdef BUILD_ON_PI
   SensorType sensor_type = SensorType::REAL;
-#else
+  #else
   SensorType sensor_type = SensorType::MODEL;
-#endif
-
+  #endif
+  
   SensorModel gyro;
-
+  
+  bool gyro_calibrated;
   double gyro_wradps;
+
+  bool reset_gyro_calibration; 
 
   std::vector<SensorModel> motors;
   Eigen::Vector4d motors_rpms;
