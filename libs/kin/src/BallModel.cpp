@@ -8,39 +8,41 @@ BallModel::BallModel(double radius, double mass)
     : radius_(radius), 
       mass_(mass),
       spin_(Eigen::Vector3d::Zero()),
-      friction_coefficient_(0.4),    // Realistic grass friction
-      air_resistance_(0.47),         // Sphere drag coefficient
-      restitution_(0.8),             // Ball bounce factor
-      magnus_coefficient_(0.00005)   // Magnus effect strength
+      friction_coefficient_(3.5),    // High friction for SSL carpet/turf - ball stops quickly
+      air_resistance_(0.1),          // Minimal air resistance for SSL (small field)
+      restitution_(0.6),             // Lower restitution for SSL ball
+      magnus_coefficient_(0.0001)    // Minimal spin effect for SSL
 {
 }
 
 void BallModel::UpdatePhysics(Eigen::Vector3d& position, Eigen::Vector3d& velocity, 
                               Eigen::Vector3d& acceleration, double dt) {
-    // Apply air resistance
+    // SSL Physics: Ball always stays on ground (2D simulation)
+    position[2] = 0.0;  // Force ball to stay on ground
+    velocity[2] = 0.0;  // No vertical velocity
+    acceleration[2] = 0.0;  // No vertical acceleration (no gravity in 2D)
+    
+    // Apply ground friction (always active in SSL)
+    ApplyFriction(velocity, friction_coefficient_, dt);
+    
+    // Apply minimal air resistance (SSL field is small)
     ApplyAirResistance(velocity, dt);
     
-    // Apply ground friction (only when ball is on ground)
-    if (std::abs(position[2]) < radius_) {  // Ball is touching ground
-        ApplyFriction(velocity, friction_coefficient_, dt);
-    }
-    
-    // Apply Magnus force (spin effects)
+    // Apply Magnus force (minimal for SSL)
     if (spin_.norm() > 0.1) {  // Only apply if significant spin
         Eigen::Vector2d magnus_force = CalculateMagnusForce(velocity, spin_);
         acceleration[0] += magnus_force[0] / mass_;
         acceleration[1] += magnus_force[1] / mass_;
     }
     
-    // Apply gravity (if implementing 3D physics)
-    acceleration[2] -= 9.81;  // Gravity in Z direction
+    // Integrate physics using Euler method (2D only)
+    velocity[0] += acceleration[0] * dt;
+    velocity[1] += acceleration[1] * dt;
+    position[0] += velocity[0] * dt;
+    position[1] += velocity[1] * dt;
     
-    // Integrate physics using Euler method
-    velocity += acceleration * dt;
-    position += velocity * dt;
-    
-    // Decay spin over time due to air resistance
-    spin_ *= (1.0 - 0.01 * dt);  // Spin decay factor
+    // Decay spin over time
+    spin_ *= (1.0 - 0.05 * dt);  // Faster spin decay for SSL
     
     // Reset acceleration for next frame
     acceleration = Eigen::Vector3d::Zero();
@@ -51,18 +53,17 @@ void BallModel::ApplyKick(Eigen::Vector3d& velocity, const Eigen::Vector2d& kick
     // Normalize kick direction
     Eigen::Vector2d normalized_direction = kick_direction.normalized();
     
-    // Apply kick velocity (kick_power is in m/s)
+    // Apply kick velocity (kick_power is in m/s) - SSL realistic speeds
+    // Typical SSL robot kick: 2-6 m/s max
     velocity[0] = normalized_direction[0] * kick_power;
     velocity[1] = normalized_direction[1] * kick_power;
+    velocity[2] = 0.0;  // Always 2D for SSL
     
-    // Add some random spin based on kick direction and power
-    double spin_magnitude = kick_power * 0.5;  // Spin proportional to kick power
+    // Add minimal spin for SSL (robots have precise control)
+    double spin_magnitude = kick_power * 0.1;  // Reduced spin for SSL
     spin_[2] = spin_magnitude * (0.5 - static_cast<double>(rand()) / RAND_MAX); // Random spin
     
-    // For chip kicks, add vertical component (uncomment for 3D)
-    if (kick_power > 3.0) {
-        velocity[2] = kick_power * 0.3;  // Vertical component for chip kicks
-    }
+    // No chip kicks in SSL simulation (always 2D)
 }
 
 void BallModel::ApplyDribbleForce(Eigen::Vector3d& velocity, const Eigen::Vector2d& dribble_force) {
@@ -118,12 +119,12 @@ void BallModel::HandleBounce(Eigen::Vector3d& velocity, const Eigen::Vector2d& s
 }
 
 void BallModel::ApplyFriction(Eigen::Vector3d& velocity, double friction_coefficient, double dt) {
-    // Ground friction opposes motion
+    // SSL Ground friction - high deceleration on carpet/turf
     double speed = std::sqrt(velocity[0]*velocity[0] + velocity[1]*velocity[1]);
     
-    if (speed > 0.01) {  // Avoid division by zero
-        // Friction force proportional to normal force (mg) and friction coefficient
-        double friction_deceleration = friction_coefficient * 9.81;  // Assuming g = 9.81 m/s²
+    if (speed > 0.05) {  // Higher threshold for SSL (0.05 m/s = 5 cm/s)
+        // SSL friction is much higher than grass - ball decelerates quickly
+        double friction_deceleration = friction_coefficient;  // Direct deceleration rate (m/s²)
         double friction_magnitude = friction_deceleration * dt;
         
         // Don't over-apply friction (can't reverse direction)
@@ -134,37 +135,31 @@ void BallModel::ApplyFriction(Eigen::Vector3d& velocity, double friction_coeffic
         velocity[1] -= (velocity[1] / speed) * friction_magnitude;
         
         // Reduce spin due to rolling friction
-        spin_ *= (1.0 - friction_coefficient * dt * 0.5);
+        spin_ *= (1.0 - 0.2 * dt);  // Faster spin decay for SSL carpet
     } else {
-        // Stop ball if speed is very low
+        // Stop ball completely when speed is very low (SSL precision)
         velocity[0] = 0.0;
         velocity[1] = 0.0;
+        velocity[2] = 0.0;
         spin_ = Eigen::Vector3d::Zero();
     }
 }
 
 void BallModel::ApplyAirResistance(Eigen::Vector3d& velocity, double dt) {
-    // Air resistance force = 0.5 * ρ * Cd * A * v²
-    // Where ρ = air density, Cd = drag coefficient, A = cross-sectional area, v = velocity
-    
+    // Minimal air resistance for SSL (small field, low speeds)
     double speed = std::sqrt(velocity[0]*velocity[0] + velocity[1]*velocity[1]);
     
-    if (speed > 0.1) {  // Only apply at reasonable speeds
-        double air_density = CalculateAirDensity();
-        double drag_coefficient = CalculateDragCoefficient();
-        double cross_sectional_area = M_PI * radius_ * radius_;
-        
-        // Drag force magnitude
-        double drag_force = 0.5 * air_density * drag_coefficient * cross_sectional_area * speed * speed;
-        double drag_acceleration = drag_force / mass_;
-        double drag_deceleration = drag_acceleration * dt;
+    if (speed > 0.5) {  // Only apply at higher speeds (>0.5 m/s)
+        // Simple air resistance proportional to velocity
+        double air_resistance_deceleration = air_resistance_ * speed;
+        double drag_magnitude = air_resistance_deceleration * dt;
         
         // Don't over-apply drag
-        drag_deceleration = std::min(drag_deceleration, speed);
+        drag_magnitude = std::min(drag_magnitude, speed);
         
         // Apply drag opposite to velocity direction
-        velocity[0] -= (velocity[0] / speed) * drag_deceleration;
-        velocity[1] -= (velocity[1] / speed) * drag_deceleration;
+        velocity[0] -= (velocity[0] / speed) * drag_magnitude;
+        velocity[1] -= (velocity[1] / speed) * drag_magnitude;
     }
 }
 
