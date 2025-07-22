@@ -30,7 +30,8 @@ class HardwareManager {
   // Serial Comms
   void InitializeSerialPort();
 
-  double ComputeGyroAngle(double angular_velocity_radps);
+  bool IsGyroCalibrated();
+  void CalibrateGyro();
 
   ~HardwareManager();
 
@@ -38,8 +39,8 @@ class HardwareManager {
   // std::unique_ptr<CameraDriver> camera_driver;
   Eigen::Vector3d camera_data;
 
-  bool new_sensor_data = false;
-  bool new_camera_data = false;
+  bool new_sensor_data;
+  bool new_camera_data;
 
   std::unique_ptr<SensorDriver> sensor_driver;
   std::shared_ptr<kin::RobotModel> robot_model;

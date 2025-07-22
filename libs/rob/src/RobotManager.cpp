@@ -252,9 +252,7 @@ void rob::RobotManager::InitializePose(Eigen::Vector3d& pose_fWorld) {
 
 rob::RobotAction rob::RobotManager::GetRobotAction() { return robot_action; }
 
-void rob::RobotManager::SetRobotAction(RobotAction action) {
-  robot_action = action;
-}
+void rob::RobotManager::SetRobotAction(RobotAction action) { robot_action = action; }
 
 rob::RobotManager::~RobotManager() {
   rob_manager_running.store(false);
@@ -264,4 +262,14 @@ rob::RobotManager::~RobotManager() {
 
 void rob::RobotManager::NewCameraData(Eigen::Vector3d pose_from_camera) {
   hardware_manager.NewCameraData(pose_from_camera);
+}
+
+void rob::RobotManager::CalibrateGyro() { hardware_manager.CalibrateGyro(); }
+
+bool rob::RobotManager::IsGyroCalibrated() {
+  if (!hardware_manager.IsGyroCalibrated()) {
+    std::cout << "[rob::RobotManager::IsGyroCalibrated] Gyro is not calibrated." << std::endl;
+    return false;
+  }
+  return true;
 }

@@ -19,7 +19,7 @@ enum class RobotState {
   INTERPOLATING_TO_POINT,
   MANUAL_DRIVING,
   AUTONOMOUS_DRIVING,
-  GOING_HOME
+  GOING_HOME,
 };
 
 enum class RobotAction {
@@ -63,6 +63,8 @@ class RobotManager {
   void TryAssignNextGoal();
 
   std::string GetRobotState();
+  void CalibrateGyro();
+  bool IsGyroCalibrated();
 
   ~RobotManager();
 

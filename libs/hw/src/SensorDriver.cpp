@@ -15,6 +15,10 @@ hw::SensorDriver::SensorDriver(std::shared_ptr<LibSerial::SerialPort> shared_ser
   gyro_wradps = 0;
   motors_rpms << 0, 0, 0, 0;
   motors = std::vector<SensorModel>(kin::RobotDescription::num_wheels);
+  gyro_calibrated = false;
+  num_of_iterations_for_gyro = 500;
+  bias_in_gyro = 0.0;
+  reset_gyro_calibration = false;
 }
 
 void hw::SensorDriver::SetAngularVelocityRadps(double w_radps) {
@@ -124,6 +128,15 @@ std::pair<Eigen::Vector4d, int> hw::SensorDriver::GetSensorsData() {
   }
 
   std::memcpy(&gyro_mdeg_ps, &buffer[16], sizeof(int32_t));
+
+  if (gyro_calibrated) {
+    double gz = (static_cast<double>(gyro_mdeg_ps) - bias_in_gyro) / hw::Config::gyro_sensitivity;
+    if (fabs(gz) < 0.35f) gz = 0;
+    gyro_mdeg_ps = static_cast<int>(gz);
+  } else {
+    CalibrateGyro();
+  }
+
   if (VerifyRpms(rpm)) {
     new_data_available = true;
     std::cout << "[hw::SensorDriver::GetSensorsData] RPMS: " << rpm[0] << " " << rpm[1] << " "
@@ -143,4 +156,42 @@ bool hw::SensorDriver::VerifyRpms(std::vector<int> rpms) {
     if (std::abs(rpm) > 400) return false;
   }
   return true;
+}
+
+void hw::SensorDriver::CalibrateGyro() {
+  if (sensor_type == SensorType::MODEL) {
+    gyro_calibrated = true;
+    return;
+  }
+  static int count = 0;
+  static int sum = 0;
+
+  if (reset_gyro_calibration) {
+    count = 0;
+    sum = 0;
+    reset_gyro_calibration = false;
+    std::cout << "[hw::SensorDriver::CalibrateGyro] Resetting gyro calibration." << std::endl;
+  }
+
+  if (!gyro_calibrated && count < num_of_iterations_for_gyro) {
+    sum += gyro_mdeg_ps;
+    count++;
+    std::cout << "[hw::SensorDriver::CalibrateGyro] Calibration iteration: " << count
+              << ", Gyro mdeg/s: " << gyro_mdeg_ps << std::endl;
+  } else {
+    bias_in_gyro = sum / static_cast<double>(num_of_iterations_for_gyro);
+    gyro_calibrated = true;
+  }
+}
+
+bool hw::SensorDriver::IsGyroCalibrated() { return gyro_calibrated; }
+
+void hw::SensorDriver::SetGyroOnCalibration() {
+  if (sensor_type == SensorType::MODEL) {
+    gyro_calibrated = true;
+    return;
+  }
+  gyro_calibrated = false;
+  reset_gyro_calibration = true;
+  std::cout << "[hw::SensorDriver::SetGyroOnCalibration] Gyro calibration started." << std::endl;
 }

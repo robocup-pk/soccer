@@ -3,9 +3,12 @@
 #include "HardwareManager.h"
 #include "RobotModel.h"
 #include "RobotConstants.h"
+#include "Utils.h"
 
 hw::HardwareManager::HardwareManager() {
   std::cout << "[hw::HardwareManager::HardwareManager]" << std::endl;
+  new_sensor_data = false;
+  new_camera_data = false;
 
   robot_model = std::make_shared<kin::RobotModel>();
 
@@ -42,26 +45,15 @@ std::optional<Eigen::Vector4d> hw::HardwareManager::NewMotorsRpms() {
   return std::nullopt;
 }
 
-double hw::HardwareManager::ComputeGyroAngle(double angular_velocity_radps) {
-  static double angle_rad = 0.0;
-  static auto prev_time = std::chrono::steady_clock::now();
-
-  auto now = std::chrono::steady_clock::now();
-  std::chrono::duration<double> dt = now - prev_time;
-  prev_time = now;
-
-  angle_rad += angular_velocity_radps * dt.count();
-  return angle_rad;
-}
-
 std::optional<double> hw::HardwareManager::NewGyroAngularVelocity() {
   double w_radps = sensor_driver->GetAngularVelocityRadps();
   std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Data: " << w_radps << std::endl;
 
-  double angle = ComputeGyroAngle(w_radps) * 180.0 / M_PI;  // Convert to degrees
-
-  std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Angle(Degree): " << angle
-            << std::endl;
+  if (sensor_driver->IsGyroCalibrated()) {
+    double angle = util::ComputeAnglefromGyroData(w_radps) * 180.0 / M_PI;  // Convert to degrees
+    std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Angle(Degree): " << angle
+              << std::endl;
+  }
   return w_radps;
 }
 
@@ -77,6 +69,10 @@ void hw::HardwareManager::NewCameraData(Eigen::Vector3d pose_from_camera) {
   camera_data = pose_from_camera;
   new_camera_data = true;
 }
+
+void hw::HardwareManager::CalibrateGyro() { sensor_driver->SetGyroOnCalibration(); }
+
+bool hw::HardwareManager::IsGyroCalibrated() { return sensor_driver->IsGyroCalibrated(); }
 
 hw::HardwareManager::~HardwareManager() {
   // Properly close the serial port before destruction
