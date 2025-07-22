@@ -115,6 +115,13 @@ void rob::RobotManager::SenseLogic() {
     pose_fWorld = state_estimator.GetPose();
   }
 
+  if (!hardware_manager.IsGyroCalibrated()) {
+    std::cout << "[rob::RobotManager::SenseLogic] Gyro is not calibrated. Waiting for calibration."
+              << std::endl;
+    robot_state = RobotState::CALIBRATING;
+    return;
+  }
+  
   // Print pose every few seconds
   // static int num = 0;
   // ++num;
