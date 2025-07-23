@@ -27,6 +27,8 @@ class TrajectoryManager {
   void MergeNewTrajectoriesFirstCall(Trajectories&& new_trajectories);
   void MergeNewTrajectoriesInFuture(Trajectories&& new_trajectories);
   void MergeNewTrajectoriesAtT(Trajectories&& new_trajectories);
+  void MergeNewTrajectoriesAtCurrentTime(Trajectories&& new_trajectories);
+  void UpdateCurrentTrajectory();
 
   // Helpers
   void Print();

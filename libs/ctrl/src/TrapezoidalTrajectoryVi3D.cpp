@@ -16,8 +16,8 @@ ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D(Eigen::Vector3d pose_
   this->v0 = v0;
   h = pose_end - pose_start;
   T = t_finish_s - t_start_s;
+  
   a = cfg::SystemConfig::max_acc_m_radpsps;
-
   std::pair<bool, std::optional<Eigen::Vector3d>> traj_v_cruise = IsFeasible(h, T, v0);
 
   if (!traj_v_cruise.first) {
@@ -65,7 +65,7 @@ Eigen::Vector3d ctrl::TrapezoidalTrajectoryVi3D::VelocityAtT(double t_sec) {
     if (v0[i] * h[i] >= 0) {
       // Case 1: No sign change
       int sign = v_cruise[i] >= v0[i] ? 1 : -1;
-      if (t_sec < t_a[i]) {
+      if (t_sec <= t_a[i]) {
         v_fWorld[i] = v0[i] + sign * a[i] * t_sec;
       } else if (t_sec < (T - t_d[i])) {
         v_fWorld[i] = v_cruise[i];
@@ -78,7 +78,7 @@ Eigen::Vector3d ctrl::TrapezoidalTrajectoryVi3D::VelocityAtT(double t_sec) {
       // Case 2: Sign change
       int sign = v0[i] > 0 ? -1 : 1;
       if (t_sec < t_1) {
-        v_fWorld[i] = v0[0] + sign * a[i] * t_sec;
+        v_fWorld[i] = v0[i] + sign * a[i] * t_sec;
       } else {
         // Now we are in the trapezoidal part
         t_sec -= t_1;
