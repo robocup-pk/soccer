@@ -5,8 +5,8 @@
 
 std::pair<bool, std::optional<Eigen::Vector3d>> ctrl::Trajectory3D::IsFeasible(
     Eigen::Vector3d h, double T, Eigen::Vector3d v0) {
-  std::cout << "[ctrl::Trajectory3D::IsFeasible] h: " << h.transpose()
-            << ". v0: " << v0.transpose() << ". T: " << T << std::endl;
+  // std::cout << "[ctrl::Trajectory3D::IsFeasible] h: " << h.transpose()
+            // << ". v0: " << v0.transpose() << ". T: " << T << std::endl;
   Eigen::Vector3d t_acc_s(-1, -1, -1);
   Eigen::Vector3d a = cfg::SystemConfig::max_acc_m_radpsps;
   Eigen::Vector3d disc;  // Discriminant

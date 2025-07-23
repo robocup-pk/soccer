@@ -14,12 +14,12 @@ void ctrl::TrajectoryManager::MergeNewTrajectories(Trajectories&& new_trajectori
   }
 
   double new_traj_t_start_s = new_trajectories.front()->GetTStart();
-  std::cout << "Is Active Empty?: " << active_trajectories.empty() << std::endl;
-  std::cout << "Is Current Empty?: " << (current_trajectory == nullptr) << std::endl;
+  // std::cout << "Is Active Empty?: " << active_trajectories.empty() << std::endl;
+  // std::cout << "Is Current Empty?: " << (current_trajectory == nullptr) << std::endl;
 
   // Case 1a: First call (and its analogous cases)
   if (active_trajectories.empty() && current_trajectory == nullptr) {
-    std::cout << "Case 1a" << std::endl;
+    // std::cout << "Case 1a" << std::endl;
     MergeNewTrajectoriesFirstCall(std::move(new_trajectories));
     return;
   }
@@ -27,7 +27,7 @@ void ctrl::TrajectoryManager::MergeNewTrajectories(Trajectories&& new_trajectori
   // Case 1b: New trajectories arrive in future (no overlap with active trajectories)
   if (new_traj_t_start_s >=
       active_traj_t_finish_s) {  // Case covers both active and current trajectories.
-    std::cout << "Case 1b" << std::endl;
+    // std::cout << "Case 1b" << std::endl;
     MergeNewTrajectoriesInFuture(std::move(new_trajectories));
     return;
   }
@@ -38,7 +38,7 @@ void ctrl::TrajectoryManager::MergeNewTrajectories(Trajectories&& new_trajectori
           new_trajectories.front()
               ->GetTStart()) {  // Conflict was that current is also smaller than new_trajectories
                                 // but we were not looking it it.
-    std::cout << "Case 2a" << std::endl;
+    // std::cout << "Case 2a" << std::endl;
     MergeNewTrajectoriesAtT(std::move(new_trajectories));
     return;
   }
@@ -46,13 +46,13 @@ void ctrl::TrajectoryManager::MergeNewTrajectories(Trajectories&& new_trajectori
   // Case 2b: New trajectories overlap with current trajectory
   if (current_trajectory->GetTFinish() > new_trajectories.front()->GetTStart() &&
       current_trajectory->GetTStart() < new_trajectories.front()->GetTStart()) {
-    std::cout << "Case 2b" << std::endl;
+    // std::cout << "Case 2b" << std::endl;
     MergeNewTrajectoriesAtCurrentTime(std::move(new_trajectories));
     return;
   }
-  std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectories] No case hit // The start point "
-               "was left behind in the timeline :("
-            << std::endl;
+  // std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectories] No case hit // The start point "
+              //  "was left behind in the timeline :("
+            // << std::endl;
   return;
 }
 void ctrl::TrajectoryManager::MergeNewTrajectoriesAtCurrentTime(Trajectories&& new_trajectories) {
@@ -74,8 +74,8 @@ void ctrl::TrajectoryManager::MergeNewTrajectoriesAtCurrentTime(Trajectories&& n
   current_trajectory->SetTFinish(new_traj_t_start_s);
 
   if (merged_traj) {
-    std::cout
-        << "[ctrl::TrajectoryManager::MergeNewTrajectoriesAtCurrentTime] Merged Trajectory: \n";
+    // std::cout
+        // << "[ctrl::TrajectoryManager::MergeNewTrajectoriesAtCurrentTime] Merged Trajectory: \n";
     merged_traj->Print();
   }
 
@@ -130,7 +130,7 @@ void ctrl::TrajectoryManager::MergeNewTrajectoriesAtT(Trajectories&& new_traject
       std::make_unique<ctrl::TrapezoidalTrajectoryVi3D>(pose_start, pose_end, t_start_s,
                                                         t_finish_s, v0);
   if (merged_traj) {
-    std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectoryAtT] Merged Trajectory: \n";
+    // std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectoryAtT] Merged Trajectory: \n";
     merged_traj->Print();
   }
   active_trajectories_cpy.push(std::move(merged_traj));
@@ -153,10 +153,10 @@ void ctrl::TrajectoryManager::MergeNewTrajectoriesAtT(Trajectories&& new_traject
 
 void ctrl::TrajectoryManager::MergeNewTrajectoriesInFuture(Trajectories&& new_trajectories) {
   double t = new_trajectories.front()->GetTStart();
-  std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectoryInFuture] t = " << t << std::endl;
+  // std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectoryInFuture] t = " << t << std::endl;
   if (t - active_traj_t_finish_s > 0.01) {
-    std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectoryInFuture] Zero-vel traj from t "
-              << active_traj_t_finish_s << " " << t << std::endl;
+    // std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectoryInFuture] Zero-vel traj from t "
+              // << active_traj_t_finish_s << " " << t << std::endl;
     // Step 1: Make a zero-velocity trajectory
     std::unique_lock<std::mutex> lock(active_traj_mutex);
     active_trajectories.push(std::make_unique<ctrl::TrapezoidalTrajectoryVi3D>(
@@ -169,7 +169,7 @@ void ctrl::TrajectoryManager::MergeNewTrajectoriesInFuture(Trajectories&& new_tr
 }
 
 void ctrl::TrajectoryManager::MergeNewTrajectoriesFirstCall(Trajectories&& new_trajectories) {
-  std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectoriesFirstCall]" << std::endl;
+  // std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectoriesFirstCall]" << std::endl;
   // Add all the the new trajectories into active trajectories
   {
     std::unique_lock<std::mutex> lock(active_traj_mutex);
@@ -180,8 +180,8 @@ void ctrl::TrajectoryManager::MergeNewTrajectoriesFirstCall(Trajectories&& new_t
     active_traj_t_finish_s = active_trajectories.back()->GetTFinish();
   }
   UpdateCurrentTrajectory();
-  std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectoriesFirstCall] Active trajectories: "
-            << active_trajectories.size() << std::endl;
+  // std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectoriesFirstCall] Active trajectories: "
+            // << active_trajectories.size() << std::endl;
 }
 
 void ctrl::TrajectoryManager::UpdateCurrentTrajectory() {
@@ -205,12 +205,12 @@ void ctrl::TrajectoryManager::UpdateCurrentTrajectory() {
     }
   }
   if (current_trajectory == nullptr) {
-    std::cout << "[ctrl::TrajectoryManager::UpdateCurrentTrajectory] No current trajectory set."
-              << std::endl;
+    // std::cout << "[ctrl::TrajectoryManager::UpdateCurrentTrajectory] No current trajectory set."
+              // << std::endl;
     return;
   }
-  std::cout << "[ctrl::TrajectoryManager::UpdateCurrentTrajectory] Current Trajectory:"
-            << std::endl;
+  // std::cout << "[ctrl::TrajectoryManager::UpdateCurrentTrajectory] Current Trajectory:"
+            // << std::endl;
 }
 
 Eigen::Vector3d ctrl::TrajectoryManager::FindV0AtT(double t) {

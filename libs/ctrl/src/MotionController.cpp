@@ -22,7 +22,7 @@ std::pair<bool, Eigen::Vector3d> ctrl::MotionController::DriveToPoint(
   double distance_to_goal = position_error_fWorld.norm();
   if (distance_to_goal < position_error_tolerance_m &&
       std::abs(angle_error_rad) < angle_error_tolerance_rad) {
-    std::cout << "[ctrl::MotionController::InterpolateToPoint] Finished I2P" << std::endl;
+    // std::cout << "[ctrl::MotionController::InterpolateToPoint] Finished I2P" << std::endl;
     return std::make_pair(true, Eigen::Vector3d::Zero());
   }
 
@@ -57,24 +57,24 @@ std::pair<bool, Eigen::Vector3d> ctrl::MotionController::InterpolateToPoint(
   double distance_to_goal = position_error_fWorld.norm();
   if (distance_to_goal < position_error_tolerance_m &&
       std::abs(angle_error_rad) < angle_error_tolerance_rad) {
-    std::cout << "[ctrl::MotionController::InterpolateToPoint] Finished I2P" << std::endl;
+    // std::cout << "[ctrl::MotionController::InterpolateToPoint] Finished I2P" << std::endl;
     return std::make_pair(true, Eigen::Vector3d::Zero());
   }
 
-  std::cout << "Position error fWorld: " << position_error_fWorld.transpose() << std::endl;
-  std::cout << "Angle error: " << angle_error_rad << std::endl;
+  // std::cout << "Position error fWorld: " << position_error_fWorld.transpose() << std::endl;
+  // std::cout << "Angle error: " << angle_error_rad << std::endl;
 
   // Step 3: Compute direction in robot frame
   Eigen::Rotation2D<double> fWorldToBody(-pose_fWorld[2]);
   Eigen::Vector2d direction_fBody = fWorldToBody * position_error_fWorld;
-  std::cout << "Direction fBody: " << direction_fBody.transpose() << std::endl;
+  // std::cout << "Direction fBody: " << direction_fBody.transpose() << std::endl;
 
   if (direction_fBody.norm() > 1e-6)
     direction_fBody.normalize();
   else
     direction_fBody.setZero();
 
-  std::cout << "Direction fBody unit: " << direction_fBody.transpose() << std::endl;
+  // std::cout << "Direction fBody unit: " << direction_fBody.transpose() << std::endl;
 
   // Step 4: Apply constant velocity in that direction
   Eigen::Vector3d velocity_fBody;

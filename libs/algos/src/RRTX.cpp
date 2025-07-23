@@ -291,4 +291,7 @@ void RRTX::SetGoal(const state::Waypoint& new_goal) {
 }
 
 
-}  // namespace algos
+}
+
+
+// namespace algos
