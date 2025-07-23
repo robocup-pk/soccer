@@ -24,6 +24,7 @@ state::Waypoint Extend(const state::Waypoint& from, const state::Waypoint& to);
 int FindNearestWaypointIdx(const state::Waypoint& random_wp,
                            const std::vector<algos::NodeRRT>& path);
 state::Waypoint FindRandomWaypoint(const state::Waypoint& goal);
+state::Path SmoothPath(const state::Path& original_path);
 
 extern std::mt19937 rng;
 extern std::uniform_real_distribution<double> x_distribution;
