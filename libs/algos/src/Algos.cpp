@@ -48,7 +48,7 @@ state::Path PlanPath(AlgoName algo_name, std::vector<state::SoccerObject>& socce
   state::Waypoint bot_pos(bot_pos3d[0], bot_pos3d[1], 0.0f);
   state::Waypoint goal_pos(SelectGoal(soccer_objects));
   std::cout << "c\n";
-  
+
   switch (algo_name) {
     case AlgoName::RRTX:
       path = algo::FindSinglePath_RRTX(bot_pos, goal_pos);
