@@ -1,6 +1,6 @@
 #include "SoccerField.h"
-
 #include "RRT.h"
+#include <Eigen/Dense>
 
 namespace algos {
 std::mt19937 rng(std::random_device{}());
@@ -8,11 +8,13 @@ std::uniform_real_distribution<double> x_distribution =
     std::uniform_real_distribution<double>(0, vis::SoccerField::GetInstance().width_mm);
 std::uniform_real_distribution<double> y_distribution =
     std::uniform_real_distribution<double>(0, vis::SoccerField::GetInstance().height_mm);
-double step_size = 100;  // Step size optimized for trajectory feasibility
+
+RRTParams DefaultRRTParams() { return RRTParams(); }
 }  // namespace algos
 
-state::Path algos::FindSinglePath(const state::Waypoint& start, const state::Waypoint& goal) {
-  double goal_tolerance = 150.0;  // 15cm tolerance for reaching goal
+state::Path algos::FindSinglePath(const state::Waypoint& start, const state::Waypoint& goal,
+                                  const RRTParams& params) {
+  double goal_tolerance = params.goal_tolerance;
   std::vector<algos::NodeRRT> path;
   state::Waypoint start_cpy = start;
   NodeRRT start_NodeRRT(start_cpy, -1);
@@ -22,11 +24,14 @@ state::Path algos::FindSinglePath(const state::Waypoint& start, const state::Way
   std::cout << "[RRT] Starting path planning from (" << start.x << ", " << start.y 
             << ") to (" << goal.x << ", " << goal.y << ")" << std::endl;
 
-  int max_iterations = 500;  // Balanced iterations for reasonable performance
+  int max_iterations = params.max_iterations;  // Balanced iterations for reasonable performance
   for (int iteration = 0; iteration < max_iterations; ++iteration) {
-    state::Waypoint random_wp = FindRandomWaypoint(goal);
+    state::Waypoint random_wp = FindRandomWaypoint(goal, params.goal_bias);
     int nearest_wp_idx = FindNearestWaypointIdx(random_wp, path);  // parent
-    state::Waypoint new_wp = Extend(path[nearest_wp_idx].wp, random_wp);
+    double dynamic_step = params.step_size;
+    double dist_to_goal = (path[nearest_wp_idx].wp - goal).Norm();
+    if (dist_to_goal < params.step_size) dynamic_step = dist_to_goal;
+    state::Waypoint new_wp = Extend(path[nearest_wp_idx].wp, random_wp, dynamic_step);
     
     // Skip if new waypoint is same as parent (no progress)
     if ((new_wp - path[nearest_wp_idx].wp).Norm() < 1.0) {
@@ -75,16 +80,16 @@ state::Path algos::ReconstructPath(const int goal_idx, const state::Waypoint& go
   return sol;
 }
 
-state::Waypoint algos::Extend(const state::Waypoint& from, const state::Waypoint& to) {
+state::Waypoint algos::Extend(const state::Waypoint& from, const state::Waypoint& to, double step) {
   state::Waypoint direction_wp = to - from;
   double distance = direction_wp.Norm();
 
-  if (distance <= step_size) {
+  if (distance <= step) {
     return to;
   }
 
   direction_wp.Normalize();
-  return from + direction_wp * step_size;
+  return from + direction_wp * step;
 }
 
 int algos::FindNearestWaypointIdx(const state::Waypoint& random_wp,
@@ -103,11 +108,10 @@ int algos::FindNearestWaypointIdx(const state::Waypoint& random_wp,
   return nearest_wp_idx;
 }
 
-state::Waypoint algos::FindRandomWaypoint(const state::Waypoint& goal) {
+state::Waypoint algos::FindRandomWaypoint(const state::Waypoint& goal, double bias) {
   std::uniform_real_distribution<double> bias_distribution(0, 1.0);
 
-  // Increase goal bias to 50% for much faster convergence
-  if (bias_distribution(rng) < 0.5) {
+  if (bias_distribution(rng) < bias) {
     return goal;
   }
 
@@ -118,40 +122,33 @@ state::Path algos::SmoothPath(const state::Path& original_path) {
   if (original_path.size() <= 2) {
     return original_path;
   }
-  
+
   state::Path smoothed_path;
-  smoothed_path.push_back(original_path[0]); // Always keep start
-  
-  // Keep waypoints that change direction significantly (> 30 degrees)
-  const double angle_threshold = 0.52; // ~30 degrees in radians
-  
+  smoothed_path.push_back(original_path.front());
+
+  // Remove waypoints that are approximately on a straight line
+  const double distance_threshold = 20.0;  // mm
+
   for (size_t i = 1; i < original_path.size() - 1; ++i) {
-    state::Waypoint prev = original_path[i-1];
+    state::Waypoint prev = smoothed_path.back();
+    state::Waypoint next = original_path[i + 1];
     state::Waypoint curr = original_path[i];
-    state::Waypoint next = original_path[i+1];
-    
-    // Calculate vectors
-    state::Waypoint v1 = curr - prev;
-    state::Waypoint v2 = next - curr;
-    
-    // Skip if either vector is too short
-    if (v1.Norm() < 10.0 || v2.Norm() < 10.0) {
-      continue;
+
+    Eigen::Vector2d p(prev.x, prev.y);
+    Eigen::Vector2d q(next.x, next.y);
+    Eigen::Vector2d r(curr.x, curr.y);
+
+    Eigen::Vector2d line = q - p;
+    double line_mag = line.norm();
+    if (line_mag > 1e-6) {
+      double distance = std::abs((q.x() - p.x()) * (p.y() - r.y()) - (p.x() - r.x()) * (q.y() - p.y())) / line_mag;
+      if (distance < distance_threshold) {
+        continue;  // skip nearly collinear waypoint
+      }
     }
-    
-    v1.Normalize();
-    v2.Normalize();
-    
-    // Calculate angle between vectors using dot product
-    double dot_product = v1.x * v2.x + v1.y * v2.y;
-    double angle = std::acos(std::max(-1.0, std::min(1.0, dot_product)));
-    
-    // Keep waypoint if it represents a significant direction change
-    if (angle > angle_threshold) {
-      smoothed_path.push_back(curr);
-    }
+    smoothed_path.push_back(curr);
   }
-  
-  smoothed_path.push_back(original_path.back()); // Always keep goal
+
+  smoothed_path.push_back(original_path.back());
   return smoothed_path;
 }
