@@ -2,6 +2,8 @@
 #include <algorithm>
 #include "RRTX.h"
 #include <limits>
+#include <vector>
+#include <iostream>
 #include "SoccerField.h"
 
 
@@ -290,8 +292,21 @@ void RRTX::SetGoal(const state::Waypoint& new_goal) {
     nodes[goal_idx].wp = goal;
 }
 
-
 }
-
-
 // namespace algos
+namespace algo {
+state::Path FindSinglePath_RRTX(state::Waypoint start,state::Waypoint goal) {
+
+    algos::RRTX rrtx(start, goal);
+
+    rrtx.InvalidateEdges(goal);
+
+    for (int i = 0; i < 3000; ++i)
+        rrtx.SampleAndExpand();
+
+    rrtx.UpdateRRTX();
+    rrtx.ComputeShortPath();
+
+    return rrtx.ReconstructPath();
+}
+}
