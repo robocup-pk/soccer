@@ -12,6 +12,7 @@
 bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vector3d> path_fWorld,
                                                          double t_start_s) {
   if (path_fWorld.size() <= 1) return false;
+  std::cout << "CreateTrajectoriesFromPath powered up" << std::endl;
   Trajectories trajectories;
   double t_end_s = t_start_s;
   for (int path_index = 1; path_index < path_fWorld.size(); ++path_index) {
@@ -19,11 +20,11 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
     Eigen::Vector3d pose_end(path_fWorld[path_index]);
     Eigen::Vector3d h(pose_end - pose_start);
     Eigen::Vector3d v0(0, 0, 0);
-    if (path_index == 1) v0 = FindV0AtT(t_start_s);
-
     double T = 4;
+    if (path_index == 1) v0 = FindV0AtT(t_start_s);
+    std::cout << "b\n ";
+
     //std::max({h[0], h[1], h[2]}) * cfg::SystemConfig::avg_velocity_fBody_mps;
-    // std::cout << "T = " << T << std::endl;
 
     // Create Trajectory
     t_start_s = t_end_s;
@@ -40,6 +41,8 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
   std::cout << "[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Added all new trajs\n"
             << std::endl;
   MergeNewTrajectories(std::move(trajectories));
+
+  std::cout << "CreateTrajectoriesFromPath powered off" << std::endl;
   return true;
 }
 
@@ -55,6 +58,7 @@ void ctrl::TrajectoryManager::Print() {
 }
 
 std::pair<bool, Eigen::Vector3d> ctrl::TrajectoryManager::Update(Eigen::Vector3d pose_est) {
+  // std::cout << "update powered up" << std::endl;
   // Step 1: Get current time
   double current_time_s = util::GetCurrentTime();
 
@@ -73,17 +77,18 @@ std::pair<bool, Eigen::Vector3d> ctrl::TrajectoryManager::Update(Eigen::Vector3d
   }
 
   // Step 3: Update the current trajectory
-  if (current_trajectory == nullptr || current_time_s >= current_trajectory->GetTFinish()) {
+  if (current_trajectory == nullptr || current_time_s > current_trajectory->GetTFinish()) {
     {
       std::unique_lock<std::mutex> lock(active_traj_mutex);
       current_trajectory = std::move(active_trajectories.front());
       active_trajectories.pop();
     }
-    current_trajectory->Print();
   }
   // Step 4: Get reference velocity from current trajectory
   Eigen::Vector3d velocity_fWorld = GetVelocityAtT(current_time_s);
   Eigen::Vector3d velocity_fBody = util::RotateAboutZ(velocity_fWorld, -pose_est[2]);
-
+  std::cout << "[ctrl::TrajectoryManager::Update] Velocity_Frame Body: "
+            << velocity_fBody.transpose() << std::endl;
+  // std::cout << "update powered down" << std::endl;
   return std::make_pair(false, velocity_fBody);
 }

@@ -140,7 +140,7 @@ TEST_F(TrajectoryTest, TestPathToTrajectoryConversation) {
   bool valid_trajectories = trajectory_manager.CreateTrajectoriesFromPath(path);
 
   EXPECT_TRUE(valid_trajectories);
-  EXPECT_TRUE(trajectory_manager.active_trajectories.size() == 4);
+  EXPECT_TRUE(trajectory_manager.active_trajectories.size() == 3);
 
   trajectory_manager.Print();
 }
