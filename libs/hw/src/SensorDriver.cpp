@@ -16,7 +16,7 @@ hw::SensorDriver::SensorDriver(std::shared_ptr<LibSerial::SerialPort> shared_ser
   motors_rpms << 0, 0, 0, 0;
   motors = std::vector<SensorModel>(kin::RobotDescription::num_wheels);
   gyro_calibrated = false;
-  num_of_iterations_for_gyro = 500;
+  num_of_iterations_for_gyro = 200;
   bias_in_gyro = 0.0;
   reset_gyro_calibration = false;
 }

@@ -20,6 +20,7 @@ enum class RobotState {
   MANUAL_DRIVING,
   AUTONOMOUS_DRIVING,
   GOING_HOME,
+  CALIBRATING
 };
 
 enum class RobotAction {
