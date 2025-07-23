@@ -16,14 +16,16 @@ ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D(Eigen::Vector3d pose_
   this->v0 = v0;
   h = pose_end - pose_start;
   T = t_finish_s - t_start_s;
-  
+  // // std::cout << "[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] T: " << T
+  //           <<std::endl;
+  // T = 3;
   a = cfg::SystemConfig::max_acc_m_radpsps;
   std::pair<bool, std::optional<Eigen::Vector3d>> traj_v_cruise = IsFeasible(h, T, v0);
 
   if (!traj_v_cruise.first) {
-    std::cout << "[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] Trajectory not "
-                 "feasible. Try different params"
-              << std::endl;
+    // // std::cout << "[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] Trajectory not "
+    //              "feasible. Try different params"
+    //           << std::endl;
     return;
   }
 
@@ -42,14 +44,14 @@ ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D(Eigen::Vector3d pose_
     }
   }
 
-  std::cout << "[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] v_cruise: "
-            << v_cruise.transpose() << std::endl;
-  std::cout << "[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_a: "
-            << t_a.transpose() << std::endl;
-  std::cout << "[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_d: "
-            << t_d.transpose() << std::endl;
-  std::cout << "[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] T: " << T
-            << std::endl;
+  // // std::cout << "[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] v_cruise: "
+  //           << v_cruise.transpose() << std::endl;
+  // // std::cout << "[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_a: "
+  //           << t_a.transpose() << std::endl;
+  // // std::cout << "[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_d: "
+  //           << t_d.transpose() << std::endl;
+  // // std::cout << "[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] T: " << T
+  //           << std::endl;
 }
 
 Eigen::Vector3d ctrl::TrapezoidalTrajectoryVi3D::VelocityAtT(double t_sec) {
@@ -98,10 +100,10 @@ Eigen::Vector3d ctrl::TrapezoidalTrajectoryVi3D::VelocityAtT(double t_sec) {
 }
 
 void ctrl::TrapezoidalTrajectoryVi3D::Print() {
-  std::cout << "[ctrl::TrapezoidalTrajectory3D::Print] Trajectory Info. ";
-  std::cout << "Pose: " << pose_start.transpose() << " -> " << pose_end.transpose();
-  std::cout << ". Time: " << t_start_s << " -> " << t_finish_s;
-  std::cout << ". v0: " << v0.transpose() << "\n\n";
+  // // std::cout << "[ctrl::TrapezoidalTrajectory3D::Print] Trajectory Info. ";
+  // // std::cout << "Pose: " << pose_start.transpose() << " -> " << pose_end.transpose();
+  // // std::cout << ". Time: " << t_start_s << " -> " << t_finish_s;
+  // // std::cout << ". v0: " << v0.transpose() << "\n\n";
 }
 
 Eigen::Vector3d ctrl::TrapezoidalTrajectoryVi3D::TotalDistance() {
