@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
     state::Path rrt_path;
     int current_path_index = 0;
     double demo_start_time = 0.0;
-    double path_completion_tolerance = 0.15; // 15cm tolerance for reaching waypoints
+    double path_completion_tolerance = 0.25; // 25cm tolerance for faster completion
 
     std::cout << "RRT Trajectory Kick Demo Instructions:" << std::endl;
     std::cout << "1. Robot starts at (-0.5, -0.5)" << std::endl;
