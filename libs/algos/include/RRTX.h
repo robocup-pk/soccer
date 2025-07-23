@@ -51,7 +51,7 @@ private:
                         std::greater<std::pair<double, int>>> pq;
 
     double goal_sample_rate = 0.1;
-    double step_size = 0.1;
+    double step_size = 0.3;
     double radius = 0.3;
 };
 

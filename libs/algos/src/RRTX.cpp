@@ -298,10 +298,10 @@ namespace algo {
 state::Path FindSinglePath_RRTX(state::Waypoint start,state::Waypoint goal) {
 
     algos::RRTX rrtx(start, goal);
-
+  
     rrtx.InvalidateEdges(goal);
 
-    for (int i = 0; i < 3000; ++i)
+    for (int i = 0; i < 2500; ++i)
         rrtx.SampleAndExpand();
 
     rrtx.UpdateRRTX();

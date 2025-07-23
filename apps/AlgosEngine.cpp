@@ -39,6 +39,7 @@ int main(int argc, char* argv[]) {
   state::Waypoint start_=state::Waypoint(soccer_objects[1].position[0], soccer_objects[1].position[1], 0.0f);
     state::Waypoint goal_=state::Waypoint(soccer_objects[0].position[0], soccer_objects[0].position[1], 0.0f);
     algos::RRTX rrtx(start_, goal_);
+  int steps=0;
   while (1) {
     // Step 1: Calculate dt
     // --- Time Calculation ---
@@ -57,14 +58,15 @@ int main(int argc, char* argv[]) {
     bool goal_changed = (soccer_objects[0].GetPosition() - lastballPos).norm() > 0.05;
     if (first_time || robot_manager.FinishedMotion() || goal_changed) {
         first_time = false;
+        lastballPos = soccer_objects[0].GetPosition();
         auto new_path = algos::PlanPath(algo_name, soccer_objects);
+        steps++;
         std::cout<<soccer_objects[1].position<<std::endl;
         if (new_path.empty()) {
             std::cout << "No path found!" << std::endl;
         } else  {
             robot_manager.SetPath(new_path);
         }
-        std::cout<<"new path "<<new_path<<std::endl;
     }
 
 
