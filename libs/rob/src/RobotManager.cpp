@@ -7,6 +7,7 @@
 #include "Utils.h"
 #include "Trajectory3D.h"
 #include "Waypoint.h"
+#include "RobotPositions.h"
 
 rob::RobotManager::RobotManager() {
   std::cout << "[rob::RobotManager::RobotManager]" << std::endl;
@@ -14,7 +15,10 @@ rob::RobotManager::RobotManager() {
   robot_state = RobotState::CALIBRATING;
   start_time_idle_s = util::GetCurrentTime();
   velocity_fBody << 0, 0, 0;
-  initialized_pose_home = false;
+  home_position = cfg::RobotHomePosition::CENTER_FORWARD;
+  pose_home_fWorld = cfg::RobotHomeCoordinates.at(home_position);
+  initialized_pose_home = true;
+  start_from_home = false;
   finished_motion = true;
   num_sensor_readings_failed = 0;
   rob_manager_running.store(true);
@@ -125,17 +129,17 @@ void rob::RobotManager::SenseLogic() {
     return;
   }
 
-  // Print pose every few seconds
-  // static int num = 0;
-  // ++num;
-  // if (num % 200 == 0)
-  //   std::cout << "[rob::RobotManager::SenseLogic] Pose (est): " << pose_fWorld.transpose()
-  //             << std::endl;
-
-  // Set home pose
-  if (!initialized_pose_home && state_estimator.initialized_pose) {
-    pose_home_fWorld = state_estimator.GetPoseInit();
-    initialized_pose_home = true;
+  if (state_estimator.initialized_pose && initialized_pose_home && !start_from_home) {
+    if ((pose_fWorld - pose_home_fWorld).norm() > 0.05) {
+      std::cout
+          << "[rob::RobotManager::SenseLogic] Robot is not at home, Going to Home from home. "
+          << std::endl;
+      robot_state = RobotState::GOING_HOME;
+    } else {
+      start_from_home = true;
+      std::cout << "[rob::RobotManager::SenseLogic] Robot is at home, starting from home."
+                << std::endl;
+    }
   }
 }
 
