@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
                 path_planned = true;
                 path_executed = false;
             } else {
-                std::cout << "[Demo] ❌ RRT algorithm failed to find path! Retrying..." << std::endl;
+                std::cout << "[Demo] RRT algorithm failed to find path! Retrying..." << std::endl;
                 // Reset and try again
                 demo_started = false;
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
