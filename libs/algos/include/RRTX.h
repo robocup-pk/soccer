@@ -1,7 +1,11 @@
+
 #ifndef ALGOS_RRTX_H
 #define ALGOS_RRTX_H
 
 #include <vector>
+#include <queue>
+#include <utility>
+#include <limits>
 #include "Waypoint.h"
 
 namespace algos {
@@ -9,13 +13,51 @@ namespace algos {
 struct NodeRRTX {
     state::Waypoint wp;
     int parent_idx;
-    double cost;
-    NodeRRTX(const state::Waypoint& wp_, int parent_idx_, double cost_)
-        : wp(wp_), parent_idx(parent_idx_), cost(cost_) {}
+    double g;
+    double rhs;
+    std::vector<int> neighbors;
 };
 
-state::Path FindSinglePath_RRTX(const state::Waypoint& start, const state::Waypoint& goal);
+class RRTX {
+public:
+    RRTX(const state::Waypoint& start, const state::Waypoint& goal);
 
-}
+    void SampleAndExpand();
+    void UpdateRRTX();
+    void ComputeShortPath();
+    void InvalidateEdges(const state::Waypoint& moved_object_pos);
+    void SetGoal(const state::Waypoint& new_goal);
+    void SetStart(const state::Waypoint& new_start) ;
+
+    state::Path ReconstructPath(); 
+    void UpdateVertex(int idx);
+    int start_idx;
+    state::Waypoint start, goal;
+    int goal_idx;
+
+
+private:
+    state::Waypoint Sample(const state::Waypoint& goal, double angle);
+    int Nearest(const std::vector<NodeRRTX>& tree, const state::Waypoint& wp);
+    state::Waypoint Extend(const state::Waypoint& from, const state::Waypoint& to);
+    double Distance(const state::Waypoint& a, const state::Waypoint& b);
+    std::vector<int> Near(const std::vector<NodeRRTX>& tree, const state::Waypoint& wp);
+    void AddNode(const state::Waypoint& wp); 
+
+    std::vector<NodeRRTX> nodes;
+    std::priority_queue<std::pair<double, int>,
+                        std::vector<std::pair<double, int>>,
+                        std::greater<>> pq;
+
+
+    double goal_sample_rate = 0.1;
+    double step_size = 0.1;
+
+    double radius = 0.3;
+
+
+};
+
+}  // namespace algos
 
 #endif

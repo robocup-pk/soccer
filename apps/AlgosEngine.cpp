@@ -17,6 +17,7 @@
 #include "Algos.h"
 #include "RobotManager.h"
 
+
 int main(int argc, char* argv[]) {
   auto start_time = std::chrono::high_resolution_clock::now();
   auto last_time = start_time;
@@ -35,7 +36,9 @@ int main(int argc, char* argv[]) {
 
   rob::RobotManager robot_manager;
   bool first_time = true;
-
+  state::Waypoint start_=state::Waypoint(soccer_objects[1].position[0], soccer_objects[1].position[1], 0.0f);
+    state::Waypoint goal_=state::Waypoint(soccer_objects[0].position[0], soccer_objects[0].position[1], 0.0f);
+    algos::RRTX rrtx(start_, goal_);
   while (1) {
     // Step 1: Calculate dt
     // --- Time Calculation ---
@@ -48,12 +51,40 @@ int main(int argc, char* argv[]) {
 
     // Step 2: Plan planning step
     algos::AlgoName algo_name = algos::AlgoName::RRTX;
-    if (first_time || robot_manager.FinishedMotion()) {
-      first_time = false;
-      state::Path path = algos::PlanPath(algo_name, soccer_objects);
-      std::cout << "Path: " << path << std::endl;
-      robot_manager.SetPath(path);
+
+
+
+    bool goal_changed = (soccer_objects[0].GetPosition() - lastballPos).norm() > 0.05;
+    if (first_time || robot_manager.FinishedMotion() || goal_changed) {
+        first_time = false;
+        std::cout<<"goal_changed"<<goal_changed<<std::endl;
+        if (goal_changed) {
+            lastballPos = soccer_objects[0].GetPosition();
+            state::Waypoint new_start = state::Waypoint(soccer_objects[1].position[0], soccer_objects[1].position[1], 0.0f);
+            state::Waypoint new_goal = state::Waypoint(soccer_objects[0].position[0], soccer_objects[0].position[1], 0.0f);
+
+            rrtx.SetStart(new_start);
+            rrtx.SetGoal(new_goal);
+            // rrtx.SetGoal(new_goal);
+            rrtx.InvalidateEdges(new_goal);
+        }
+
+        for (int i = 0; i <3000 ; ++i) {
+            rrtx.SampleAndExpand();
+        }
+        rrtx.UpdateRRTX();
+
+        rrtx.ComputeShortPath();
+        auto new_path = rrtx.ReconstructPath();
+        if (new_path.empty()) {
+            std::cout << "No path found!" << std::endl;
+        } else  {
+            robot_manager.SetPath(new_path);
+        }
+        std::cout<<"new path "<<new_path<<std::endl;
     }
+
+
     soccer_objects[1].position = robot_manager.GetPoseInWorldFrame();
 
     // Step 5: Simulation Step
