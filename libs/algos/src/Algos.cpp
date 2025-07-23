@@ -41,26 +41,26 @@ state::Waypoint SelectGoal(std::vector<state::SoccerObject>& soccer_objects) {
   return goal_pos;
 }
 
-// state::Path PlanPath(AlgoName algo_name, std::vector<state::SoccerObject>& soccer_objects) {
-//   state::Path path;
+state::Path PlanPath(AlgoName algo_name, std::vector<state::SoccerObject>& soccer_objects) {
+  state::Path path;
 
-//   Eigen::Vector3d& bot_pos3d = soccer_objects[1].position;
-//   state::Waypoint bot_pos(bot_pos3d[0], bot_pos3d[1], 0.0f);
-//   state::Waypoint goal_pos(SelectGoal(soccer_objects));
-//   std::cout << "c\n";
+  Eigen::Vector3d& bot_pos3d = soccer_objects[1].position;
+  state::Waypoint bot_pos(bot_pos3d[0], bot_pos3d[1], 0.0f);
+  state::Waypoint goal_pos(SelectGoal(soccer_objects));
+  std::cout << "c\n";
+  
+  switch (algo_name) {
+    case AlgoName::RRTX:
+      path = algo::FindSinglePath_RRTX(bot_pos, goal_pos);
+      std::cout << "Path: " << path << std::endl;
+      std::cout << "d\n";
+      break;
+    case AlgoName::ASTAR:
+      // path =;
+      break;
+  }
 
-//   switch (algo_name) {
-//     case AlgoName::RRTX:
-//       path = algos::FindSinglePath_RRTX(bot_pos, goal_pos);
-//       std::cout << "Path: " << path << std::endl;
-//       std::cout << "d\n";
-//       break;
-//     case AlgoName::ASTAR:
-//       // path =;
-//       break;
-//   }
-
-//   return path;
-// }
+  return path;
+}
 
 }  // namespace algos
