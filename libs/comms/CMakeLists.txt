@@ -1,5 +1,7 @@
 # Find locally installed protobuf
 find_package(Protobuf REQUIRED)
+find_package(absl REQUIRED)
+
 find_package(Threads REQUIRED)
 
 # Verify protobuf was found
@@ -71,6 +73,10 @@ target_include_directories(comms_lib PUBLIC
 target_link_libraries(comms_lib PUBLIC
   ${Protobuf_LIBRARIES}
   Threads::Threads
+  absl::log
+  absl::log_internal_check_op
+  absl::strings
+  absl::base
 )
 
 # 5) Examples (if any)

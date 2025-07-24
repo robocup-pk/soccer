@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include "Coordinates.h"
 #include "Utils.h"
+#include "Coordinates.h"
 
 #ifndef M_PI  // in case it doesnt work on windows
 #define M_PI 3.14159265
