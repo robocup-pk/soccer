@@ -21,7 +21,41 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
     Eigen::Vector3d pose_end(path_fWorld[path_index]);
     Eigen::Vector3d h(pose_end - pose_start);
     Eigen::Vector3d v0(0, 0, 0);
-    double T = 4;
+    
+    // Calculate proper trajectory time based on distance and velocity constraints
+    double linear_dist = sqrt(h.x() * h.x() + h.y() * h.y());
+    double angular_dist = std::abs(h.z());
+    
+    // Use maximum safe velocity to calculate time
+    double max_linear_vel = cfg::SystemConfig::max_velocity_fBody_mps[0];
+    double max_angular_vel = cfg::SystemConfig::max_velocity_fBody_mps[2];
+    double max_linear_acc = cfg::SystemConfig::max_acc_m_radpsps[0];
+    double max_angular_acc = cfg::SystemConfig::max_acc_m_radpsps[2];
+    
+    // Time for trapezoidal profile: acceleration + cruise + deceleration
+    double linear_acc_time = max_linear_vel / max_linear_acc;
+    double linear_acc_dist = 0.5 * max_linear_acc * linear_acc_time * linear_acc_time;
+    double linear_time;
+    if (linear_dist <= 2 * linear_acc_dist) {
+      // Short distance: mostly acceleration/deceleration
+      linear_time = 2 * sqrt(linear_dist / max_linear_acc);
+    } else {
+      // Long distance: has constant velocity phase
+      linear_time = 2 * linear_acc_time + (linear_dist - 2 * linear_acc_dist) / max_linear_vel;
+    }
+    
+    double angular_acc_time = max_angular_vel / max_angular_acc;
+    double angular_acc_dist = 0.5 * max_angular_acc * angular_acc_time * angular_acc_time;
+    double angular_time;
+    if (angular_dist <= 2 * angular_acc_dist) {
+      angular_time = 2 * sqrt(angular_dist / max_angular_acc);
+    } else {
+      angular_time = 2 * angular_acc_time + (angular_dist - 2 * angular_acc_dist) / max_angular_vel;
+    }
+    
+    double T = std::max(linear_time, angular_time) * 1.2; // 20% safety buffer
+    T = std::max(T, 0.5); // Minimum 0.5 seconds per segment
+    
     if (path_index == 1) v0 = FindV0AtT(t_start_s);
     std::cout << "b\n ";
 
@@ -48,7 +82,7 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
 }
 
 Eigen::Vector3d ctrl::TrajectoryManager::GetVelocityAtT(double current_time_s) {
-  double kp = 0.2;
+  double kp = 0.0;
   Eigen::Vector3d Current_speed = current_trajectory->VelocityAtT(current_time_s);
   Eigen::Vector3d Current_position_fWorld = p_fworld;
 
