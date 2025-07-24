@@ -19,8 +19,11 @@ rob::RobotManager::RobotManager() {
   num_sensor_readings_failed = 0;
   rob_manager_running.store(true);
 
-  // TODO: remove when we have the camera system ready
+#ifdef BUILD_ON_PI
   state_estimator.initialized_pose = false;
+#else
+  state_estimator.initialized_pose = true;
+#endif
 
   sense_thread = std::thread(&RobotManager::SenseLoop, this);
   control_thread = std::thread(&RobotManager::ControlLoop, this);
@@ -121,7 +124,7 @@ void rob::RobotManager::SenseLogic() {
     robot_state = RobotState::CALIBRATING;
     return;
   }
-  
+
   // Print pose every few seconds
   // static int num = 0;
   // ++num;
