@@ -4,6 +4,7 @@
 namespace hw {
 struct Config {
   static constexpr int ticks_per_rev = 242;
+  static constexpr double gyro_sensitivity = 14.375f; // specific for gyro, hardware dependent
 };
 }  // namespace hw
 

@@ -20,6 +20,7 @@ double CalculateDt();  // Relative to the first call of this function. Returns t
                        // consecutive calls
 float PixelsPerMm();
 float MmToPixels(float mm_value);
+double ComputeAnglefromGyroData(double gyro_data_mdeg_ps);
 }  // namespace util
 
 #endif  // READ_FILE_H

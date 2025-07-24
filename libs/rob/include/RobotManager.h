@@ -19,7 +19,8 @@ enum class RobotState {
   INTERPOLATING_TO_POINT,
   MANUAL_DRIVING,
   AUTONOMOUS_DRIVING,
-  GOING_HOME
+  GOING_HOME,
+  CALIBRATING
 };
 
 enum class RobotAction {
@@ -51,6 +52,7 @@ class RobotManager {
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
   Eigen::Vector3d GetPos();
+  void NewCameraData(Eigen::Vector3d pose_from_camera);
 
   // void IntegratePhysics(std::vector<state::SoccerObject>& soccer_objects, float dt);
   // void HandleCollisionFeedback(std::vector<state::SoccerObject>& soccer_objects);
@@ -64,6 +66,8 @@ class RobotManager {
   void TryAssignNextGoal();
 
   std::string GetRobotState();
+  void CalibrateGyro();
+  bool IsGyroCalibrated();
 
   ~RobotManager();
 

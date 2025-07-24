@@ -11,7 +11,7 @@
 rob::RobotManager::RobotManager() {
   std::cout << "[rob::RobotManager::RobotManager]" << std::endl;
   previous_robot_state = RobotState::IDLE;
-  robot_state = RobotState::IDLE;
+  robot_state = RobotState::CALIBRATING;
   start_time_idle_s = util::GetCurrentTime();
   velocity_fBody << 0, 0, 0;
   initialized_pose_home = false;
@@ -19,8 +19,11 @@ rob::RobotManager::RobotManager() {
   num_sensor_readings_failed = 0;
   rob_manager_running.store(true);
 
-  // TODO: remove when we have the camera system ready
+#ifdef BUILD_ON_PI
+  state_estimator.initialized_pose = false;
+#else
   state_estimator.initialized_pose = true;
+#endif
 
   sense_thread = std::thread(&RobotManager::SenseLoop, this);
   control_thread = std::thread(&RobotManager::ControlLoop, this);
@@ -53,6 +56,14 @@ void rob::RobotManager::ControlLogic() {
   Eigen::Vector3d velocity_fBody_;
 
   switch (robot_state) {
+    case RobotState::CALIBRATING:
+      velocity_fBody_ = Eigen::Vector3d::Zero();
+      if (hardware_manager.IsGyroCalibrated()) {
+        robot_state = RobotState::IDLE;
+        std::cout << "[rob::RobotManager::ControlLogic] Gyro is calibrated. Going to IDLE state."
+                  << std::endl;
+      }
+      break;
     case RobotState::IDLE:
       velocity_fBody_ = velocity_fBody;
       break;
@@ -107,18 +118,25 @@ void rob::RobotManager::SenseLogic() {
     pose_fWorld = state_estimator.GetPose();
   }
 
-  // Print pose every few seconds
-  static int num = 0;
-  ++num;
-  if (num % 200 == 0)
-    // std::cout << "[rob::RobotManager::SenseLogic] Pose (est): " << pose_fWorld.transpose()
-    //           << std::endl;
+  if (!hardware_manager.IsGyroCalibrated()) {
+    std::cout << "[rob::RobotManager::SenseLogic] Gyro is not calibrated. Waiting for calibration."
+              << std::endl;
+    robot_state = RobotState::CALIBRATING;
+    return;
+  }
 
-    // Set home pose
-    if (!initialized_pose_home && state_estimator.initialized_pose) {
-      pose_home_fWorld = state_estimator.GetPoseInit();
-      initialized_pose_home = true;
-    }
+  // Print pose every few seconds
+  // static int num = 0;
+  // ++num;
+  // if (num % 200 == 0)
+  //   std::cout << "[rob::RobotManager::SenseLogic] Pose (est): " << pose_fWorld.transpose()
+  //             << std::endl;
+
+  // Set home pose
+  if (!initialized_pose_home && state_estimator.initialized_pose) {
+    pose_home_fWorld = state_estimator.GetPoseInit();
+    initialized_pose_home = true;
+  }
 }
 
 void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
@@ -266,4 +284,18 @@ rob::RobotManager::~RobotManager() {
   rob_manager_running.store(false);
   if (sense_thread.joinable()) sense_thread.join();
   if (control_thread.joinable()) control_thread.join();
+}
+
+void rob::RobotManager::NewCameraData(Eigen::Vector3d pose_from_camera) {
+  hardware_manager.NewCameraData(pose_from_camera);
+}
+
+void rob::RobotManager::CalibrateGyro() { hardware_manager.CalibrateGyro(); }
+
+bool rob::RobotManager::IsGyroCalibrated() {
+  if (!hardware_manager.IsGyroCalibrated()) {
+    std::cout << "[rob::RobotManager::IsGyroCalibrated] Gyro is not calibrated." << std::endl;
+    return false;
+  }
+  return true;
 }
