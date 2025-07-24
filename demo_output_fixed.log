@@ -1,0 +1,94 @@
+[KickDemo] Starting RRT + Trapezoidal Trajectory Kick Demo...
+[est::StateEstimator::StateEstimator]
+[hw::HardwareManager::HardwareManager]
+[hw::MotorDriver::MotorDriver]
+[hw::GyroDriver::GyroDriver]
+[rob::RobotManager::RobotManager]
+
+Demo Instructions:
+1. Robot starts at (-2.0, -1.5)
+2. Ball is positioned at (1.5, 1.0)
+3. RRT will plan a path from robot to ball
+4. Robot follows trapezoidal trajectory to reach ball
+5. Robot orients towards ball and kicks it
+6. Press ESC to exit
+
+[KickDemo] Planning RRT path from robot to ball...
+[RRT] Starting path planning from (-2000, -1500) to (1500, 1000)
+[RRT] Goal reached! Distance: 375.99mm, Iterations: 22
+[RRT] Path smoothed from 23 to 9 waypoints
+[KickDemo] ✅ Found RRT path with 9 waypoints
+[rob::RobotManager::SetPath]   -2 -1.5    0 ->   -2 -1.5    0 -> -1.81173 -1.43251        0 -> -1.55385 -1.12885        0 -> -0.0772233 -0.0994877          0 ->   0.113292 -0.0386292          0 -> 0.904928 0.571763        0 -> 1.30044 0.62335       0 ->  1.20549 0.766262        0 -> 1.5   1   0
+[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Added new traj 1
+[ctrl::Trajectory3D::IsFeasible] h: 0 0 0. v0: 0 0 0. T: 4
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] v_cruise: 0 0 0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_a: 0 0 0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_d: 0 0 0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] T: 4
+[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Added new traj 2
+[ctrl::Trajectory3D::IsFeasible] h:  0.188267 0.0674949         0. v0: 0 0 0. T: 4
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] v_cruise: 0.0482298 0.0170185         0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_a: 0.0964596 0.0340371         0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_d: 0.0964596 0.0340371         0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] T: 4
+[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Added new traj 3
+[ctrl::Trajectory3D::IsFeasible] h: 0.257886 0.303658        0. v0: 0 0 0. T: 4
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] v_cruise: 0.0666956  0.079038         0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_a: 0.133391 0.158076        0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_d: 0.133391 0.158076        0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] T: 4
+[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Added new traj 4
+[ctrl::Trajectory3D::IsFeasible] h: 1.47662 1.02936       0. v0: 0 0 0. T: 4
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] v_cruise: 0.488446 0.303351        0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_a: 0.976891 0.606701        0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_d: 0.976891 0.606701        0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] T: 4
+[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Added new traj 5
+[ctrl::Trajectory3D::IsFeasible] h:  0.190516 0.0608585         0. v0: 0 0 0. T: 4
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] v_cruise: 0.0488207 0.0153322         0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_a: 0.0976413 0.0306643         0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_d: 0.0976413 0.0306643         0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] T: 4
+[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Added new traj 6
+[ctrl::Trajectory3D::IsFeasible] h: 0.791636 0.610392        0. v0: 0 0 0. T: 4
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] v_cruise: 0.222708 0.166451        0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_a: 0.445417 0.332902        0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_d: 0.445417 0.332902        0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] T: 4
+[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Added new traj 7
+[ctrl::Trajectory3D::IsFeasible] h: 0.395511 0.051587        0. v0: 0 0 0. T: 4
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] v_cruise: 0.104319 0.012981        0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_a: 0.208638 0.025962        0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_d: 0.208638 0.025962        0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] T: 4
+[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Added new traj 8
+[ctrl::Trajectory3D::IsFeasible] h: -0.094946  0.142912         0. v0: 0 0 0. T: 4
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] v_cruise: -0.0240251  0.0363901          0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_a: 0.0480502 0.0727802         0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_d: 0.0480502 0.0727802         0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] T: 4
+[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Added new traj 9
+[ctrl::Trajectory3D::IsFeasible] h: 0.294507 0.233738        0. v0: 0 0 0. T: 4
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] v_cruise: 0.0765574 0.0602495         0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_a: 0.153115 0.120499        0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] t_d: 0.153115 0.120499        0
+[ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D] T: 4
+[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Added all new trajs
+
+[ctrl::TrajectoryManager::MergeNewTrajectoriesFirstCall]
+[rob::RobotManager::SetPath] Finish creating trajectories. t_finish_s: 36.0002
+
+[KickDemo] ✅ Set trajectory path with 10 waypoints
+[ctrl::TrapezoidalTrajectory3D::Print] Trajectory Info. Pose:   -2 -1.5    0 ->   -2 -1.5    0. Time: 0.000154125 -> 4.00015. v0: 0 0 0
+
+[KickDemo] Following trajectory... Robot at (0, 0), Distance to ball: 1.80278m
+[rob::RobotManager::SenseLogic] Pose (est): 0 0 0
+[KickDemo] Following trajectory... Robot at (0, 0), Distance to ball: 1.80278m
+[KickDemo] Ball: pos(1.5, 1), speed=0 m/s
+[rob::RobotManager::SenseLogic] Pose (est): 0 0 0
+[KickDemo] Following trajectory... Robot at (0, 0), Distance to ball: 1.80278m
+[rob::RobotManager::SenseLogic] Pose (est): 0 0 0
+[ctrl::TrapezoidalTrajectory3D::Print] Trajectory Info. Pose:   -2 -1.5    0 -> -1.81173 -1.43251        0. Time: 4.00015 -> 8.00015. v0: 0 0 0
+
+[KickDemo] Following trajectory... Robot at (2.40431e-06, 2.40431e-06), Distance to ball: 1.80277m
+[KickDemo] Ball: pos(1.5, 1), speed=0 m/s

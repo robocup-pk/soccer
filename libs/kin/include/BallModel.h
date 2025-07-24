@@ -2,13 +2,15 @@
 #define BALL_MODEL_H
 
 #include <Eigen/Dense>
+#include "SoccerObject.h"
 
 namespace kin {
 
-class BallModel {
+class BallModel : public state::SoccerObject {
  public:
-  // Constructor
-  BallModel(double radius = 0.0215, double mass = 0.43);
+  // Constructor - inherits mass and radius from SoccerObject
+  BallModel();
+  BallModel(const Eigen::Vector3d& position_);
   
   // Physics update
   void UpdatePhysics(Eigen::Vector3d& position, Eigen::Vector3d& velocity, 
@@ -35,9 +37,9 @@ class BallModel {
                                   const Eigen::Vector3d& current_vel, 
                                   double prediction_time) const;
   
-  // Ball properties
-  double GetRadius() const { return radius_; }
-  double GetMass() const { return mass_; }
+  // Ball properties - inherited from SoccerObject
+  double GetRadius() const { return radius_m; }
+  double GetMass() const { return mass_kg; }
   
   // Physics constants
   void SetFriction(double friction) { friction_coefficient_ = friction; }
@@ -45,9 +47,7 @@ class BallModel {
   void SetRestitution(double restitution) { restitution_ = restitution; }
 
  private:
-  // Physical properties
-  double radius_;                    // Ball radius (m)
-  double mass_;                      // Ball mass (kg)
+  // Physical properties (radius_m and mass_kg inherited from SoccerObject)
   Eigen::Vector3d spin_;             // Current spin vector (rad/s)
   
   // Physics constants
