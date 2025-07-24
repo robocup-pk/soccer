@@ -16,8 +16,7 @@ rob::RobotManager::RobotManager() {
   start_time_idle_s = util::GetCurrentTime();
   velocity_fBody << 0, 0, 0;
   home_position = cfg::RobotHomePosition::CENTER_FORWARD;
-  pose_home_fWorld = cfg::RobotHomeCoordinates.at(home_position);
-  initialized_pose_home = true;
+  InitializeHome(cfg::RobotHomeCoordinates.at(home_position));
   start_from_home = false;
   finished_motion = true;
   num_sensor_readings_failed = 0;
@@ -86,9 +85,9 @@ void rob::RobotManager::ControlLogic() {
       // finished_motion = true;
       break;
     case RobotState::GOING_HOME:
-      std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
-      // std::tie(finished_motion, velocity_fBody_) =
-      //     motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
+      // std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
+      std::tie(finished_motion, velocity_fBody_) =
+          motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
       break;
     case RobotState::AUTONOMOUS_DRIVING:
       std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
@@ -132,8 +131,8 @@ void rob::RobotManager::SenseLogic() {
   if (state_estimator.initialized_pose && initialized_pose_home && !start_from_home) {
     if ((pose_fWorld - pose_home_fWorld).norm() > 0.05) {
       std::cout
-          << "[rob::RobotManager::SenseLogic] Robot is not at home, Going to Home from home. "
-          << std::endl;
+          << "[rob::RobotManager::SenseLogic] Robot is not at home, Going to Home from Pose: "
+          << pose_fWorld.transpose() << std::endl;
       robot_state = RobotState::GOING_HOME;
     } else {
       start_from_home = true;
