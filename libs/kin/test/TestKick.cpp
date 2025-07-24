@@ -7,17 +7,17 @@
 class KickTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        // Create robot at origin facing positive X direction
+        // Create robot with its center at (0,0,0) facing positive X direction
         robot = state::SoccerObject("robot0", 
-                                   Eigen::Vector3d(0.0, 0.0, 0.0),  // position (x, y, angle)
+                                   Eigen::Vector3d(-0.09, -0.09, 0.0),  // position (x, y, angle) so center is at (0,0)
                                    Eigen::Vector2d(0.18, 0.18),     // size (18cm x 18cm)
                                    Eigen::Vector3d::Zero(),          // velocity
                                    Eigen::Vector3d::Zero(),          // acceleration
                                    2.0f);                            // mass (2kg)
         robot.radius_m = 0.09f; // 9cm radius
         
-        // Create ball in kicking position (close to robot front)
-        ball = state::Ball(Eigen::Vector3d(0.12, 0.0, 0.0)); // 12cm in front of robot
+        // Create ball in kicking position (close to robot front), so its center is at (0.12, 0, 0)
+        ball = state::Ball(Eigen::Vector3d(0.12 - 0.0215, 0.0 - 0.0215, 0.0)); // Adjust for ball center
     }
     
     state::SoccerObject robot;
@@ -44,7 +44,8 @@ TEST_F(KickTest, BasicKickWhenFacingBall) {
 // Test 2: Kick fails when ball is too far away
 TEST_F(KickTest, KickFailsWhenBallTooFar) {
     // Place ball beyond maximum kick distance (25cm for SSL)
-    ball.position = Eigen::Vector3d(0.3, 0.0, 0.0); // 30cm away
+    // Ball center at (0.3, 0, 0)
+    ball.position = Eigen::Vector3d(0.3 - ball.radius_m, -ball.radius_m, 0.0); 
     
     bool success = kin::Kick(robot, ball);
     
@@ -57,7 +58,8 @@ TEST_F(KickTest, KickFailsWhenBallTooFar) {
 // Test 3: Kick fails when robot is not facing ball
 TEST_F(KickTest, KickFailsWhenNotFacingBall) {
     // Robot facing +X, but ball is to the side (+Y)
-    ball.position = Eigen::Vector3d(0.0, 0.12, 0.0); // 12cm to the right
+    // Ball center at (0, 0.12, 0)
+    ball.position = Eigen::Vector3d(-ball.radius_m, 0.12 - ball.radius_m, 0.0); 
     
     bool success = kin::Kick(robot, ball, 3.0, false); // Don't force kick
     
@@ -70,7 +72,8 @@ TEST_F(KickTest, KickFailsWhenNotFacingBall) {
 // Test 4: Force kick bypasses orientation check
 TEST_F(KickTest, ForceKickBypassesOrientationCheck) {
     // Robot facing +X, but ball is to the side (+Y)
-    ball.position = Eigen::Vector3d(0.0, 0.12, 0.0); // 12cm to the right
+    // Ball center at (0, 0.12, 0)
+    ball.position = Eigen::Vector3d(-ball.radius_m, 0.12 - ball.radius_m, 0.0); 
     
     bool success = kin::Kick(robot, ball, 3.0, true); // Force kick = true
     
@@ -83,17 +86,17 @@ TEST_F(KickTest, ForceKickBypassesOrientationCheck) {
 // Test 5: Different kick power levels
 TEST_F(KickTest, DifferentKickPowerLevels) {
     // Test with low power
-    state::Ball ball1(Eigen::Vector3d(0.12, 0.0, 0.0));
+    state::Ball ball1(Eigen::Vector3d(0.12 - ball.radius_m, -ball.radius_m, 0.0));
     bool success_low = kin::Kick(robot, ball1, 1.0);
     double velocity_low = ball1.velocity.norm();
     
     // Test with medium power
-    state::Ball ball2(Eigen::Vector3d(0.12, 0.0, 0.0));
+    state::Ball ball2(Eigen::Vector3d(0.12 - ball.radius_m, -ball.radius_m, 0.0));
     bool success_medium = kin::Kick(robot, ball2, 3.0);
     double velocity_medium = ball2.velocity.norm();
     
     // Test with high power
-    state::Ball ball3(Eigen::Vector3d(0.12, 0.0, 0.0));
+    state::Ball ball3(Eigen::Vector3d(0.12 - ball.radius_m, -ball.radius_m, 0.0));
     bool success_high = kin::Kick(robot, ball3, 5.0);
     double velocity_high = ball3.velocity.norm();
     
@@ -131,22 +134,20 @@ TEST_F(KickTest, KickDirectionBasedOnRobotOrientation) {
     
     // Robot facing +X (0 radians)
     robot.position.z() = 0.0;
-    ball.position = Eigen::Vector3d(0.12, 0.0, 0.0);
+    ball.position = Eigen::Vector3d(0.12 - ball.radius_m, -ball.radius_m, 0.0);
     state::Ball ball_x = ball;
     bool success_x = kin::Kick(robot, ball_x, 3.0);
     
     // Robot facing +Y (π/2 radians)
     robot.position.z() = M_PI / 2.0;
-    ball.position = Eigen::Vector3d(0.0, 0.12, 0.0);
+    ball.position = Eigen::Vector3d(-ball.radius_m, 0.12 - ball.radius_m, 0.0);
     state::Ball ball_y = ball;
-    ball_y.position = Eigen::Vector3d(0.0, 0.12, 0.0);
     bool success_y = kin::Kick(robot, ball_y, 3.0);
     
     // Robot facing -X (π radians)
     robot.position.z() = M_PI;
-    ball.position = Eigen::Vector3d(-0.12, 0.0, 0.0);
+    ball.position = Eigen::Vector3d(-0.12 - ball.radius_m, -ball.radius_m, 0.0);
     state::Ball ball_neg_x = ball;
-    ball_neg_x.position = Eigen::Vector3d(-0.12, 0.0, 0.0);
     bool success_neg_x = kin::Kick(robot, ball_neg_x, 3.0);
     
     EXPECT_TRUE(success_x) << "Kick in +X direction should succeed";
@@ -172,7 +173,7 @@ TEST_F(KickTest, SSLDefaultPowerValues) {
     
     // Test with explicit default power
     state::Ball ball_explicit = ball;
-    ball_explicit.position = Eigen::Vector3d(0.12, 0.0, 0.0);
+    ball_explicit.position = Eigen::Vector3d(0.12 - ball.radius_m, -ball.radius_m, 0.0);
     bool success_explicit = kin::Kick(robot, ball_explicit, kin::ssl::DEFAULT_KICK_POWER);
     
     EXPECT_TRUE(success_default) << "Default kick should succeed";
@@ -190,15 +191,15 @@ TEST_F(KickTest, SSLDefaultPowerValues) {
 // Test 9: Ball at edge of kick range
 TEST_F(KickTest, BallAtEdgeOfKickRange) {
     // Place ball exactly at maximum kick distance
-    double max_kick_distance = kin::ssl::MAX_KICK_DISTANCE; // 25cm
-    ball.position = Eigen::Vector3d(max_kick_distance, 0.0, 0.0);
+    double max_kick_distance_from_center = kin::ssl::MAX_KICK_DISTANCE; 
+    ball.position = Eigen::Vector3d(max_kick_distance_from_center - ball.radius_m, -ball.radius_m, 0.0);
     
     bool success_at_edge = kin::Kick(robot, ball, 3.0);
     EXPECT_TRUE(success_at_edge) << "Kick should succeed when ball is exactly at max distance";
     
     // Place ball just beyond maximum kick distance
     state::Ball ball_beyond = ball;
-    ball_beyond.position = Eigen::Vector3d(max_kick_distance + 0.001, 0.0, 0.0);
+    ball_beyond.position = Eigen::Vector3d(max_kick_distance_from_center - ball.radius_m + 0.001, -ball.radius_m, 0.0);
     
     bool success_beyond = kin::Kick(robot, ball_beyond, 3.0);
     EXPECT_FALSE(success_beyond) << "Kick should fail when ball is just beyond max distance";
@@ -213,7 +214,7 @@ TEST_F(KickTest, MultipleKicks) {
     Eigen::Vector3d velocity_after_first = ball.velocity;
     
     // Reset ball position but keep velocity
-    ball.position = Eigen::Vector3d(0.12, 0.0, 0.0);
+    ball.position = Eigen::Vector3d(0.12 - ball.radius_m, -ball.radius_m, 0.0);
     
     // Second immediate kick might have different behavior
     // (in real implementation, there might be a cooldown)
@@ -226,20 +227,18 @@ TEST_F(KickTest, MultipleKicks) {
 // Test 11: Kick with different ball positions relative to robot
 TEST_F(KickTest, KickWithDifferentBallPositions) {
     // Ball directly in front
-    ball.position = Eigen::Vector3d(0.12, 0.0, 0.0);
+    ball.position = Eigen::Vector3d(0.12 - ball.radius_m, -ball.radius_m, 0.0);
     state::Ball ball_front = ball;
     bool success_front = kin::Kick(robot, ball_front, 3.0);
     
     // Ball slightly to the right but still in front sector
-    ball.position = Eigen::Vector3d(0.10, 0.05, 0.0);
+    ball.position = Eigen::Vector3d(0.10 - ball.radius_m, 0.02 - ball.radius_m, 0.0); // Adjusted Y position to be clearly in front sector
     state::Ball ball_right = ball;
-    ball_right.position = Eigen::Vector3d(0.10, 0.05, 0.0);
     bool success_right = kin::Kick(robot, ball_right, 3.0);
     
     // Ball slightly to the left but still in front sector  
-    ball.position = Eigen::Vector3d(0.10, -0.05, 0.0);
+    ball.position = Eigen::Vector3d(0.10 - ball.radius_m, -0.02 - ball.radius_m, 0.0); // Adjusted Y position to be clearly in front sector
     state::Ball ball_left = ball;
-    ball_left.position = Eigen::Vector3d(0.10, -0.05, 0.0);
     bool success_left = kin::Kick(robot, ball_left, 3.0);
     
     EXPECT_TRUE(success_front) << "Kick should succeed for ball directly in front";
@@ -260,7 +259,7 @@ TEST_F(KickTest, PassPowerVsKickPower) {
     
     // Test with kick power (stronger kick)
     state::Ball ball_kick = ball;
-    ball_kick.position = Eigen::Vector3d(0.12, 0.0, 0.0);
+    ball_kick.position = Eigen::Vector3d(0.12 - ball.radius_m, -ball.radius_m, 0.0);
     bool success_kick = kin::Kick(robot, ball_kick, kin::ssl::DEFAULT_KICK_POWER);
     
     EXPECT_TRUE(success_pass) << "Pass should succeed";
