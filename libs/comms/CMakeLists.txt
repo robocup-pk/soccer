@@ -71,13 +71,13 @@ target_include_directories(comms_lib PUBLIC
 
 # Link libraries
 target_link_libraries(comms_lib PUBLIC
-  ${Protobuf_LIBRARIES}
-  Threads::Threads
   absl::log
   absl::log_internal_check_op
   absl::strings
   absl::base
+  ${Protobuf_LIBRARIES}  
 )
+
 
 # 5) Examples (if any)
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/CMakeLists.txt")
