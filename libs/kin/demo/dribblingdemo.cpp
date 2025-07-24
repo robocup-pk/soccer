@@ -136,7 +136,7 @@ int main(int argc, char* argv[]) {
                     break;
                 }
                 
-                std::cout << "[DribblingDemo] ✅ Found RRT path with " << rrt_path.size() << " waypoints" << std::endl;
+                std::cout << "[DribblingDemo] Found RRT path with " << rrt_path.size() << " waypoints" << std::endl;
                 
                 // Convert RRT path to Eigen::Vector3d trajectory (convert back from mm to meters)
                 trajectory_path.clear();
@@ -162,7 +162,7 @@ int main(int argc, char* argv[]) {
                 // Use RobotManager's SetPath with TrapezoidalTrajectoryVi3D (handled automatically)
                 robot_manager.SetPath(trajectory_path, current_time);
                 
-                std::cout << "[DribblingDemo] ✅ Set trajectory path with " << trajectory_path.size() << " waypoints" << std::endl;
+                std::cout << "[DribblingDemo] Set trajectory path with " << trajectory_path.size() << " waypoints" << std::endl;
                 demo_state = MOVING_TO_BALL;
                 break;
             }
@@ -184,7 +184,7 @@ int main(int argc, char* argv[]) {
                 
                 // Check if robot reached ball area
                 if (distance_to_ball <= approach_distance) {
-                    std::cout << "[DribblingDemo] ✅ Robot reached ball area! Distance: " << distance_to_ball << "m" << std::endl;
+                    std::cout << "[DribblingDemo] Robot reached ball area! Distance: " << distance_to_ball << "m" << std::endl;
                     demo_state = ORIENTING_TO_BALL;
                 }
                 break;
@@ -210,7 +210,7 @@ int main(int argc, char* argv[]) {
                 for (auto& obj : soccer_objects) {
                     if (obj.name == "robot0") {
                         obj.position.z() = required_angle;  // Set orientation directly
-                        std::cout << "[DribblingDemo] ✅ Robot orientation set to: " << required_angle << " rad" << std::endl;
+                        std::cout << "[DribblingDemo] Robot orientation set to: " << required_angle << " rad" << std::endl;
                         break;
                     }
                 }
@@ -219,7 +219,7 @@ int main(int argc, char* argv[]) {
                 Eigen::Vector3d new_pose(robot_pos.x(), robot_pos.y(), required_angle);
                 robot_manager.InitializePose(new_pose);
                 
-                std::cout << "[DribblingDemo] ✅ Robot is now facing the ball!" << std::endl;
+                std::cout << "[DribblingDemo] Robot is now facing the ball!" << std::endl;
                 demo_state = STARTING_DRIBBLE;
                 break;
             }
@@ -260,12 +260,12 @@ int main(int argc, char* argv[]) {
                 rrt_path = algos::FindSinglePath(start_wp, goal_wp, rrt_params);
                 
                 if (rrt_path.empty()) {
-                    std::cout << "[DribblingDemo] ❌ Failed to find dribbling path to target!" << std::endl;
+                    std::cout << "[DribblingDemo] Failed to find dribbling path to target!" << std::endl;
                     demo_state = COMPLETED;
                     break;
                 }
                 
-                std::cout << "[DribblingDemo] ✅ Found RRT dribbling path with " << rrt_path.size() << " waypoints" << std::endl;
+                std::cout << "[DribblingDemo] Found RRT dribbling path with " << rrt_path.size() << " waypoints" << std::endl;
                 
                 // Convert RRT path to Eigen::Vector3d trajectory (convert back from mm to meters)
                 trajectory_path.clear();
@@ -277,7 +277,7 @@ int main(int argc, char* argv[]) {
                 // Use RobotManager's SetPath for dribbling trajectory
                 robot_manager.SetPath(trajectory_path, current_time);
                 
-                std::cout << "[DribblingDemo] ✅ Set dribbling trajectory with " << trajectory_path.size() << " waypoints" << std::endl;
+                std::cout << "[DribblingDemo] Set dribbling trajectory with " << trajectory_path.size() << " waypoints" << std::endl;
                 demo_state = DRIBBLING_TO_TARGET;
                 break;
             }
@@ -299,7 +299,7 @@ int main(int argc, char* argv[]) {
                 
                 // Check if robot reached target area
                 if (distance_to_target <= 0.5) { // 50cm tolerance to target
-                    std::cout << "[DribblingDemo] ✅ Robot reached target area while dribbling! Distance: " << distance_to_target << "m" << std::endl;
+                    std::cout << "[DribblingDemo] Robot reached target area while dribbling! Distance: " << distance_to_target << "m" << std::endl;
                     
                     // Stop dribbling
                     robot_manager.SetRobotAction(rob::RobotAction::MOVE);
@@ -313,7 +313,7 @@ int main(int argc, char* argv[]) {
             case COMPLETED: {
                 static bool completion_printed = false;
                 if (!completion_printed) {
-                    std::cout << "\n[DribblingDemo] ✅ Demo completed successfully!" << std::endl;
+                    std::cout << "\n[DribblingDemo] Demo completed successfully!" << std::endl;
                     std::cout << "[DribblingDemo] Robot successfully dribbled ball from center to target!" << std::endl;
                     std::cout << "[DribblingDemo] Press ESC to exit" << std::endl;
                     completion_printed = true;
