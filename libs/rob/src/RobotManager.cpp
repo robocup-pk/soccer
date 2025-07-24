@@ -111,14 +111,14 @@ void rob::RobotManager::SenseLogic() {
   static int num = 0;
   ++num;
   if (num % 200 == 0)
-    std::cout << "[rob::RobotManager::SenseLogic] Pose (est): " << pose_fWorld.transpose()
-              << std::endl;
+    // std::cout << "[rob::RobotManager::SenseLogic] Pose (est): " << pose_fWorld.transpose()
+    //           << std::endl;
 
-  // Set home pose
-  if (!initialized_pose_home && state_estimator.initialized_pose) {
-    pose_home_fWorld = state_estimator.GetPoseInit();
-    initialized_pose_home = true;
-  }
+    // Set home pose
+    if (!initialized_pose_home && state_estimator.initialized_pose) {
+      pose_home_fWorld = state_estimator.GetPoseInit();
+      initialized_pose_home = true;
+    }
 }
 
 void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
@@ -144,6 +144,12 @@ void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path_fWorld, double
     std::cout << "[rob::RobotManager::SetPath] Give path is invalid. Failed to create "
                  "trajectories\nPath: ";
   }
+}
+
+void rob::RobotManager::GoToStartPosition(Eigen::Vector3d& p) {
+  InitializeHome(p);
+  InitializePose(p);
+  state_estimator.SetPose(p);
 }
 
 void rob::RobotManager::SetBodyVelocity(Eigen::Vector3d& velocity_fBody) {
@@ -252,9 +258,9 @@ void rob::RobotManager::InitializePose(Eigen::Vector3d& pose_fWorld) {
 
 rob::RobotAction rob::RobotManager::GetRobotAction() { return robot_action; }
 
-void rob::RobotManager::SetRobotAction(RobotAction action) {
-  robot_action = action;
-}
+void rob::RobotManager::SetRobotAction(RobotAction action) { robot_action = action; }
+
+Eigen::Vector3d rob::RobotManager::GetPos() { return pose_fWorld; }
 
 rob::RobotManager::~RobotManager() {
   rob_manager_running.store(false);

@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
 
   // Simulation - OpenGL
   vis::GLSimulation gl_simulation;
-  gl_simulation.InitGameObjects(soccer_objects);
+  gl_simulation.InitGameObjectsTwoTeamsUnit(soccer_objects);
   GLFWwindow* gl_window = gl_simulation.GetRawGLFW();
   glfwSetMouseButtonCallback(gl_window, vis::MouseButtonCallback);
 
@@ -29,14 +29,22 @@ int main(int argc, char* argv[]) {
   std::vector<rob::RobotManager> robot_managers(cfg::SystemConfig::num_robots);
 
   // Initializing Robot Managers Positions using SoccerObjects to avoid conflicts
-  for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
-    robot_managers[i].InitializePose(soccer_objects[i].position);
+  std::vector<Eigen::Vector3d> team_one_config = cfg::SystemConfig::team_one_start_formation;
+  for (int i = 0; i < cfg::SystemConfig::num_robots / 2; ++i) {
+    // robot_managers[i].InitializePose(soccer_objects[i].position);
+    robot_managers[i].GoToStartPosition(team_one_config[i]);
+  }
+
+  std::vector<Eigen::Vector3d> team_two_config = cfg::SystemConfig::team_two_start_formation;
+  for (int i = 0; i < cfg::SystemConfig::num_robots / 2; ++i) {
+    // robot_managers[i].InitializePose(soccer_objects[i].position);
+    robot_managers[i + cfg::SystemConfig::num_robots / 2].GoToStartPosition(team_two_config[i]);
   }
 
   while (1) {
     float dt = util::CalculateDt();
 
-    vis::ProcessInput(gl_window, robot_managers);
+    vis::ProcessInputTwoTeams(gl_window, robot_managers);
 
     // Update SoccerObjects using robot managers
     for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
