@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
                 rrt_path = algos::FindSinglePath(start_wp, goal_wp, rrt_params);
                 
                 if (rrt_path.empty()) {
-                    std::cout << "[DribblingDemo] ❌ Failed to find path to ball!" << std::endl;
+                    std::cout << "[DribblingDemo] Failed to find path to ball!" << std::endl;
                     demo_state = COMPLETED;
                     break;
                 }
