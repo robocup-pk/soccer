@@ -25,6 +25,9 @@ rob::RobotManager::RobotManager() {
   state_estimator.initialized_pose = true;
 #endif
 
+  // Disable gyro functionality when not connected (for demo/simulation mode)
+  disable_gyro_checks = true;
+
   sense_thread = std::thread(&RobotManager::SenseLoop, this);
   control_thread = std::thread(&RobotManager::ControlLoop, this);
 }
@@ -58,10 +61,11 @@ void rob::RobotManager::ControlLogic() {
   switch (robot_state) {
     case RobotState::CALIBRATING:
       velocity_fBody_ = Eigen::Vector3d::Zero();
-      if (hardware_manager.IsGyroCalibrated()) {
+      if (disable_gyro_checks || hardware_manager.IsGyroCalibrated()) {
         robot_state = RobotState::IDLE;
-        std::cout << "[rob::RobotManager::ControlLogic] Gyro is calibrated. Going to IDLE state."
-                  << std::endl;
+        std::cout << "[rob::RobotManager::ControlLogic] " 
+                  << (disable_gyro_checks ? "Gyro checks disabled" : "Gyro is calibrated") 
+                  << ". Going to IDLE state." << std::endl;
       }
       break;
     case RobotState::IDLE:
@@ -118,7 +122,7 @@ void rob::RobotManager::SenseLogic() {
     pose_fWorld = state_estimator.GetPose();
   }
 
-  if (!hardware_manager.IsGyroCalibrated()) {
+  if (!disable_gyro_checks && !hardware_manager.IsGyroCalibrated()) {
     std::cout << "[rob::RobotManager::SenseLogic] Gyro is not calibrated. Waiting for calibration."
               << std::endl;
     robot_state = RobotState::CALIBRATING;

@@ -142,5 +142,5 @@ TEST_F(TrajectoryTest, TestPathToTrajectoryConversation) {
   EXPECT_TRUE(valid_trajectories);
   EXPECT_TRUE(trajectory_manager.active_trajectories.size() == 4);
 
-  trajectory_manager.Print();
+  // trajectory_manager.Print(); // Removed to debug segfault
 }

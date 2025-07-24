@@ -126,6 +126,9 @@ private:
 
   // Error cases
   int num_sensor_readings_failed;
+
+  // Flag to disable gyro functionality when not connected (for demo/simulation mode)
+  bool disable_gyro_checks;
 };
 }  // namespace rob
 
