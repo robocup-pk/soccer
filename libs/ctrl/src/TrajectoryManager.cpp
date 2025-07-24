@@ -19,7 +19,14 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
     Eigen::Vector3d pose_end(path_fWorld[path_index]);
     Eigen::Vector3d h(pose_end - pose_start);
     Eigen::Vector3d v0(0, 0, 0);
-    double T = 4;
+
+    // Calculate a more realistic duration for the trajectory
+    double linear_dist = sqrt(h.x() * h.x() + h.y() * h.y());
+    double angular_dist = std::abs(h.z());
+    double linear_time = linear_dist / cfg::SystemConfig::max_velocity_fBody_mps[0];
+    double angular_time = angular_dist / cfg::SystemConfig::max_velocity_fBody_mps[2];
+    double T = std::max(linear_time, angular_time) * 2.0; // Add a buffer
+
     if (path_index == 1) v0 = FindV0AtT(t_start_s);
 
     //std::max({h[0], h[1], h[2]}) * cfg::SystemConfig::avg_velocity_fBody_mps;

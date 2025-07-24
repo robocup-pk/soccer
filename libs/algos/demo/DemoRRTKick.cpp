@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
             rrt_path = algos::FindSinglePath(start_wp, goal_wp);
             
             if (!rrt_path.empty()) {
-                std::cout << "[Demo] ✅ RRT algorithm found path with " << rrt_path.size() << " waypoints!" << std::endl;
+                std::cout << "[Demo] RRT algorithm found path with " << rrt_path.size() << " waypoints!" << std::endl;
                 
                 // Convert RRT path to trajectory waypoints with theta values
                 std::vector<Eigen::Vector3d> trajectory_path;
@@ -229,10 +229,10 @@ int main(int argc, char* argv[]) {
                         bool kick_successful = kin::Kick(*robot, *ball, kick_power, false);
                         
                         if (kick_successful) {
-                            std::cout << "[Demo] ✅ SSL kick successful! Ball kicked with " << kick_power << " m/s power!" << std::endl;
+                            std::cout << "[Demo] SSL kick successful! Ball kicked with " << kick_power << " m/s power!" << std::endl;
                             ball_kicked = true;
                         } else {
-                            std::cout << "[Demo] ❌ SSL kick failed - checking SSL constraints..." << std::endl;
+                            std::cout << "[Demo] SSL kick failed - checking SSL constraints..." << std::endl;
                             // The SSL Kick function will output the specific reason for failure
                         }
                     } else {
@@ -292,9 +292,9 @@ int main(int argc, char* argv[]) {
             if (current_time - kick_completion_time > 3.0) {
                 std::cout << "[Demo] RRT Kick Demo completed successfully!" << std::endl;
                 std::cout << "Summary:" << std::endl;
-                std::cout << "✅ RRT planned path from (-2, -2) to ball at (1, 1)" << std::endl;
-                std::cout << "✅ Robot followed RRT path successfully" << std::endl;
-                std::cout << "✅ SSL kick applied when robot reached ball" << std::endl;
+                std::cout << "RRT planned path from (-2, -2) to ball at (1, 1)" << std::endl;
+                std::cout << "Robot followed RRT path successfully" << std::endl;
+                std::cout << "SSL kick applied when robot reached ball" << std::endl;
                 break;
             }
         }
