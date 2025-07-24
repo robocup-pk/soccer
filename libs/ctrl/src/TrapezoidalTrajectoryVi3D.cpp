@@ -160,6 +160,10 @@ Eigen::Vector3d ctrl::TrapezoidalTrajectoryVi3D::PositionAtT(double t_sec) {
 
   return position_fworld;
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 0256aa88 (Temp)
 
 void ctrl::TrapezoidalTrajectoryVi3D::Print() {
   std::cout << "[ctrl::TrapezoidalTrajectory3D::Print] Trajectory Info. ";

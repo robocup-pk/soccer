@@ -15,7 +15,11 @@ class Trajectory3D {
 
   virtual Eigen::Vector3d VelocityAtT(double t) = 0;
 
+<<<<<<< HEAD
   virtual Eigen::Vector3d PositionAtT(double t) = 0;
+=======
+    virtual Eigen::Vector3d PositionAtT(double t) = 0;
+>>>>>>> 0256aa88 (Temp)
 
   // Helpers
   virtual void Print() = 0;
