@@ -27,7 +27,7 @@ void hw::SensorDriver::SetAngularVelocityRadps(double w_radps) {
 
 double hw::SensorDriver::GetAngularVelocityRadps() {
   if (sensor_type == SensorType::MODEL) {
-    return 0.0f;
+    return gyro.GetAngularVelocityRadps();
   }
   return (gyro_mdeg_ps / 1000.0) * M_PI / 180.0;
 }
@@ -184,7 +184,13 @@ void hw::SensorDriver::CalibrateGyro() {
   }
 }
 
-bool hw::SensorDriver::IsGyroCalibrated() { return gyro_calibrated; }
+bool hw::SensorDriver::IsGyroCalibrated() {
+  if (sensor_type == SensorType::MODEL) {
+    return true;  // Always calibrated in MODEL mode
+  }
+
+  return gyro_calibrated;
+}
 
 void hw::SensorDriver::SetGyroOnCalibration() {
   if (sensor_type == SensorType::MODEL) {
