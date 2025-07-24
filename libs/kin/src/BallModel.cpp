@@ -1,18 +1,27 @@
 #include "BallModel.h"
+#include "SystemConfig.h"
 #include <cmath>
 #include <algorithm>
 
 namespace kin {
 
-BallModel::BallModel(double radius, double mass) 
-    : radius_(radius), 
-      mass_(mass),
+BallModel::BallModel() 
+    : state::SoccerObject("ball", Eigen::Vector3d::Zero(), 
+                         Eigen::Vector2d(cfg::SystemConfig::ball_radius_m * 2, 
+                                        cfg::SystemConfig::ball_radius_m * 2),
+                         Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), 0.046f),
       spin_(Eigen::Vector3d::Zero()),
       friction_coefficient_(3.5),    // High friction for SSL carpet/turf - ball stops quickly
       air_resistance_(0.1),          // Minimal air resistance for SSL (small field)
       restitution_(0.6),             // Lower restitution for SSL ball
       magnus_coefficient_(0.0001)    // Minimal spin effect for SSL
 {
+    radius_m = cfg::SystemConfig::ball_radius_m;  // SSL standard: 21.5mm radius
+    mass_kg = 0.046f;  // SSL standard: 46g mass
+}
+
+BallModel::BallModel(const Eigen::Vector3d& position_) : BallModel() {
+    position = position_;
 }
 
 void BallModel::UpdatePhysics(Eigen::Vector3d& position, Eigen::Vector3d& velocity, 
@@ -31,8 +40,8 @@ void BallModel::UpdatePhysics(Eigen::Vector3d& position, Eigen::Vector3d& veloci
     // Apply Magnus force (minimal for SSL)
     if (spin_.norm() > 0.1) {  // Only apply if significant spin
         Eigen::Vector2d magnus_force = CalculateMagnusForce(velocity, spin_);
-        acceleration[0] += magnus_force[0] / mass_;
-        acceleration[1] += magnus_force[1] / mass_;
+        acceleration[0] += magnus_force[0] / mass_kg;
+        acceleration[1] += magnus_force[1] / mass_kg;
     }
     
     // Integrate physics using Euler method (2D only)
@@ -67,12 +76,12 @@ void BallModel::ApplyKick(Eigen::Vector3d& velocity, const Eigen::Vector2d& kick
 }
 
 void BallModel::ApplyDribbleForce(Eigen::Vector3d& velocity, const Eigen::Vector2d& dribble_force) {
-    // Apply gentle force for dribbling (much weaker than kicks)
-    velocity[0] += dribble_force[0] * 0.1;  // Scaled down for control
-    velocity[1] += dribble_force[1] * 0.1;
+    // Apply stronger force for dribbling to keep up with robot movement
+    velocity[0] += dribble_force[0] * 0.2;  // Increased scaling for better control
+    velocity[1] += dribble_force[1] * 0.2;
     
-    // Limit dribble velocity to realistic range
-    double max_dribble_speed = 2.0;  // m/s
+    // Limit dribble velocity to realistic range (increased for SSL)
+    double max_dribble_speed = 3.0;  // m/s - higher limit for SSL dribbling
     double current_speed = std::sqrt(velocity[0]*velocity[0] + velocity[1]*velocity[1]);
     if (current_speed > max_dribble_speed) {
         velocity[0] = (velocity[0] / current_speed) * max_dribble_speed;

@@ -18,6 +18,7 @@ target_link_libraries(demo_rrt_kick
     utils_lib
     Eigen3::Eigen
 )
+<<<<<<< HEAD
 add_executable(demo_opponent_dribbling DemoOpponentDribbling.cpp)
 target_link_libraries(demo_opponent_dribbling
     algos_lib
@@ -30,3 +31,6 @@ target_link_libraries(demo_opponent_dribbling
     Eigen3::Eigen
 )
 >>>>>>> 7f1fd930 (Add RRT opponent dribbling demo with new dribble util (#4))
+=======
+
+>>>>>>> 55c9ca2b (Kick, Dribble, Testing, Demos)

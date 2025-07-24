@@ -23,6 +23,8 @@ struct RRTParams {
   double step_size = 100.0;       // step size in mm
   double goal_bias = 0.5;         // probability of sampling the goal
   double goal_tolerance = 150.0;  // distance in mm to consider goal reached
+  bool use_rrt_star = false;      // enable RRT* for optimal paths
+  double near_radius = 200.0;     // radius for rewiring in RRT*
 };
 
 RRTParams DefaultRRTParams();
