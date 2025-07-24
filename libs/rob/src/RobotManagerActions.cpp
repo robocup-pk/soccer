@@ -110,8 +110,11 @@ void rob::RobotManager::ExecuteDribbleAction(std::vector<state::SoccerObject>& s
 
     if (!ball || !robot) return;
     
+    state::Ball* ball_ptr = dynamic_cast<state::Ball*>(ball);
+    if (!ball_ptr) return; // Ensure it's actually a Ball object
+
     // Check if ball is close enough to dribble
-    Eigen::Vector3d ball_center = ball->GetCenterPosition();
+    Eigen::Vector3d ball_center = ball_ptr->GetCenterPosition();
     Eigen::Vector3d robot_center = robot->GetCenterPosition();
     
     double distance = std::sqrt(std::pow(ball_center.x() - robot_center.x(), 2) + 
@@ -161,7 +164,7 @@ void rob::RobotManager::ExecuteDribbleAction(std::vector<state::SoccerObject>& s
         // Apply continuous dribbling force using the Dribble function
         // This applies forces to keep ball close without attaching (SSL legal)
         double dribble_power = 15.0;  // Higher power to make ball keep up with robot movement
-        bool success = kin::Dribble(*robot, *ball, dribble_power, true);  // continuous = true
+        bool success = kin::Dribble(*robot, *ball_ptr, dribble_power, true);  // continuous = true
         
         // Get robot velocity to help ball follow robot's movement
         Eigen::Vector3d robot_velocity = robot->velocity;

@@ -2,15 +2,11 @@
 #define DRIBBLE_H
 
 #include <Eigen/Dense>
-
-namespace state {
-class SoccerObject;
-}
+#include "SoccerObject.h"
 
 namespace kin {
 
-// Simple dribble function that applies force to keep ball close to robot
-bool Dribble(state::SoccerObject& robot, state::SoccerObject& ball, double power, bool continuous = false);
+bool Dribble(state::SoccerObject& robot, state::Ball& ball, double dribble_power, bool continuous);
 
 }  // namespace kin
 

@@ -1,6 +1,19 @@
 # Recursively search for header and source files in the include and src directories
-file(GLOB_RECURSE HEADERS "include/*.h")
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+set(HEADERS
+    include/BallModel.h
+    include/Dribble.h
+    include/Kick.h
+    include/Kinematics.h
+    include/RobotModel.h
+)
+
+set(SOURCES
+    src/BallModel.cpp
+    src/Dribble.cpp
+    src/Kick.cpp
+    src/Kinematics.cpp
+    src/RobotModel.cpp
+)
 
 # Create a library named kin_lib using the headers and sources found
 add_library(kin_lib ${HEADERS} ${SOURCES})

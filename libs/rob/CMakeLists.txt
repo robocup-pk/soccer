@@ -1,4 +1,8 @@
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+set(SOURCES
+    src/RobotManager.cpp
+    src/RobotManagerActions.cpp
+)
+
 file(GLOB_RECURSE HEADERS "include/*.h")
 
 add_library(rob_lib ${SOURCES} ${HEADERS})

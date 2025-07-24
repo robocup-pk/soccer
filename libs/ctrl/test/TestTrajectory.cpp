@@ -142,6 +142,7 @@ TEST_F(TrajectoryTest, TestPathToTrajectoryConversation) {
   EXPECT_TRUE(valid_trajectories);
   EXPECT_TRUE(trajectory_manager.active_trajectories.size() == 3);
 
+<<<<<<< HEAD
   trajectory_manager.Print();
 }
 TEST_F(TrajectoryTest, PositionAtStartTimeIsStartPose) {
@@ -269,4 +270,7 @@ TEST_F(TrajectoryTest, PositionInDecelerationPhase) {
 
   EXPECT_GT(pos.x(), 0.9);
   EXPECT_LT(pos.x(), 1.01);
+=======
+  // trajectory_manager.Print(); // Removed to debug segfault
+>>>>>>> 26be03f3 (Temp Mode for Now)
 }
