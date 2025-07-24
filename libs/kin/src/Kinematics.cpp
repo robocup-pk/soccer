@@ -43,6 +43,12 @@ void kin::CheckAndResolveCollisions(std::vector<state::SoccerObject>& soccer_obj
           if (IsBallInFrontOfRobot(obj2, obj1)) {
             if (obj1.is_attached) continue;  // Skip only this pair
 
+            // SSL RULE: Don't attach ball during dribbling - use physics-based control only
+            if (obj2.name.find("robot") != std::string::npos && obj1.is_dribbling) {
+              // Robot is dribbling - use physics forces, not attachment
+              continue;  // Skip attachment, let dribbling forces handle ball control
+            }
+            
             HandleBallSticking(obj2, obj1);
             continue;  // Continue to next pair
           }
@@ -52,6 +58,12 @@ void kin::CheckAndResolveCollisions(std::vector<state::SoccerObject>& soccer_obj
           if (IsBallInFrontOfRobot(obj1, obj2)) {
             if (obj2.is_attached) continue;  // Skip only this pair
 
+            // SSL RULE: Don't attach ball during dribbling - use physics-based control only  
+            if (obj1.name.find("robot") != std::string::npos && obj2.is_dribbling) {
+              // Robot is dribbling - use physics forces, not attachment
+              continue;  // Skip attachment, let dribbling forces handle ball control
+            }
+            
             HandleBallSticking(obj1, obj2);
             continue;  // Continue to next pair
           }
@@ -294,8 +306,13 @@ void kin::ApplyKickToBall(state::SoccerObject& ball, const Eigen::Vector2d& kick
     DetachBall(ball, 0.0f);  // Detach without extra velocity, kick will provide it
   }
   
-  // Apply kick using the ball model
-  global_ball_model.ApplyKick(ball.velocity, kick_direction, kick_power);
+  // Try to cast to BallModel first for proper physics
+  if (auto* ball_model = dynamic_cast<kin::BallModel*>(&ball)) {
+    ball_model->ApplyKick(ball.velocity, kick_direction, kick_power);
+  } else {
+    // Fallback: Use global ball model to apply kick to the object's velocity
+    global_ball_model.ApplyKick(ball.velocity, kick_direction, kick_power);
+  }
 }
 
 Eigen::Vector2d kin::PredictBallPosition(const state::SoccerObject& ball, double prediction_time) {

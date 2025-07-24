@@ -89,7 +89,9 @@ state::Waypoint algos::Extend(const state::Waypoint& from, const state::Waypoint
   }
 
   direction_wp.Normalize();
-  return from + direction_wp * step;
+  state::Waypoint new_wp = from + direction_wp * step;
+  new_wp.angle = from.angle;
+  return new_wp;
 }
 
 int algos::FindNearestWaypointIdx(const state::Waypoint& random_wp,

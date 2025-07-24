@@ -31,6 +31,7 @@ enum class RobotState {
 enum class RobotAction {
   KICK_BALL,
   PASS_BALL,
+  DRIBBLE_BALL,
   MOVE  // Normal Action State
 };
 
@@ -46,11 +47,13 @@ class RobotManager {
   // Actions
   void KickBall();
   void PassBall();
+  void DribbleBall();
   
   // Action execution methods (for integration with soccer objects)
   void ExecuteKickAction(std::vector<state::SoccerObject>& soccer_objects);
   void ExecutePassAction(std::vector<state::SoccerObject>& soccer_objects, 
                         const Eigen::Vector2d& target_position);
+  void ExecuteDribbleAction(std::vector<state::SoccerObject>& soccer_objects);
 
   // Used by the outside world
   void SetBodyVelocity(Eigen::Vector3d& velocity_fBody);
@@ -87,7 +90,11 @@ class RobotManager {
   est::StateEstimator state_estimator;
   hw::HardwareManager hardware_manager;
   ctrl::MotionController motion_controller;
+
+public:
   ctrl::TrajectoryManager trajectory_manager;
+
+private:
 
   std::thread control_thread;
   std::thread sense_thread;

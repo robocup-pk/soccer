@@ -2,19 +2,16 @@
 #define DRIBBLE_H
 
 #include <Eigen/Dense>
-#include "SoccerObject.h"
+
+namespace state {
+class SoccerObject;
+}
 
 namespace kin {
 
-namespace ssl {
-static constexpr double MAX_DRIBBLE_DISTANCE = 0.3; // 30 cm typical dribble range
-}
+// Simple dribble function that applies force to keep ball close to robot
+bool Dribble(state::SoccerObject& robot, state::SoccerObject& ball, double power, bool continuous = false);
 
-// Apply a dribble force to the ball without attaching it to the robot.
-// Returns true if the dribble was applied (ball in range and in front) or force_dribble is true.
-bool Dribble(state::SoccerObject& robot, state::SoccerObject& ball,
-             double dribble_power = 1.0, bool force_dribble = false);
+}  // namespace kin
 
-} // namespace kin
-
-#endif // DRIBBLE_H
+#endif  // DRIBBLE_H

@@ -11,3 +11,6 @@ target_link_libraries(kin_lib PUBLIC Eigen3::Eigen state_lib vis_lib)
 
 # Add test subdirectory
 add_subdirectory(test)
+
+# Add demo subdirectory
+add_subdirectory(demo)
