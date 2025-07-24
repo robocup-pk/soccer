@@ -23,9 +23,7 @@ const Eigen::Vector2d cfg::SystemConfig::robot_size_m = Eigen::Vector2d(0.204, 0
 const Eigen::Vector3d cfg::SystemConfig::init_robot_velocity_mps = Eigen::Vector3d(0, 0, 0);
 const Eigen::Vector3d cfg::SystemConfig::init_robot_acceleration_mpsps = Eigen::Vector3d(0, 0, 0);
 
-double pixels_per_mm = util::MmToPixels(1.0);
-double robot_width_mm = 512.0 / pixels_per_mm;
-double robot_width = robot_width_mm / 1000.0;
+double robot_width = 512.0 / cfg::Coordinates::px_per_m;
 
 // team 1 initial formation
 const std::vector<Eigen::Vector3d> cfg::SystemConfig::team_one_start_formation = []() {
