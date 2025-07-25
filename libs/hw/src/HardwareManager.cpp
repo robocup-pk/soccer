@@ -51,8 +51,7 @@ std::optional<double> hw::HardwareManager::NewGyroAngularVelocity() {
 #ifdef BUILD_ON_PI
   std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Data: " << w_radps << std::endl;
   if (sensor_driver->IsGyroCalibrated()) {
-    double angle = util::WrapAngle(util::ComputeAnglefromGyroData(w_radps)) * 180.0 /
-                   M_PI;  // Convert to degrees
+    double angle = util::WrapAngle(util::ComputeAnglefromGyroData(w_radps)) * 180.0 / M_PI;  // Convert to degrees
     std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Angle(Degree): " << angle
               << std::endl;
   }

@@ -86,8 +86,7 @@ void rob::RobotManager::ControlLogic() {
       break;
     case RobotState::GOING_HOME:
       // std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
-      std::tie(finished_motion, velocity_fBody_) =
-          motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
+      std::tie(finished_motion, velocity_fBody_) = motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
       break;
     case RobotState::AUTONOMOUS_DRIVING:
       std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
@@ -110,9 +109,10 @@ void rob::RobotManager::ControlLogic() {
 void rob::RobotManager::SenseLogic() {
   std::optional<Eigen::Vector4d> motors_rpms = hardware_manager.NewMotorsRpms();
   std::optional<double> w_radps = hardware_manager.NewGyroAngularVelocity();
+   
   std::optional<Eigen::Vector3d> pose_from_camera = hardware_manager.NewCameraData();
   if (motors_rpms.has_value()) state_estimator.NewMotorsData(motors_rpms.value());
-  if (w_radps.has_value()) state_estimator.NewGyroData(w_radps.value());
+  if (w_radps.has_value() && hardware_manager.IsGyroCalibrated()) state_estimator.NewGyroData(w_radps.value());
   if (pose_from_camera.has_value()) state_estimator.NewCameraData(pose_from_camera.value());
 
   {
@@ -121,7 +121,7 @@ void rob::RobotManager::SenseLogic() {
     pose_fWorld = state_estimator.GetPose();
   }
 
-  if (!hardware_manager.IsGyroCalibrated()) {
+   if (!hardware_manager.IsGyroCalibrated()) {
     std::cout << "[rob::RobotManager::SenseLogic] Gyro is not calibrated. Waiting for calibration."
               << std::endl;
     robot_state = RobotState::CALIBRATING;
