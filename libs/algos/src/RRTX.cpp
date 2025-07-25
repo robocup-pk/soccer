@@ -9,14 +9,15 @@
 
 namespace {
     std::mt19937 rng(std::random_device{}());
-    std::uniform_real_distribution<float> x_dist(-2.03784f, 2.03784f);
-    std::uniform_real_distribution<float> y_dist(-1.45f, 1.45f);
+    std::uniform_real_distribution<float> x_dist(-2037.84f, 2037.84f);
+    std::uniform_real_distribution<float> y_dist(-1450.0f, 1450.0f);
     std::uniform_real_distribution<double> prob_dist(0.0, 1.0);
 }
+
 namespace algos {
   
-  RRTX::RRTX(const state::Waypoint& start_, const state::Waypoint& goal_)
-    : start(start_), goal(goal_) {
+  RRTX::RRTX(const state::Waypoint& start_, const state::Waypoint& goal_, double step_size_, double radius_)
+    : start(start_), goal(goal_), step_size(step_size_), radius(radius_) {
     AddNode(start);
     start_idx = 0;
 
@@ -292,21 +293,31 @@ void RRTX::SetGoal(const state::Waypoint& new_goal) {
     nodes[goal_idx].wp = goal;
 }
 
+state::Path FindSinglePath_RRTX(state::Waypoint start, state::Waypoint goal, double step_size, double radius) {
+    RRTX rrtx_planner(start, goal, step_size, radius);
+    
+    // Run multiple iterations to build the tree and find a path
+    const int max_iterations = 1000;
+    for (int i = 0; i < max_iterations; ++i) {
+        rrtx_planner.SampleAndExpand();
+        rrtx_planner.UpdateRRTX();
+        
+        // Check if path found every 50 iterations
+        if (i % 50 == 0) {
+            state::Path path = rrtx_planner.ReconstructPath();
+            if (!path.empty()) {
+                std::cout << "[RRTX] Path found after " << i+1 << " iterations with " << path.size() << " waypoints" << std::endl;
+                return path;
+            }
+        }
+    }
+    
+    // Final attempt to reconstruct path
+    state::Path final_path = rrtx_planner.ReconstructPath();
+    if (final_path.empty()) {
+        std::cout << "[RRTX] No path found after " << max_iterations << " iterations" << std::endl;
+    }
+    return final_path;
 }
-// namespace algos
-namespace algo {
-state::Path FindSinglePath_RRTX(state::Waypoint start,state::Waypoint goal) {
 
-    algos::RRTX rrtx(start, goal);
-  
-    rrtx.InvalidateEdges(goal);
-
-    for (int i = 0; i < 2500; ++i)
-        rrtx.SampleAndExpand();
-
-    rrtx.UpdateRRTX();
-    rrtx.ComputeShortPath();
-
-    return rrtx.ReconstructPath();
-}
-}
+}  // namespace algos
