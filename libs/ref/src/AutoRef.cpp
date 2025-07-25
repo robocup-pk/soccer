@@ -20,8 +20,8 @@ void ref::CheckCollisions(std::vector<state::SoccerObject>& soccer_objects) {
 
       if (kin::CheckCircularCollision(obj1, obj2)) {
         if (!(obj1.name == "ball" || obj2.name == "ball")) {
-          // std::cout << "[ref::CheckCollisions] Detected collision between: " << obj1.name
-          //<< " and " << obj2.name << std::endl;
+          std::cout << "[ref::CheckCollisions] Detected collision between: " << obj1.name
+                    << " and " << obj2.name << std::endl;
         }
 
         if (obj1.name == "ball") {
@@ -57,7 +57,7 @@ void ref::CheckCollisions(std::vector<state::SoccerObject>& soccer_objects) {
     if (ref::IsOutsidePlayingField(obj) && !obj.is_attached) {
       std::cout << "[ref::CheckCollisions] Robot " << obj.name << " is outside the playing field"
                 << std::endl;
-      if (obj.name == "ball") {
+      if(obj.name == "ball"){
         obj.velocity = Eigen::Vector3d::Zero();
         obj.position = Eigen::Vector3d::Zero();
       }
@@ -105,7 +105,10 @@ void ref::CheckForGoals(std::vector<state::SoccerObject>& soccer_objects) {
       float top = obj.position[1] + obj.size[1];
       float bottom = obj.position[1];
 
-      if (left <= left_goal_x2 && top <= left_goal_y1 && bottom >= left_goal_y2) {
+      if ((left >= left_goal_x1 && left <= left_goal_x2 && top <= left_goal_y1 &&
+           bottom >= left_goal_y2) ||
+          (right >= left_goal_x1 && right <= left_goal_x2 && top >= left_goal_y1 &&
+           bottom <= left_goal_y2)) {
         std::cout << "[ref::CheckForGoals] Goal scored by the right team!" << std::endl;
         goal_scored = true;
       } else if (right >= right_goal_x1 && right <= right_goal_x2 && top <= right_goal_y1 &&
@@ -146,36 +149,4 @@ bool ref::IsOutsidePlayingField(state::SoccerObject& obj) {
   float bottom = obj.position[1];
 
   return (left < -half_width || right > half_width || top > half_height || bottom < -half_height);
-}
-
-/* ATTACKER DOUBLE-TOUCHED BALL
-
-When the ball is brought into play following a kick-off or free kick, the kicker is not allowed to
-touch the ball until it has been touched by another robot or the game has been stopped.
-The ball must have moved at least 0.05 meters to be considered as in play.
-A double touch results in a stop followed by a free kick from the same ball position.
-
-*/
-
-// called while there was a kick off if ((state == KICK_OFF || state == FREE_KICK)
-// BallXo= get.kickoffOption1BallPos();
-//   BallXf = ball.getPos()
-//   double BallDeltaX = BallXf - BallXo;
-// if (BallDeltaX >= 0.05 meters) GameState = IN_PLAY();
-
-bool ::ref::AttackerDoubleTouchedBall() {
-  /*  pseudocode
-  gamestate state = game.GetGamestate();
-
-  if (Game_State == IN_PLAY && other robots have not touched the ball yet) {
-    if (robot that did the free kick touches the ball) {
-      foul++;
-      std::cout << "attacker double touched ball" << std::endl;
-    }
-  }
-
-  }
- */
-
-  return true;
 }
