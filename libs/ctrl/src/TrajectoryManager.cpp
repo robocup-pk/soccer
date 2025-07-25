@@ -57,6 +57,7 @@ Eigen::Vector3d ctrl::TrajectoryManager::GetVelocityAtT(double current_time_s) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   double kp = 0.5;
 =======
   double kp = 0.2;
@@ -70,6 +71,9 @@ Eigen::Vector3d ctrl::TrajectoryManager::GetVelocityAtT(double current_time_s) {
 =======
   double kp = 0.01;  // Proportional gain for velocity correction
 >>>>>>> 2cdab88a (Temp Changes)
+=======
+  double kp = 0.3;  // Proportional gain for velocity correction
+>>>>>>> d00929a9 (Kick, Dribble Funtionality)
   Eigen::Vector3d Current_speed = current_trajectory->VelocityAtT(current_time_s);
   Eigen::Vector3d Current_position_fWorld = p_fworld;
 

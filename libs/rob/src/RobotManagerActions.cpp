@@ -129,7 +129,7 @@ void rob::RobotManager::ExecuteDribbleAction(std::vector<state::SoccerObject>& s
     Eigen::Vector3d robot_to_ball = ball_center - robot_center;
     robot_to_ball.z() = 0;  // 2D only
     double ball_angle = atan2(robot_to_ball.y(), robot_to_ball.x());
-    double robot_angle = robot->position.z();
+    double robot_angle = robot->position[2];
     
     // Normalize angles to [-pi, pi]
     auto normalize_angle = [](double angle) {
@@ -140,6 +140,7 @@ void rob::RobotManager::ExecuteDribbleAction(std::vector<state::SoccerObject>& s
     
     double angle_diff = normalize_angle(ball_angle - robot_angle);
     bool robot_facing_ball = std::abs(angle_diff) < M_PI/3;  // Within 60 degrees (±30°)
+    
     
     // Debug output for orientation checking
     static double last_orientation_debug = 0;
@@ -152,7 +153,7 @@ void rob::RobotManager::ExecuteDribbleAction(std::vector<state::SoccerObject>& s
     }
     
     // Dribble if ball is within dribbling range AND robot is facing the ball (SSL compliance)
-    if (distance < 1.0 && robot_facing_ball) {  // 1m dribbling range + orientation check
+    if (distance < 0.3 && robot_facing_ball) {  // 30cm dribbling range + orientation check
         // SSL RULE: Set ball to dribbling mode (physics-based, not attached)
         ball->is_dribbling = true;
         
@@ -202,9 +203,6 @@ void rob::RobotManager::ExecuteDribbleAction(std::vector<state::SoccerObject>& s
             std::cout << "[DEBUG] Applying pull force to ball (distance=" << distance << "m)" << std::endl;
         }
         
-        // SSL LEGAL: No ball attachment - ball moves freely with applied forces
-        // The kin::Dribble function handles proper SSL dribbling physics
-        
         // Ensure ball is not attached (SSL rule compliance)
         if (ball->is_attached) {
             ball->is_attached = false;
@@ -214,7 +212,7 @@ void rob::RobotManager::ExecuteDribbleAction(std::vector<state::SoccerObject>& s
         // Not dribbling - clear dribbling flag
         ball->is_dribbling = false;
         
-        if (distance < 1.0 && !robot_facing_ball) {
+        if (distance < 0.3 && !robot_facing_ball) {
             // Ball is close but robot is not facing it - SSL rule violation prevention
             static double last_warning = 0;
             if (current_time - last_warning > 2.0) {
@@ -224,6 +222,5 @@ void rob::RobotManager::ExecuteDribbleAction(std::vector<state::SoccerObject>& s
             }
         }
     }
-    // Note: We don't need an else clause to detach - ball should never be attached during dribbling
 }
 
