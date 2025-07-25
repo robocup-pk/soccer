@@ -21,11 +21,16 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
     Eigen::Vector3d pose_end(path_fWorld[path_index]);
     Eigen::Vector3d h(pose_end - pose_start);
     Eigen::Vector3d v0(0, 0, 0);
-    double T = 4;
+    
+    // Calculate trajectory duration based on distance and average velocity
+    double distance = h.norm();
+    double T = distance / cfg::SystemConfig::avg_velocity_fBody_mps;
+    // Ensure minimum duration for feasible trapezoidal trajectories
+    // For very short distances, allow longer time to meet acceleration constraints
+    T = std::max(T, 2.0);
+    
     if (path_index == 1) v0 = FindV0AtT(t_start_s);
-    std::cout << "b\n ";
-
-    // std::max({h[0], h[1], h[2]}) * cfg::SystemConfig::avg_velocity_fBody_mps;
+    std::cout << "Trajectory " << path_index << ": distance=" << distance << "m, duration=" << T << "s" << std::endl;
 
     // Create Trajectory
     t_start_s = t_end_s;
@@ -48,7 +53,7 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
 }
 
 Eigen::Vector3d ctrl::TrajectoryManager::GetVelocityAtT(double current_time_s) {
-  double kp = 0.2;
+  double kp = 0.01;  // Proportional gain for velocity correction
   Eigen::Vector3d Current_speed = current_trajectory->VelocityAtT(current_time_s);
   Eigen::Vector3d Current_position_fWorld = p_fworld;
 

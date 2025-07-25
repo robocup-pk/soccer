@@ -32,9 +32,8 @@ enum class RobotAction {
   KICK_BALL,
   PASS_BALL,
   DRIBBLE_BALL,
-  MOVE  // Normal Action State
+  MOVE,  // Default action when no specific action is set
 };
-
 class RobotManager {
  public:
   RobotManager();
@@ -47,7 +46,6 @@ class RobotManager {
   // Actions
   void KickBall();
   void PassBall();
-  void DribbleBall();
   
   // Action execution methods (for integration with soccer objects)
   void ExecuteKickAction(std::vector<state::SoccerObject>& soccer_objects);
@@ -63,7 +61,6 @@ class RobotManager {
   void SetPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
-  void NewCameraData(Eigen::Vector3d pose_from_camera);
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
 
@@ -75,6 +72,7 @@ class RobotManager {
   std::string GetRobotState();
   void CalibrateGyro();
   bool IsGyroCalibrated();
+  void NewCameraData(Eigen::Vector3d pose_from_camera);
 
   ~RobotManager();
 
@@ -90,11 +88,7 @@ class RobotManager {
   est::StateEstimator state_estimator;
   hw::HardwareManager hardware_manager;
   ctrl::MotionController motion_controller;
-
-public:
   ctrl::TrajectoryManager trajectory_manager;
-
-private:
 
   std::thread control_thread;
   std::thread sense_thread;
