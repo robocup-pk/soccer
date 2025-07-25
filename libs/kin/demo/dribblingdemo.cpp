@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
         //calculate distance between robot and ball
         Eigen::Vector3d robot_pos = robot_manager.GetPoseInWorldFrame();
         double dist = (ball_position - robot_pos).head<2>().norm();
-        if (dist < 0.2) {  // If close enough to ball, start dribbling
+        if (dist < 0.3) {  // If close enough to ball, start dribbling
             std::cout << "[DribblingDemo] Robot close to ball, starting dribble..." << std::endl;
             robot_manager.ExecuteDribbleAction(soccer_objects);  // Execute dribble action
         } else {
