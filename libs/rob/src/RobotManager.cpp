@@ -270,6 +270,7 @@ bool rob::RobotManager::BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody) 
 void rob::RobotManager::InitializePose(Eigen::Vector3d& pose_fWorld) {
   std::unique_lock<std::mutex> lock(robot_state_mutex);
   state_estimator.InitializePose(pose_fWorld);
+  state_estimator.SetPose(pose_fWorld);  // Also set current pose
 }
 
 rob::RobotAction rob::RobotManager::GetRobotAction() { return robot_action; }
