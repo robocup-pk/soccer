@@ -165,7 +165,7 @@ struct NodeRRTX {
 
 class RRTX {
 public:
-    RRTX(const state::Waypoint& start, const state::Waypoint& goal);
+    RRTX(const state::Waypoint& start, const state::Waypoint& goal, double step_size, double radius);
 
     void SampleAndExpand();
     void UpdateRRTX();
@@ -200,11 +200,9 @@ private:
     double radius = 0.3;
 };
 
-}  // namespace algos
+    state::Path FindSinglePath_RRTX(state::Waypoint start, state::Waypoint goal, double step_size, double radius);
 
-namespace algo {
-    state::Path FindSinglePath_RRTX(state::Waypoint start, state::Waypoint goal);
-}
+}  // namespace algos
 
 #endif  // ALGOS_RRTX_H
 >>>>>>> da9e9f5e (Algos)

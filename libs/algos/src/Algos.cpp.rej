@@ -1,0 +1,11 @@
+--- Algos.cpp
++++ Algos.cpp
+@@ -49,7 +49,7 @@
+ 
+   switch (algo_name) {
+     case AlgoName::RRTX:
+-      path = FindSinglePath_RRTX(bot_pos, goal_pos, 150.0, 150.0);
++      path = algo::FindSinglePath_RRTX(bot_pos, goal_pos, 150.0, 150.0);
+       std::cout << "Path: " << path << std::endl;
+       std::cout << "d\n";
+       break;

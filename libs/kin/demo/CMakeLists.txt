@@ -1,3 +1,6 @@
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+
 # Demo: KickDemo - RRT path planning with trapezoidal trajectory and kick
 add_executable(kick_demo kickdemo.cpp)
 

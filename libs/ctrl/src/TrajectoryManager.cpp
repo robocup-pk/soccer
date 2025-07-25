@@ -84,6 +84,7 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
 Eigen::Vector3d ctrl::TrajectoryManager::GetVelocityAtT(double current_time_s) {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   double kp = 0.5;
 =======
   double kp = 0.2;
@@ -91,6 +92,9 @@ Eigen::Vector3d ctrl::TrajectoryManager::GetVelocityAtT(double current_time_s) {
 =======
   double kp = 0.0;
 >>>>>>> b9c7af12 (TEMP)
+=======
+  double kp = 0.2;
+>>>>>>> 71e078e1 (Temp Changes)
   Eigen::Vector3d Current_speed = current_trajectory->VelocityAtT(current_time_s);
   Eigen::Vector3d Current_position_fWorld = p_fworld;
 

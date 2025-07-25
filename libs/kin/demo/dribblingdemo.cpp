@@ -7,9 +7,10 @@
 #include <cstdlib>
 
 // Project libs
-#include "GLSimulation.h"
+#include "GLSimulation.h" 
 #include "SoccerObject.h" 
-#include "RRT.h"
+#include "RRTX.h"
+#include "Algos.h"
 #include "Waypoint.h"
 #include "Kinematics.h"
 #include "Dribble.h"
@@ -120,15 +121,10 @@ int main(int argc, char* argv[]) {
                 state::Waypoint start_wp(robot_pos.x() * 1000, robot_pos.y() * 1000, robot_pos.z());
                 state::Waypoint goal_wp(ball_pos.x() * 1000, ball_pos.y() * 1000, 0);
                 
-                // Configure RRT parameters
-                algos::RRTParams rrt_params = algos::DefaultRRTParams();
-                rrt_params.max_iterations = 1000;
-                rrt_params.step_size = 100.0; // 10cm steps
-                rrt_params.goal_tolerance = 300.0; // 30cm tolerance (same as approach distance)
-                rrt_params.use_rrt_star = true; // Use RRT* for smoother paths
+                
                 
                 // Plan path using RRT
-                rrt_path = algos::FindSinglePath(start_wp, goal_wp, rrt_params);
+                rrt_path = algos::FindSinglePath_RRTX(start_wp, goal_wp, 150.0, 150.0);
                 
                 if (rrt_path.empty()) {
                     std::cout << "[DribblingDemo] Failed to find path to ball!" << std::endl;
@@ -249,15 +245,10 @@ int main(int argc, char* argv[]) {
                 state::Waypoint start_wp(current_robot_pos.x() * 1000, current_robot_pos.y() * 1000, 0);
                 state::Waypoint goal_wp(target_pos.x() * 1000, target_pos.y() * 1000, 0);
                 
-                // Configure RRT parameters for dribbling (need smoother path)
-                algos::RRTParams rrt_params = algos::DefaultRRTParams();
-                rrt_params.max_iterations = 1000;
-                rrt_params.step_size = 150.0; // Smaller steps for better control while dribbling
-                rrt_params.goal_tolerance = 200.0; // 20cm tolerance to target
-                rrt_params.use_rrt_star = true; // Use RRT* for optimal dribbling path
+                
                 
                 // Plan path using RRT
-                rrt_path = algos::FindSinglePath(start_wp, goal_wp, rrt_params);
+                rrt_path = algos::FindSinglePath_RRTX(start_wp, goal_wp, 150.0, 150.0);
                 
                 if (rrt_path.empty()) {
                     std::cout << "[DribblingDemo] Failed to find dribbling path to target!" << std::endl;
@@ -299,7 +290,7 @@ int main(int argc, char* argv[]) {
                 
                 // Check if robot reached target area
                 if (distance_to_target <= 0.5) { // 50cm tolerance to target
-                    std::cout << "[DribblingDemo] Robot reached target area while dribbling! Distance: " << distance_to_target << "m" << std::endl;
+                    std::cout << "[DribblingDemo] Robot reached target area while dribbling!" << std::endl;
                     
                     // Stop dribbling
                     robot_manager.SetRobotAction(rob::RobotAction::MOVE);
