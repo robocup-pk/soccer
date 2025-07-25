@@ -14,9 +14,8 @@ est::StateEstimator::StateEstimator() {
   robot_model = std::make_shared<kin::RobotModel>();
   angle_random_walk_per_rt_t = 0.001;
   initialized_pose = false;
-  pose_init << 0.0, 0.0, 0;
-  pose_est << 0.0, 0.0, 0;
-  // pose_est << 0, 0, 0;
+  pose_init << 0, 0, 0;
+  pose_est << 0, 0, 0;
   initialized_gyro = false;
   initialized_encoder = false;
   // P_init

@@ -1,8 +1,5 @@
 # Find locally installed protobuf
 find_package(Protobuf REQUIRED)
-find_package(absl QUIET)
-
-
 find_package(Threads REQUIRED)
 
 # Verify protobuf was found
@@ -71,23 +68,10 @@ target_include_directories(comms_lib PUBLIC
 )
 
 # Link libraries
-if(absl_FOUND)
-    message(STATUS "Using Abseil libraries with Protobuf")
-    target_link_libraries(comms_lib PUBLIC
-        ${Protobuf_LIBRARIES}  
-        Threads::Threads
-        absl::log
-        absl::log_internal_check_op
-        absl::strings
-        absl::base
-    )
-else()
-    message(STATUS "Abseil not found - linking Protobuf without Abseil")
-    target_link_libraries(comms_lib PUBLIC
-        ${Protobuf_LIBRARIES}  
-        Threads::Threads
-    )
-endif()
+target_link_libraries(comms_lib PUBLIC
+  ${Protobuf_LIBRARIES}
+  Threads::Threads
+)
 
 # 5) Examples (if any)
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/CMakeLists.txt")

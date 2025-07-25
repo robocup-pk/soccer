@@ -13,45 +13,10 @@
 #include "Utils.h"
 #include "SoccerField.h"
 
-namespace vis {
-int team_one_selected_player = 0;
-int team_two_selected_player =
-    cfg::SystemConfig::num_robots / 2;  // cfg::SystemConfig::num_robots / 2;
-inline Eigen::Vector2d g_mouse_click_position;
-inline bool g_mouse_clicked = false;
-}  // namespace vis
-
 bool vis::GLSimulation::RunSimulationStep(std::vector<state::SoccerObject>& soccer_objects,
                                           float dt) {
   // Convert SoccerObjects to GameObjects
   for (auto& soccer_object : soccer_objects) {
-    if (game_objects.find(soccer_object.name) == game_objects.end()) {
-      std::cout << "[vs::GLSimulation::RunSimulationStep] Game Object " << soccer_object.name
-                << " do not exist" << std::endl;
-      return false;
-    }
-    UpdateGameObject(soccer_object);
-  }
-
-  // ProcessInput(dt);
-
-  Render(dt);
-  return Update();
-}
-
-bool vis::GLSimulation::RunSimulationStepTwoTeams(
-    std::vector<state::SoccerObject>& team_one_soccer_objects,
-    std::vector<state::SoccerObject>& team_two_soccer_objects, float dt) {
-  for (auto& soccer_object : team_one_soccer_objects) {
-    if (game_objects.find(soccer_object.name) == game_objects.end()) {
-      std::cout << "[vs::GLSimulation::RunSimulationStep] Game Object " << soccer_object.name
-                << " do not exist" << std::endl;
-      return false;
-    }
-    UpdateGameObject(soccer_object);
-  }
-
-  for (auto& soccer_object : team_two_soccer_objects) {
     if (game_objects.find(soccer_object.name) == game_objects.end()) {
       std::cout << "[vs::GLSimulation::RunSimulationStep] Game Object " << soccer_object.name
                 << " do not exist" << std::endl;
@@ -204,163 +169,6 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
   }
 }
 
-void vis::GLSimulation::InitGameObjectsTwoTeamsUnit(
-    std::vector<state::SoccerObject>& soccer_objects) {
-  // Load Shaders
-  std::string vertex_shader_path =
-      util::GetExecutableDir() + "/libs/vis/resources/shaders/sprite.vs";
-  std::string fragment_shader_path =
-      util::GetExecutableDir() + "/libs/vis/resources/shaders/sprite.fs";
-  ResourceManager::LoadShader(vertex_shader_path.c_str(), fragment_shader_path.c_str(), "sprite");
-  ResourceManager::GetShader("sprite").Use().SetInteger("sprite", 0);
-
-  std::string field_vector_shader_path =
-      util::GetExecutableDir() + "/libs/vis/resources/shaders/field.vs";
-
-  std::string field_fragment_shader_path =
-      util::GetExecutableDir() + "/libs/vis/resources/shaders/field.fs";
-  ResourceManager::LoadShader(field_vector_shader_path.c_str(), field_fragment_shader_path.c_str(),
-                              "field");
-  ResourceManager::GetShader("field").Use().SetInteger("field", 0);
-
-  SoccerField::GetInstance().SoccerFieldInit();
-
-  // sprite Renderer
-  Shader shader = ResourceManager::GetShader("sprite");
-  shader.Use();
-
-  renderer.Init(shader);
-
-  // Load Textures
-  std::string robot1_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/robot1.png";
-  std::string robot2_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/robot2.png";
-  std::string robot_texture_path_2 =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
-  std::string ball_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
-  std::string arrow_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/arrow.png";
-
-  ResourceManager::LoadTexture(robot1_texture_path.c_str(), false, "face1");
-  ResourceManager::LoadTexture(robot2_texture_path.c_str(), false, "face2");
-  ResourceManager::LoadTexture(ball_texture_path.c_str(), false, "ball");
-  ResourceManager::LoadTexture(arrow_texture_path.c_str(), false, "arrow");
-  // Window
-  Eigen::Vector3d window_position(-util::MmToPixels(SoccerField::GetInstance().width_mm) / 2,
-                                  -util::MmToPixels(SoccerField::GetInstance().height_mm) / 2, 0);
-  Eigen::Vector2d window_size(util::MmToPixels(SoccerField::GetInstance().width_mm),
-                              util::MmToPixels(SoccerField::GetInstance().height_mm));
-
-  for (int i = 0; i < soccer_objects.size() / 2; i++) {
-    if (soccer_objects[i].name == "ball") {
-      game_objects["ball"] = GameObject(
-          soccer_objects[i].name, soccer_objects[i].position, soccer_objects[i].size,
-          soccer_objects[i].velocity, soccer_objects[i].acceleration, soccer_objects[i].mass_kg,
-          ResourceManager::GetTexture("ball"), Eigen::Vector3d(1.0, 1.0, 1.0));
-    } else {
-      game_objects[soccer_objects[i].name] = GameObject(
-          soccer_objects[i].name, soccer_objects[i].position, soccer_objects[i].size,
-          soccer_objects[i].velocity, soccer_objects[i].acceleration, soccer_objects[i].mass_kg,
-          ResourceManager::GetTexture("face1"), Eigen::Vector3d(1.0, 1.0, 1.0));
-    }
-  }
-
-  for (int i = soccer_objects.size() / 2; i < soccer_objects.size(); i++) {
-    if (soccer_objects[i].name == "ball") {
-      game_objects["ball"] = GameObject(
-          soccer_objects[i].name, soccer_objects[i].position, soccer_objects[i].size,
-          soccer_objects[i].velocity, soccer_objects[i].acceleration, soccer_objects[i].mass_kg,
-          ResourceManager::GetTexture("ball"), Eigen::Vector3d(1.0, 1.0, 1.0));
-    } else {
-      game_objects[soccer_objects[i].name] = GameObject(
-          soccer_objects[i].name, soccer_objects[i].position, soccer_objects[i].size,
-          soccer_objects[i].velocity, soccer_objects[i].acceleration, soccer_objects[i].mass_kg,
-          ResourceManager::GetTexture("face2"), Eigen::Vector3d(1.0, 1.0, 1.0));
-    }
-  }
-}
-
-void vis::GLSimulation::InitGameObjectsTwoTeams(
-    std::vector<state::SoccerObject>& team_one_soccer_objects,
-    std::vector<state::SoccerObject>& team_two_soccer_objects) {
-  // Load Shaders
-  std::string vertex_shader_path =
-      util::GetExecutableDir() + "/libs/vis/resources/shaders/sprite.vs";
-  std::string fragment_shader_path =
-      util::GetExecutableDir() + "/libs/vis/resources/shaders/sprite.fs";
-  ResourceManager::LoadShader(vertex_shader_path.c_str(), fragment_shader_path.c_str(), "sprite");
-  ResourceManager::GetShader("sprite").Use().SetInteger("sprite", 0);
-
-  std::string field_vector_shader_path =
-      util::GetExecutableDir() + "/libs/vis/resources/shaders/field.vs";
-
-  std::string field_fragment_shader_path =
-      util::GetExecutableDir() + "/libs/vis/resources/shaders/field.fs";
-  ResourceManager::LoadShader(field_vector_shader_path.c_str(), field_fragment_shader_path.c_str(),
-                              "field");
-  ResourceManager::GetShader("field").Use().SetInteger("field", 0);
-
-  SoccerField::GetInstance().SoccerFieldInit();
-
-  // sprite Renderer
-  Shader shader = ResourceManager::GetShader("sprite");
-  shader.Use();
-
-  renderer.Init(shader);
-
-  // Load Textures
-  std::string robot_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/robot.png";
-  std::string robot_texture_path_2 =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
-  std::string ball_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
-  std::string arrow_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/arrow.png";
-
-  ResourceManager::LoadTexture(robot_texture_path.c_str(), false, "face");
-  ResourceManager::LoadTexture(ball_texture_path.c_str(), false, "ball");
-  ResourceManager::LoadTexture(arrow_texture_path.c_str(), false, "arrow");
-
-  // Window
-  Eigen::Vector3d window_position(-util::MmToPixels(SoccerField::GetInstance().width_mm) / 2,
-                                  -util::MmToPixels(SoccerField::GetInstance().height_mm) / 2, 0);
-  Eigen::Vector2d window_size(util::MmToPixels(SoccerField::GetInstance().width_mm),
-                              util::MmToPixels(SoccerField::GetInstance().height_mm));
-
-  // Team 1 Robots & Ball
-  for (const auto& soccer_object : team_one_soccer_objects) {
-    if (soccer_object.name == "ball") {
-      game_objects["ball"] =
-          GameObject(soccer_object.name, soccer_object.position, soccer_object.size,
-                     soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
-                     ResourceManager::GetTexture("ball"), Eigen::Vector3d(1.0, 1.0, 1.0));
-    } else {
-      game_objects[soccer_object.name] =
-          GameObject(soccer_object.name, soccer_object.position, soccer_object.size,
-                     soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
-                     ResourceManager::GetTexture("face"), Eigen::Vector3d(1.0, 1.0, 1.0));
-    }
-  }
-
-  // Team 2 Robots & Ball (same code, but robots get “_2” suffix)
-  for (const auto& soccer_object : team_two_soccer_objects) {
-    if (soccer_object.name == "ball") {
-      game_objects["ball"] =
-          GameObject(soccer_object.name, soccer_object.position, soccer_object.size,
-                     soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
-                     ResourceManager::GetTexture("ball"), Eigen::Vector3d(1.0, 1.0, 1.0));
-    } else {
-      game_objects[soccer_object.name + "_2"] =
-          GameObject(soccer_object.name, soccer_object.position, soccer_object.size,
-                     soccer_object.velocity, soccer_object.acceleration, soccer_object.mass_kg,
-                     ResourceManager::GetTexture("face"), Eigen::Vector3d(1.0, 1.0, 1.0));
-    }
-  }
-}
-
 GLFWwindow* vis::GLSimulation::GetRawGLFW() const { return window; }
 
 vis::GLSimulation::~GLSimulation() {
@@ -379,7 +187,6 @@ void vis::ProcessInput(GLFWwindow* gl_window, std::vector<rob::RobotManager>& ro
   Eigen::Vector3d velocity_fBody_rob1(0, 0, 0);
   Eigen::Vector3d velocity_fBody_rob2(0, 0, 0);
 
-  // update key movements of selected players
   // Robot 1 (WSAD)
   if (glfwGetKey(gl_window, GLFW_KEY_W) == GLFW_PRESS) velocity_fBody_rob1.y() += 1;
   if (glfwGetKey(gl_window, GLFW_KEY_S) == GLFW_PRESS) velocity_fBody_rob1.y() -= 1;
@@ -407,203 +214,11 @@ void vis::ProcessInput(GLFWwindow* gl_window, std::vector<rob::RobotManager>& ro
     }
 
     velocity_fBody_rob2.normalize();
-    robot_managers[team_one_selected_player].SetBodyVelocity(velocity_fBody_rob2);
+    robot_managers[1].SetBodyVelocity(velocity_fBody_rob2);
   }
 
   velocity_fBody_rob1.normalize();
-  robot_managers[team_two_selected_player].SetBodyVelocity(velocity_fBody_rob1);
-}
-
-bool vis::GLSimulation::RobotAreaPressed(double center_x, double center_y,
-                                         double mouse_click_pos_x, double mouse_click_pos_y) {
-  // everything bellow is just mouse pressing math because the coordinate frame is like a grid
-  // rather than (0,0) = left corner
-
-  std::cout << "the mouse was pressed at x: " << mouse_click_pos_x << " y: " << mouse_click_pos_y
-            << std::endl;
-  double w = cfg::SystemConfig::robot_size_m[0];  // robot width
-  // first box
-  double left_post = center_x - w / 2;
-  double right_post = center_x + w / 2;
-  double bottom_post = 0;
-  double top_post = 0;
-  // second box
-  double bottom_post_2 = 0;
-  double top_post_2 = 0;
-
-  if (center_y >= 0 && center_y - w / 2 < 0) {  // quadrant 3
-    // first box
-    top_post = center_y + w / 2;
-    bottom_post = 0;
-    // second box
-    top_post_2 = 0;
-    bottom_post_2 = -1 * std::abs(w / 2 - center_y);
-  } else if (center_y < 0 && center_y + w / 2 > 0) {  // quadrant 4
-    // first box
-    top_post = 0;
-    bottom_post = -1 * (std::abs(center_y) + w / 2);
-    // second box
-    top_post_2 = w / 2 - std::abs(center_y);
-    bottom_post_2 = 0;
-  } else {  // quadrant 1
-    bottom_post = center_y - w / 2;
-    top_post = center_y + w / 2;
-  }
-
-  if (bottom_post_2 == 0 && top_post_2 == 0 && mouse_click_pos_x <= right_post &&
-      mouse_click_pos_x >= left_post && mouse_click_pos_y >= bottom_post &&
-      mouse_click_pos_y <= top_post) {  // one box case
-    return true;
-  } else if ((bottom_post_2 != 0 || top_post_2 != 0) &&
-                 (mouse_click_pos_x <= right_post && mouse_click_pos_x >= left_post &&
-                  mouse_click_pos_y >= bottom_post && mouse_click_pos_y <= top_post) ||
-             (mouse_click_pos_x <= right_post && mouse_click_pos_x >= left_post &&
-              mouse_click_pos_y >= bottom_post_2 &&
-              mouse_click_pos_y <= top_post_2)) {  // two box case
-
-    return true;
-  } else {
-    return false;
-  }
-}
-
-void vis::ProcessInputTwoTeams(GLFWwindow* gl_window,
-                               std::vector<rob::RobotManager>& robot_managers) {
-  Eigen::Vector3d velocity_fBody_rob1(0, 0, 0);
-  Eigen::Vector3d velocity_fBody_rob2(0, 0, 0);
-
-  FindAndUpdateSelectedPlayer(robot_managers);
-
-  // if mouse is pressed
-  if (vis::g_mouse_clicked) {
-    vis::g_mouse_clicked = false;
-
-    double mouse_click_left_pos_x = vis::g_mouse_click_position[0];
-    double mouse_click_left_pos_y = vis::g_mouse_click_position[1];
-    double robot_width = (cfg::SystemConfig::robot_size_m)[0];
-
-    double robot_center_x;
-    double robot_center_y;
-    Eigen::Vector3d v = Eigen::Vector3d::Zero();
-
-    for (int i = 0; i < robot_managers.size() / 2; i++) {
-      robot_center_x = robot_managers[i].GetPos()[0];
-      robot_center_y = robot_managers[i].GetPos()[1];
-
-      if (vis::GLSimulation::RobotAreaPressed(robot_center_x, robot_center_y,
-                                              mouse_click_left_pos_x, mouse_click_left_pos_y)) {
-        robot_managers[i].is_selected_player = true;
-        // now we need to deselect all other robots on that team
-        for (int j = 0; j < robot_managers.size() / 2; j++) {
-          if (j != i) {
-            robot_managers[j].is_selected_player = false;
-            robot_managers[j].SetBodyVelocity(v);
-          }
-        }
-        break;
-      }
-    }
-
-    for (int i = robot_managers.size() / 2; i < robot_managers.size(); i++) {
-      robot_center_x = robot_managers[i].GetPos()[0];
-      robot_center_y = robot_managers[i].GetPos()[1];
-
-      if (vis::GLSimulation::RobotAreaPressed(robot_center_x, robot_center_y,
-                                              mouse_click_left_pos_x, mouse_click_left_pos_y)) {
-        robot_managers[i].is_selected_player = true;
-        // now we need to deselect all other robots on that team
-        for (int j = robot_managers.size() / 2; j < robot_managers.size(); j++) {
-          if (j != i) {
-            robot_managers[j].is_selected_player = false;
-            robot_managers[j].SetBodyVelocity(v);
-          }
-        }
-        break;
-      }
-    }
-  }
-
-  // update selected player
-  FindAndUpdateSelectedPlayer(robot_managers);
-
-  // move players
-  if (glfwGetKey(gl_window, GLFW_KEY_W) == GLFW_PRESS) velocity_fBody_rob1.y() += 1;
-  if (glfwGetKey(gl_window, GLFW_KEY_S) == GLFW_PRESS) velocity_fBody_rob1.y() -= 1;
-  if (glfwGetKey(gl_window, GLFW_KEY_A) == GLFW_PRESS) velocity_fBody_rob1.x() -= 1;
-  if (glfwGetKey(gl_window, GLFW_KEY_D) == GLFW_PRESS) velocity_fBody_rob1.x() += 1;
-  if (glfwGetKey(gl_window, GLFW_KEY_C) == GLFW_PRESS) velocity_fBody_rob1.z() += 1;
-  if (glfwGetKey(gl_window, GLFW_KEY_X) == GLFW_PRESS) velocity_fBody_rob1.z() -= 1;
-  if (glfwGetKey(gl_window, GLFW_KEY_K) == GLFW_PRESS) {
-    robot_managers[team_one_selected_player].KickBall();
-  }
-  if (glfwGetKey(gl_window, GLFW_KEY_J) == GLFW_PRESS) {
-    robot_managers[team_one_selected_player].PassBall();
-  }
-
-  // Robot 2 (Arrow keys)
-  if (robot_managers.size() > 1) {
-    if (glfwGetKey(gl_window, GLFW_KEY_UP) == GLFW_PRESS) velocity_fBody_rob2.y() += 1;
-    if (glfwGetKey(gl_window, GLFW_KEY_DOWN) == GLFW_PRESS) velocity_fBody_rob2.y() -= 1;
-    if (glfwGetKey(gl_window, GLFW_KEY_LEFT) == GLFW_PRESS) velocity_fBody_rob2.x() -= 1;
-    if (glfwGetKey(gl_window, GLFW_KEY_RIGHT) == GLFW_PRESS) velocity_fBody_rob2.x() += 1;
-    if (glfwGetKey(gl_window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) velocity_fBody_rob2.z() += 1;
-    if (glfwGetKey(gl_window, GLFW_KEY_SLASH) == GLFW_PRESS) velocity_fBody_rob2.z() -= 1;
-    if (glfwGetKey(gl_window, GLFW_KEY_L) == GLFW_PRESS) {
-      robot_managers[team_two_selected_player].KickBall();
-    }
-
-    velocity_fBody_rob2.normalize();
-    robot_managers[team_two_selected_player].SetBodyVelocity(velocity_fBody_rob2);
-  }
-
-  velocity_fBody_rob1.normalize();
-  robot_managers[team_one_selected_player].SetBodyVelocity(velocity_fBody_rob1);
-}
-
-void vis::FindAndUpdateSelectedPlayer(std::vector<rob::RobotManager>& robot_managers) {
-  for (int i = 0; i < robot_managers.size() / 2; i++) {
-    if (robot_managers[i].is_selected_player) {
-      team_one_selected_player = i;
-    }
-  }
-
-  for (int i = robot_managers.size() / 2; i < robot_managers.size(); i++) {
-    if (robot_managers[i].is_selected_player) {
-      team_two_selected_player = i;
-    }
-  }
-}
-
-void vis::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-  if ((button == GLFW_MOUSE_BUTTON_LEFT || button == GLFW_MOUSE_BUTTON_RIGHT) &&
-      action == GLFW_PRESS) {
-    double xpos, ypos;
-    glfwGetCursorPos(window, &xpos, &ypos);
-
-    // Get window dimensions
-    int window_width, window_height;
-    glfwGetWindowSize(window, &window_width, &window_height);
-
-    // Convert from pixel coordinates to world coordinates (meters)
-    // 1. Convert pixels to millimeters
-    float pixels_per_mm = util::PixelsPerMm();
-    double x_mm = xpos / pixels_per_mm;
-    double y_mm = ypos / pixels_per_mm;
-
-    // 2. Convert from millimeters to meters
-    double x_m = x_mm / 1000.0;
-    double y_m = y_mm / 1000.0;
-
-    // 3. Adjust coordinate system: center at field center, flip Y axis
-    double field_width_m = vis::SoccerField::GetInstance().width_mm / 1000.0;
-    double field_height_m = vis::SoccerField::GetInstance().height_mm / 1000.0;
-
-    double world_x = x_m - (field_width_m / 2.0);  // Center X coordinate
-    double world_y = (field_height_m / 2.0) - y_m;
-
-    vis::g_mouse_click_position = Eigen::Vector2d(world_x, world_y);
-    vis::g_mouse_clicked = true;
-  }
+  robot_managers[0].SetBodyVelocity(velocity_fBody_rob1);
 }
 
 void vis::ProcessInput(GLFWwindow* gl_window, std::vector<state::SoccerObject>& soccer_objects) {
@@ -646,4 +261,32 @@ void vis::ProcessInput(GLFWwindow* gl_window, std::vector<state::SoccerObject>& 
 
   // velocity_fBody_rob1.normalize();
   soccer_objects[0].velocity = velocity_fBody_rob1;
+}
+
+void vis::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+  if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+
+    // Get window dimensions
+    int window_width, window_height;
+    glfwGetWindowSize(window, &window_width, &window_height);
+
+    // Convert from pixel coordinates to world coordinates (meters)
+    // 1. Convert pixels to millimeters
+    float pixels_per_mm = util::PixelsPerMm();
+    double x_mm = xpos / pixels_per_mm;
+    double y_mm = ypos / pixels_per_mm;
+
+    // 2. Convert from millimeters to meters
+    double x_m = x_mm / 1000.0;
+    double y_m = y_mm / 1000.0;
+
+    // 3. Adjust coordinate system: center at field center, flip Y axis
+    double field_width_m = vis::SoccerField::GetInstance().width_mm / 1000.0;
+    double field_height_m = vis::SoccerField::GetInstance().height_mm / 1000.0;
+
+    double world_x = x_m - (field_width_m / 2.0);   // Center X coordinate
+    double world_y = (field_height_m / 2.0) - y_m;  // Center Y coordinate and flip Y axis
+  }
 }

@@ -43,7 +43,6 @@ class RobotManager {
   void PassBall();
 
   // Used by the outside world
-  void GoToStartPosition(Eigen::Vector3d& p);
   void SetBodyVelocity(Eigen::Vector3d& velocity_fBody);
   void AddGoal(const Eigen::Vector3d& goal);
   void GoHome();
@@ -51,7 +50,6 @@ class RobotManager {
   void SetPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
-  Eigen::Vector3d GetPos();
   void NewCameraData(Eigen::Vector3d pose_from_camera);
 
   // void IntegratePhysics(std::vector<state::SoccerObject>& soccer_objects, float dt);
@@ -70,8 +68,6 @@ class RobotManager {
   bool IsGyroCalibrated();
 
   ~RobotManager();
-
-  bool is_selected_player = false;
 
  private:
   RobotState previous_robot_state;
@@ -113,8 +109,6 @@ class RobotManager {
 
   // Error cases
   int num_sensor_readings_failed;
-
-  // identification
 };
 }  // namespace rob
 
