@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
                 std::cout << "[KickDemo] Planning RRTX path to ball..." << std::endl;
                 
                 // Wait a bit for pose to initialize
-                if (current_time - demo_start_time < 2.0) {
+                if (current_time - demo_start_time < 1.0) {
                     break;
                 }
                 
@@ -74,12 +74,12 @@ int main(int argc, char* argv[]) {
                 Eigen::Vector3d pre_kick_pos = ball_position - ball_to_target * 0.25; // 25cm from ball
                 
                 // Create RRTX waypoints (convert to mm)
-                state::Waypoint start_wp(robot_pos.x() * 1000, robot_pos.y() * 1000, 0);
-                state::Waypoint goal_wp(pre_kick_pos.x() * 1000, pre_kick_pos.y() * 1000, 0);
+                state::Waypoint start_wp(robot_pos.x(), robot_pos.y(), 0);
+                state::Waypoint goal_wp(ball_position.x(), ball_position.y(), 0);
                 
                 
                 // Plan path with RRTX - try very small parameters
-                state::Path rrt_path = algos::FindSinglePath_RRTX(start_wp, goal_wp, 1.0, 100.0);
+                state::Path rrt_path = algo::FindSinglePath_RRTX(start_wp, goal_wp);
                 std::cout<<rrt_path.size() << " waypoints found in RRTX path." << std::endl;
                 
                 // Create fallback if RRTX fails
@@ -95,11 +95,11 @@ int main(int argc, char* argv[]) {
                 // Convert to trajectory (convert back to meters)
                 std::vector<Eigen::Vector3d> trajectory_path;
                 for (const auto& wp : rrt_path) {
-                    trajectory_path.push_back(Eigen::Vector3d(wp.x / 1000.0, wp.y / 1000.0, wp.angle));
+                    trajectory_path.push_back(Eigen::Vector3d(wp.x, wp.y, wp.angle));
                 }
                 
                 // Set trajectory
-                robot_manager.SetPath(trajectory_path, current_time);
+                robot_manager.SetPath(trajectory_path);
                 
                 state = MOVING;
                 movement_start_time = current_time;

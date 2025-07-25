@@ -53,9 +53,9 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
       angular_time = 2 * angular_acc_time + (angular_dist - 2 * angular_acc_dist) / max_angular_vel;
     }
     
-    double T = std::max(linear_time, angular_time) * 1.2; // 20% safety buffer
-    T = std::max(T, 0.5); // Minimum 0.5 seconds per segment
-    
+    // double T = std::max(linear_time, angular_time) * 1.2; // 20% safety buffer
+    // T = std::max(T, 0.5); // Minimum 0.5 seconds per segment
+    double T = 3.0; // Fixed time for now, can be adjusted later
     if (path_index == 1) v0 = FindV0AtT(t_start_s);
     std::cout << "b\n ";
 
