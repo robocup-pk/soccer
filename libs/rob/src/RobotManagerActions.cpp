@@ -24,7 +24,7 @@ void rob::RobotManager::ExecuteKickAction(std::vector<state::SoccerObject>& socc
     for (auto& obj : soccer_objects) {
         if (obj.name == "ball") {
             ball = &obj;
-        } else if (obj.name == "robot_0") {  // Assuming this robot is robot_0
+        } else if (obj.name == "robot0") {  // Matches the name created in InitSoccerObjects
             robot = &obj;
         }
     }
@@ -62,7 +62,7 @@ void rob::RobotManager::ExecutePassAction(std::vector<state::SoccerObject>& socc
     for (auto& obj : soccer_objects) {
         if (obj.name == "ball") {
             ball = &obj;
-        } else if (obj.name == "robot_0") {  // Assuming this robot is robot_0
+        } else if (obj.name == "robot0") {  // Matches the name created in InitSoccerObjects
             robot = &obj;
         }
     }
@@ -88,11 +88,6 @@ void rob::RobotManager::ExecutePassAction(std::vector<state::SoccerObject>& socc
         // Reset action after passing
         robot_action = RobotAction::MOVE;
     }
-}
-
-void rob::RobotManager::DribbleBall() {
-    robot_action = RobotAction::DRIBBLE_BALL;
-    // The actual dribble will be executed continuously in the control loop
 }
 
 void rob::RobotManager::ExecuteDribbleAction(std::vector<state::SoccerObject>& soccer_objects) {

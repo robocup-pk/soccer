@@ -17,6 +17,7 @@ void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) 
         cfg::SystemConfig::init_robot_velocity_mps,
         cfg::SystemConfig::init_robot_acceleration_mpsps, cfg::SystemConfig::robot_mass_kg));
   }
+<<<<<<< HEAD
 
 <<<<<<< HEAD
   // Robots (team two)
@@ -47,6 +48,15 @@ void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) 
   ball.acceleration = cfg::SystemConfig::init_ball_acceleration_mpsps;
   soccer_objects.push_back(ball);
 >>>>>>> 55c9ca2b (Kick, Dribble, Testing, Demos)
+=======
+  
+  soccer_objects.push_back(state::SoccerObject(
+      "ball",
+      Eigen::Vector3d(-cfg::SystemConfig::ball_radius_m + 1, cfg::SystemConfig::ball_radius_m, 0),
+      Eigen::Vector2d(cfg::SystemConfig::ball_radius_m * 2, cfg::SystemConfig::ball_radius_m * 2),
+      cfg::SystemConfig::init_ball_velocity_mps, cfg::SystemConfig::init_ball_acceleration_mpsps,
+      1));
+>>>>>>> 2cdab88a (Temp Changes)
 }
 
 bool state::SoccerObject::IsPointInFrontSector(Eigen::Vector2d point) {
@@ -54,7 +64,7 @@ bool state::SoccerObject::IsPointInFrontSector(Eigen::Vector2d point) {
   Eigen::Vector2d robot_center(center.x(), center.y());
 
   // Calculate front direction using same coordinate system as ball attachment
-  float rotation_rad = position[2]; // Use the z-component as the angle
+  float rotation_rad = (position[2]);
   Eigen::Vector2d front_dir(cos(rotation_rad), sin(rotation_rad));
 
   Eigen::Vector2d to_point = point - robot_center;
@@ -129,12 +139,11 @@ state::SoccerObject& state::SoccerObject::operator=(rob::RobotManager& robot_man
       this->attached_to) {
     kin::DetachBall(*this->attached_to, 6.5f);
   }
-
-  if (robot_manager.GetRobotAction() == rob::RobotAction::DRIBBLE_BALL) {
-    // Dribble action is handled by the robot manager's ExecuteDribbleAction method
-    // This is called from the main game loop, not here
+  if(robot_manager.GetRobotAction() == rob::RobotAction::DRIBBLE_BALL && this->name != "ball" &&
+      this->attached_to) {
+    kin::DetachBall(*this->attached_to, 1.0f);
   }
-
+  // Reset attachment state
   robot_manager.SetRobotAction(rob::RobotAction::MOVE);
   return *this;
 }
@@ -161,7 +170,7 @@ state::SoccerObject::~SoccerObject() {
     attached_to = nullptr;  
 =======
 Eigen::Vector3d state::SoccerObject::GetCenterPosition() {
-  return Eigen::Vector3d(position[0] + size[0] / 2, position[1] + size[1] / 2, 0); // Z-coordinate should be 0 for 2D
+  return Eigen::Vector3d(position[0] + size[0] / 2, position[1] + size[1] / 2, position[2]);
 }
 
 // Ball class implementation with proper SSL parameters and physics

@@ -15,3 +15,4 @@ target_include_directories(algos_lib PUBLIC include)
 
 # add_subdirectory(demo)
 add_subdirectory(test)
+add_subdirectory(demo)
