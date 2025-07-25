@@ -51,7 +51,7 @@ state::Path PlanPath(AlgoName algo_name, std::vector<state::SoccerObject>& socce
 
   switch (algo_name) {
     case AlgoName::RRTX:
-      path = FindSinglePath_RRTX(bot_pos, goal_pos, 150.0, 150.0);
+      path = algo::FindSinglePath_RRTX(bot_pos, goal_pos);
       std::cout << "Path: " << path << std::endl;
       std::cout << "d\n";
       break;
