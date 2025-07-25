@@ -42,7 +42,6 @@ class SoccerObject {
 };
 
 void InitSoccerObjects(std::vector<SoccerObject>& soccer_objects);
-
 }  // namespace state
 
 #endif  // SOCCER_OBJECT_H

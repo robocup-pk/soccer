@@ -62,8 +62,8 @@ state::SoccerObject::SoccerObject(const rob::RobotManager& robot_manager) {
 state::SoccerObject& state::SoccerObject::operator=(rob::RobotManager& robot_manager) {
   // Center position
   position = robot_manager.GetPoseInWorldFrame();
-  position[0] += size[0] / 2;
-  position[0] -= size[1] / 2;
+  // position[0] += size[0] / 2;
+  // position[0] -= size[1] / 2;
   velocity = robot_manager.GetVelocityInWorldFrame();
   if (robot_manager.GetRobotAction() == rob::RobotAction::PASS_BALL && this->name != "ball" &&
       this->attached_to) {
@@ -89,6 +89,4 @@ void state::SoccerObject::Move(float dt) {
   position[2] = util::WrapAngle(position[2]);
 }
 
-Eigen::Vector3d state::SoccerObject::GetCenterPosition() {
-  return Eigen::Vector3d(position[0] + size[0] / 2, position[1] + size[1] / 2, position[2]);
-}
+Eigen::Vector3d state::SoccerObject::GetCenterPosition() { return position; }

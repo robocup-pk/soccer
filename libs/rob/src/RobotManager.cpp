@@ -164,6 +164,12 @@ void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path_fWorld, double
   }
 }
 
+void rob::RobotManager::GoToStartPosition(Eigen::Vector3d& p) {
+  InitializeHome(p);
+  InitializePose(p);
+  state_estimator.SetPose(p);
+}
+
 void rob::RobotManager::SetBodyVelocity(Eigen::Vector3d& velocity_fBody) {
   std::unique_lock<std::mutex> lock(robot_state_mutex);
   this->velocity_fBody = velocity_fBody;
@@ -271,6 +277,8 @@ void rob::RobotManager::InitializePose(Eigen::Vector3d& pose_fWorld) {
 rob::RobotAction rob::RobotManager::GetRobotAction() { return robot_action; }
 
 void rob::RobotManager::SetRobotAction(RobotAction action) { robot_action = action; }
+
+Eigen::Vector3d rob::RobotManager::GetPos() { return pose_fWorld; }
 
 rob::RobotManager::~RobotManager() {
   rob_manager_running.store(false);

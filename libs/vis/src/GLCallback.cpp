@@ -37,5 +37,7 @@ void vis::GLSimulation::RegisterCallbacks() {
   glfwSetKeyCallback(window, vis::GLCallback::KeyCallback);
   // Window resized
   glfwSetFramebufferSizeCallback(window, vis::GLCallback::FrameBufferCallback);
+  // mouse
+  glfwSetMouseButtonCallback(window, vis::MouseButtonCallback);
   // TODO: register callback for joystick inputs when available
 }

@@ -188,6 +188,24 @@ void kin::ResolveCircularCollision(state::SoccerObject& obj1, state::SoccerObjec
     obj2.position[0] += separation * nx;
     obj2.position[1] += separation * ny;
   }
+
+  // Eigen::Vector3d pos1 = obj1.GetCenterPosition();
+  // Eigen::Vector3d pos2 = obj2.GetCenterPosition();
+  // glm::vec2 v = glm::vec2(pos1[0] - pos2[0], pos1[1] - pos2[1]);
+  // float dist = glm::length(v);
+  // float x = dist - obj2.radius_m;
+  // float penetration = obj1.radius_m - x;
+  // std::cout << "radius obj1 " << obj1.radius_m << std::endl;
+  // std::cout << "radius obj2 " << obj2.radius_m << std::endl;
+
+  // glm::vec2 u = normalize(v);
+  // glm::vec2 scaledu = glm::vec2(penetration * u.x, penetration * u.y);
+  // glm::vec2 center = obj1.radius_m + glm::vec2(obj1.radius_m);
+  // glm::vec2 newCenter = glm::vec2(center.x + scaledu.x, center.y + scaledu.y);
+  // glm::vec2 adjustedNewCenter =
+  //     glm::vec2(newCenter.x - obj1.radius_m, newCenter.y - obj1.radius_m);
+  // obj1.position[0] = adjustedNewCenter.x;
+  // obj1.position[1] = adjustedNewCenter.y;
 }
 
 bool kin::IsBallInFrontOfRobot(state::SoccerObject& robot, state::SoccerObject& ball) {
@@ -221,8 +239,8 @@ void kin::UpdateAttachedBallPosition(state::SoccerObject& robot, state::SoccerOb
   float front_y = robot_center.y() + attachment_distance * sin(robot_rotation);
 
   // Position ball center at attachment point (not corner-based)
-  ball.position[0] = front_x - ball.size[0] / 2.0f;
-  ball.position[1] = front_y - ball.size[1] / 2.0f;
+  ball.position[0] = front_x;
+  ball.position[1] = front_y;
   ball.position[2] = 0;
   ball.velocity = Eigen::Vector3d(0, 0, 0);
 }
