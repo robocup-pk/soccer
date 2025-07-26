@@ -311,8 +311,6 @@ bool vis::GLSimulation::RobotAreaPressed(double center_x, double center_y,
   // everything bellow is just mouse pressing math because the coordinate frame is like a grid
   // rather than (0,0) = left corner
 
-  std::cout << "the mouse was pressed at x: " << mouse_click_pos_x << " y: " << mouse_click_pos_y
-            << std::endl;
   double w = cfg::SystemConfig::robot_size_m[0];  // robot width
   // first box
   double left_post = center_x - w / 2;
