@@ -3,29 +3,30 @@
 #include <cmath>
 #include <algorithm>
 
-namespace kin {
+namespace state {
 
-BallModel::BallModel() 
-    : state::SoccerObject("ball", Eigen::Vector3d::Zero(), 
-                         Eigen::Vector2d(cfg::SystemConfig::ball_radius_m * 2, 
-                                        cfg::SystemConfig::ball_radius_m * 2),
-                         Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), 0.046f),
+// Ball class implementation with proper SSL parameters and physics
+Ball::Ball() 
+    : SoccerObject("ball", Eigen::Vector3d::Zero(), 
+                   Eigen::Vector2d(cfg::SystemConfig::ball_radius_m * 2, 
+                                  cfg::SystemConfig::ball_radius_m * 2),
+                   Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), 0.046f),
       spin_(Eigen::Vector3d::Zero()),
       friction_coefficient_(3.5),    // High friction for SSL carpet/turf - ball stops quickly
       air_resistance_(0.1),          // Minimal air resistance for SSL (small field)
       restitution_(0.6),             // Lower restitution for SSL ball
       magnus_coefficient_(0.0001)    // Minimal spin effect for SSL
 {
-    radius_m = cfg::SystemConfig::ball_radius_m;  // SSL standard: 21.5mm radius
-    mass_kg = 0.046f;  // SSL standard: 46g mass
+  radius_m = cfg::SystemConfig::ball_radius_m;  // SSL standard: 21.5mm radius
+  mass_kg = 0.046f;  // SSL standard: 46g mass
 }
 
-BallModel::BallModel(const Eigen::Vector3d& position_) : BallModel() {
-    position = position_;
+Ball::Ball(const Eigen::Vector3d& position_) : Ball() {
+  position = position_;
 }
 
-void BallModel::UpdatePhysics(Eigen::Vector3d& position, Eigen::Vector3d& velocity, 
-                              Eigen::Vector3d& acceleration, double dt) {
+void Ball::UpdatePhysics(Eigen::Vector3d& position, Eigen::Vector3d& velocity, 
+                                Eigen::Vector3d& acceleration, double dt) {
     // SSL Physics: Ball always stays on ground (2D simulation)
     position[2] = 0.0;  // Force ball to stay on ground
     velocity[2] = 0.0;  // No vertical velocity
@@ -57,8 +58,8 @@ void BallModel::UpdatePhysics(Eigen::Vector3d& position, Eigen::Vector3d& veloci
     acceleration = Eigen::Vector3d::Zero();
 }
 
-void BallModel::ApplyKick(Eigen::Vector3d& velocity, const Eigen::Vector2d& kick_direction, 
-                          double kick_power) {
+void Ball::ApplyKick(Eigen::Vector3d& velocity, const Eigen::Vector2d& kick_direction, 
+                           double kick_power) {
     // Normalize kick direction
     Eigen::Vector2d normalized_direction = kick_direction.normalized();
     
@@ -75,7 +76,7 @@ void BallModel::ApplyKick(Eigen::Vector3d& velocity, const Eigen::Vector2d& kick
     // No chip kicks in SSL simulation (always 2D)
 }
 
-void BallModel::ApplyDribbleForce(Eigen::Vector3d& velocity, const Eigen::Vector2d& dribble_force) {
+void Ball::ApplyDribbleForce(Eigen::Vector3d& velocity, const Eigen::Vector2d& dribble_force) {
     // Apply stronger force for dribbling to keep up with robot movement
     velocity[0] += dribble_force[0] * 0.2;  // Increased scaling for better control
     velocity[1] += dribble_force[1] * 0.2;
@@ -89,12 +90,12 @@ void BallModel::ApplyDribbleForce(Eigen::Vector3d& velocity, const Eigen::Vector
     }
 }
 
-void BallModel::ApplySpin(const Eigen::Vector3d& spin_vector) {
+void Ball::ApplySpin(const Eigen::Vector3d& spin_vector) {
     spin_ = spin_vector;
 }
 
-Eigen::Vector2d BallModel::CalculateMagnusForce(const Eigen::Vector3d& velocity, 
-                                                const Eigen::Vector3d& spin) const {
+Eigen::Vector2d Ball::CalculateMagnusForce(const Eigen::Vector3d& velocity, 
+                                                 const Eigen::Vector3d& spin) const {
     // Magnus force = k * (spin × velocity)
     // In 2D, we only consider Z-axis spin affecting X-Y motion
     double speed = std::sqrt(velocity[0]*velocity[0] + velocity[1]*velocity[1]);
@@ -109,8 +110,8 @@ Eigen::Vector2d BallModel::CalculateMagnusForce(const Eigen::Vector3d& velocity,
     return magnus_force;
 }
 
-void BallModel::HandleBounce(Eigen::Vector3d& velocity, const Eigen::Vector2d& surface_normal, 
-                             double restitution) {
+void Ball::HandleBounce(Eigen::Vector3d& velocity, const Eigen::Vector2d& surface_normal, 
+                              double restitution) {
     // Reflect velocity off surface with restitution
     Eigen::Vector2d velocity_2d(velocity[0], velocity[1]);
     Eigen::Vector2d normal = surface_normal.normalized();
@@ -127,7 +128,7 @@ void BallModel::HandleBounce(Eigen::Vector3d& velocity, const Eigen::Vector2d& s
     spin_[2] += bounce_spin * (0.5 - static_cast<double>(rand()) / RAND_MAX);
 }
 
-void BallModel::ApplyFriction(Eigen::Vector3d& velocity, double friction_coefficient, double dt) {
+void Ball::ApplyFriction(Eigen::Vector3d& velocity, double friction_coefficient, double dt) {
     // SSL Ground friction - high deceleration on carpet/turf
     double speed = std::sqrt(velocity[0]*velocity[0] + velocity[1]*velocity[1]);
     
@@ -154,7 +155,7 @@ void BallModel::ApplyFriction(Eigen::Vector3d& velocity, double friction_coeffic
     }
 }
 
-void BallModel::ApplyAirResistance(Eigen::Vector3d& velocity, double dt) {
+void Ball::ApplyAirResistance(Eigen::Vector3d& velocity, double dt) {
     // Minimal air resistance for SSL (small field, low speeds)
     double speed = std::sqrt(velocity[0]*velocity[0] + velocity[1]*velocity[1]);
     
@@ -172,9 +173,9 @@ void BallModel::ApplyAirResistance(Eigen::Vector3d& velocity, double dt) {
     }
 }
 
-Eigen::Vector2d BallModel::PredictPosition(const Eigen::Vector3d& current_pos, 
-                                           const Eigen::Vector3d& current_vel, 
-                                           double prediction_time) const {
+Eigen::Vector2d Ball::PredictPosition(const Eigen::Vector3d& current_pos, 
+                                      const Eigen::Vector3d& current_vel, 
+                                      double prediction_time) const {
     // Simple prediction assuming constant deceleration due to friction
     double friction_deceleration = friction_coefficient_ * 9.81;
     double current_speed = std::sqrt(current_vel[0]*current_vel[0] + current_vel[1]*current_vel[1]);
@@ -195,14 +196,4 @@ Eigen::Vector2d BallModel::PredictPosition(const Eigen::Vector3d& current_pos,
                           current_pos[1] + direction[1] * distance);
 }
 
-double BallModel::CalculateAirDensity() const {
-    // Standard air density at sea level (kg/m³)
-    return 1.225;
-}
-
-double BallModel::CalculateDragCoefficient() const {
-    // Drag coefficient for a smooth sphere
-    return air_resistance_;
-}
-
-}  // namespace kin
+}  // namespace state

@@ -2,6 +2,7 @@
 #include <cmath>
 #include "Dribble.h"
 #include "SoccerObject.h"
+#include "BallModel.h"
 #include "RobotModel.h"
 
 class DribbleTest : public ::testing::Test {

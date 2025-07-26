@@ -3,11 +3,12 @@
 
 #include "SystemConfig.h"
 #include "Kinematics.h"
+#include "BallModel.h"
 #include "Coordinates.h"
 #include "SoccerField.h"
 
 // Global ball model instance
-kin::BallModel kin::global_ball_model;
+state::Ball kin::global_ball_model;
 
 void kin::UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects, float dt) {
   // First update ball physics with advanced model
@@ -306,8 +307,8 @@ void kin::ApplyKickToBall(state::SoccerObject& ball, const Eigen::Vector2d& kick
     DetachBall(ball, 0.0f);  // Detach without extra velocity, kick will provide it
   }
   
-  // Try to cast to BallModel first for proper physics
-  if (auto* ball_model = dynamic_cast<kin::BallModel*>(&ball)) {
+  // Try to cast to Ball first for proper physics
+  if (auto* ball_model = dynamic_cast<state::Ball*>(&ball)) {
     ball_model->ApplyKick(ball.velocity, kick_direction, kick_power);
   } else {
     // Fallback: Use global ball model to apply kick to the object's velocity

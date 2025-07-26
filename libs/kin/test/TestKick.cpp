@@ -2,6 +2,7 @@
 #include <cmath>
 #include "Kick.h"
 #include "SoccerObject.h"
+#include "BallModel.h"
 #include "RobotModel.h"
 
 class KickTest : public ::testing::Test {

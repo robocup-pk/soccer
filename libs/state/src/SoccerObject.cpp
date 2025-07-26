@@ -103,22 +103,8 @@ Eigen::Vector3d state::SoccerObject::GetCenterPosition() {
   return Eigen::Vector3d(position[0] + size[0] / 2, position[1] + size[1] / 2, position[2]);
 }
 
-// Ball class implementation with proper SSL parameters and physics
-state::Ball::Ball() 
-    : SoccerObject("ball", Eigen::Vector3d::Zero(), 
-                   Eigen::Vector2d(cfg::SystemConfig::ball_radius_m * 2, 
-                                  cfg::SystemConfig::ball_radius_m * 2),
-                   Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), 0.046f),
-      spin_(Eigen::Vector3d::Zero()),
-      friction_coefficient_(3.5),    // High friction for SSL carpet/turf - ball stops quickly
-      air_resistance_(0.1),          // Minimal air resistance for SSL (small field)
-      restitution_(0.6),             // Lower restitution for SSL ball
-      magnus_coefficient_(0.0001)    // Minimal spin effect for SSL
-{
-  radius_m = cfg::SystemConfig::ball_radius_m;  // SSL standard: 21.5mm radius
-  mass_kg = 0.046f;  // SSL standard: 46g mass
-}
 
+<<<<<<< HEAD
 state::Ball::Ball(const Eigen::Vector3d& position_) : Ball() {
   position = position_;
 }
@@ -271,3 +257,5 @@ void state::Ball::ApplyAirResistance(Eigen::Vector3d& velocity, double dt) {
     }
 >>>>>>> b35dac02 (Kick, Dribble, Testing, Demos)
 }
+=======
+>>>>>>> 5dcaf147 (Fix BallObject Placement)
