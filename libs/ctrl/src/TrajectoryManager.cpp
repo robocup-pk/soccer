@@ -21,7 +21,7 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
     Eigen::Vector3d pose_end(path_fWorld[path_index]);
     Eigen::Vector3d h(pose_end - pose_start);
     Eigen::Vector3d v0(0, 0, 0);
-    double T = 4;
+    double T = 4.0;
     if (path_index == 1) v0 = FindV0AtT(t_start_s);
     std::cout << "b\n ";
 
@@ -48,7 +48,7 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
 }
 
 Eigen::Vector3d ctrl::TrajectoryManager::GetVelocityAtT(double current_time_s) {
-  double kp = 0.5;
+  double kp = 0.0;
   Eigen::Vector3d Current_speed = current_trajectory->VelocityAtT(current_time_s);
   Eigen::Vector3d Current_position_fWorld = p_fworld;
 
