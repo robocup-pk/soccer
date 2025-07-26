@@ -15,13 +15,6 @@ void vis::SpriteRenderer::Init(Shader& shader) {
   this->shader = shader;
   this->InitRenderData();
 
-  // Set up projection matrix for 2D rendering
-  // glm::mat4 projection =
-  //     glm::ortho(0.0f,
-  //     static_cast<float>(util::MmToPixels(SoccerField::GetInstance().width_mm)),
-  //                static_cast<float>(util::MmToPixels(SoccerField::GetInstance().height_mm)),
-  //                0.0f, -1.0f, 1.0f);
-  // Set up projection matrix with (0,0) at center
   float half_width =
       static_cast<float>(util::MmToPixels(SoccerField::GetInstance().width_mm)) / 2.0f;
   float half_height =
@@ -43,34 +36,25 @@ vis::SpriteRenderer::~SpriteRenderer() {
 
 void vis::SpriteRenderer::DrawSprite(Texture2D& texture, glm::vec2 position, glm::vec2 size,
                                      float rotate, glm::vec3 color) {
-  // Flip Y coordinate here
   position.y = -position.y;
-  // Prepare transformations
-  this->shader.Use();
+  shader.Use();
   glm::mat4 model = glm::mat4(1.0f);
 
-  // First translate to desired position
+  // 1. Translate to world position (centered at (0,0))
   model = glm::translate(model, glm::vec3(position, 0.0f));
 
-  // Move origin to center for rotation
-  model = glm::translate(model, glm::vec3(0.5f * size.x, 0.5f * size.y, 0.0f));
-
-  // Rotate
+  // 2. Rotate around the center (since quad is [-0.5,0.5], rotation is centered)
   model = glm::rotate(model, glm::radians(rotate), glm::vec3(0.0f, 0.0f, 1.0f));
 
-  // Move origin back
-  model = glm::translate(model, glm::vec3(-0.5f * size.x, -0.5f * size.y, 0.0f));
-
-  // Scale
+  // 3. Scale to size
   model = glm::scale(model, glm::vec3(size, 1.0f));
 
-  this->shader.SetMatrix4("model", model);
-  this->shader.SetVector3f("spriteColor", color);
+  shader.SetMatrix4("model", model);
+  shader.SetVector3f("spriteColor", color);
 
   glActiveTexture(GL_TEXTURE0);
   texture.Bind();
-
-  glBindVertexArray(this->quadVAO);
+  glBindVertexArray(quadVAO);
   glDrawArrays(GL_TRIANGLES, 0, 6);
   glBindVertexArray(0);
 }
@@ -79,29 +63,14 @@ void vis::SpriteRenderer::InitRenderData() {
   // configure VAO/VBO
   unsigned int VBO;
 
-  // 6 vertices for 2 triangles (quad)
-  // Each vertex: x, y, u, v (position + texture coordinates)
-  // float vertices[] = {
-  //     // First triangle
-  //     0.0f, 1.0f, 0.0f, 1.0f,  // top-left
-  //     1.0f, 0.0f, 1.0f, 0.0f,  // bottom-right
-  //     0.0f, 0.0f, 0.0f, 0.0f,  // bottom-left
-
-  //     // Second triangle
-  //     0.0f, 1.0f, 0.0f, 1.0f,  // top-left
-  //     1.0f, 1.0f, 1.0f, 1.0f,  // top-right
-  //     1.0f, 0.0f, 1.0f, 0.0f   // bottom-right
-  // };
   float vertices[] = {
-      // First triangle
-      0.0f, 1.0f, 0.0f, 0.0f,  // top-left (v=0.0 for top)
-      1.0f, 0.0f, 1.0f, 1.0f,  // bottom-right (v=1.0 for bottom)
-      0.0f, 0.0f, 0.0f, 1.0f,  // bottom-left (v=1.0 for bottom)
+      -0.5f, 0.5f,  0.0f, 0.0f,  // top-left
+      0.5f,  -0.5f, 1.0f, 1.0f,  // bottom-right
+      -0.5f, -0.5f, 0.0f, 1.0f,  // bottom-left
 
-      // Second triangle
-      0.0f, 1.0f, 0.0f, 0.0f,  // top-left (v=0.0 for top)
-      1.0f, 1.0f, 1.0f, 0.0f,  // top-right (v=0.0 for top)
-      1.0f, 0.0f, 1.0f, 1.0f   // bottom-right (v=1.0 for bottom)
+      -0.5f, 0.5f,  0.0f, 0.0f,  // top-left
+      0.5f,  0.5f,  1.0f, 0.0f,  // top-right
+      0.5f,  -0.5f, 1.0f, 1.0f   // bottom-right
   };
 
   glGenVertexArrays(1, &this->quadVAO);

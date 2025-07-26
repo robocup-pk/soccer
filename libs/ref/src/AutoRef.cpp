@@ -45,6 +45,8 @@ void ref::CheckCollisions(std::vector<state::SoccerObject>& soccer_objects) {
     }
   }
 
+  ref::CheckForGoals(soccer_objects);
+  
   for (auto& obj : soccer_objects) {
     if (!kin::IsInsideBoundary(obj)) {
       std::cout << "[ref::CheckCollisions] Robot " << obj.name << " is outside the boundary"
