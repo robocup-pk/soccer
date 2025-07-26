@@ -1,5 +1,7 @@
 #include "Kick.h"
 #include "Kinematics.h"
+#include "BallModel.h"
+#include "Utils.h"
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -60,5 +62,9 @@ bool Kick(state::SoccerObject& robot, state::SoccerObject& ball, double kick_pow
   
   return true;
 }
+
+// Old ExecuteKick and ExecutePass functions removed
+// Now handled by KickExecutor class with proper OOP architecture
+// Backward compatibility maintained through inline functions in header
 
 }  // namespace kin
