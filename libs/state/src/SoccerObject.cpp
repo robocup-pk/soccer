@@ -89,6 +89,4 @@ void state::SoccerObject::Move(float dt) {
   position[2] = util::WrapAngle(position[2]);
 }
 
-Eigen::Vector3d state::SoccerObject::GetCenterPosition() {
-  return Eigen::Vector3d(position[0] + size[0] / 2, position[1] + size[1] / 2, position[2]);
-}
+Eigen::Vector3d state::SoccerObject::GetCenterPosition() { return position; }

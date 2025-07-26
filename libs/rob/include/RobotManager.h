@@ -52,11 +52,7 @@ class RobotManager {
   void SetRobotAction(RobotAction action);
   void NewCameraData(Eigen::Vector3d pose_from_camera);
 
-  // void IntegratePhysics(std::vector<state::SoccerObject>& soccer_objects, float dt);
-  // void HandleCollisionFeedback(std::vector<state::SoccerObject>& soccer_objects);
-
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
-  // void UpdateKinematics(std::vector<state::SoccerObject>& soccer_objects, float dt);
 
   Eigen::Vector3d GetPoseInWorldFrame() const;
   void InitializePose(Eigen::Vector3d& pose_fWorld);

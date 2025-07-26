@@ -38,6 +38,7 @@ class SoccerObject {
 
   // Ball Attachment
   bool is_attached = false;
+  bool is_selected_player = false;
   SoccerObject* attached_to;
 };
 

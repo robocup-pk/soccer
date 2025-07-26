@@ -57,7 +57,6 @@ int main(int argc, char* argv[]) {
     // 1. Kinematics (Collisions, Max speeds)
     // kin::CheckAndResolveCollisions(soccer_objects);
     ref::CheckCollisions(soccer_objects);
-    ref::CheckForGoals(soccer_objects);
     // 2.
     // 3.
 

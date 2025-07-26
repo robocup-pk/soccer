@@ -65,10 +65,10 @@ void kin::CheckAndResolveCollisions(std::vector<state::SoccerObject>& soccer_obj
 void kin::ResolveCollisionWithWall(std::vector<state::SoccerObject>& soccer_objects) {
   for (state::SoccerObject& soccer_object : soccer_objects) {
     Eigen::Vector3d center = soccer_object.GetCenterPosition();
-    float left = soccer_object.position[0];
-    float right = soccer_object.position[0] + soccer_object.size[0];
-    float top = soccer_object.position[1] + soccer_object.size[1];
-    float bottom = soccer_object.position[1];
+    float left = soccer_object.position[0] - (soccer_object.size[0] / 2);
+    float right = soccer_object.position[0] + (soccer_object.size[0] / 2);
+    float top = soccer_object.position[1] + (soccer_object.size[1] / 2);
+    float bottom = soccer_object.position[1] - (soccer_object.size[1] / 2);
 
     double boundary_x = (vis::SoccerField::GetInstance().width_mm / 2.0f) / 1000.0f;
     double boundary_y = (vis::SoccerField::GetInstance().height_mm / 2.0f) / 1000.0f;
@@ -77,7 +77,7 @@ void kin::ResolveCollisionWithWall(std::vector<state::SoccerObject>& soccer_obje
     if ((right >= boundary_x && soccer_object.velocity[0] >= 0) ||
         (left <= -boundary_x && soccer_object.velocity[0] <= 0)) {
       soccer_object.position[0] =
-          std::clamp(soccer_object.position[0], -boundary_x, boundary_x - soccer_object.size[0]);
+          std::clamp(soccer_object.position[0], -boundary_x + (soccer_object.size[0]), boundary_x - (soccer_object.size[0]));
       soccer_object.velocity[0] *= -cfg::SystemConfig::wall_velocity_damping_factor;
     }
 
@@ -85,20 +85,20 @@ void kin::ResolveCollisionWithWall(std::vector<state::SoccerObject>& soccer_obje
     if ((top > boundary_y && soccer_object.velocity[1] >= 0) ||
         (bottom < -boundary_y && soccer_object.velocity[1] <= 0)) {
       soccer_object.position[1] =
-          std::clamp(soccer_object.position[1], -boundary_y, boundary_y - soccer_object.size[1]);
+          std::clamp(soccer_object.position[1], -boundary_y + (soccer_object.size[1]), boundary_y - (soccer_object.size[1]));
       soccer_object.velocity[1] *= -cfg::SystemConfig::wall_velocity_damping_factor;
     }
+
   }
 }
 
 bool kin::IsInsideBoundary(const state::SoccerObject& obj) {
   float half_width = (vis::SoccerField::GetInstance().width_mm / 2) / 1000.0f;
   float half_height = (vis::SoccerField::GetInstance().height_mm / 2) / 1000.0f;
-  float left = obj.position[0];
-  float right = obj.position[0] + obj.size[0];
-  float top = obj.position[1] + obj.size[1];
-  float bottom = obj.position[1];
-
+  float left = obj.position[0]- (obj.size[0] / 2);
+  float right = obj.position[0] + (obj.size[0] / 2);
+  float top = obj.position[1] + (obj.size[1] / 2);
+  float bottom = obj.position[1] - (obj.size[1] / 2);
   return left >= -half_width && right <= half_width && top >= -half_height &&
          bottom <= half_height;
 }
@@ -221,8 +221,8 @@ void kin::UpdateAttachedBallPosition(state::SoccerObject& robot, state::SoccerOb
   float front_y = robot_center.y() + attachment_distance * sin(robot_rotation);
 
   // Position ball center at attachment point (not corner-based)
-  ball.position[0] = front_x - ball.size[0] / 2.0f;
-  ball.position[1] = front_y - ball.size[1] / 2.0f;
+  ball.position[0] = front_x;
+  ball.position[1] = front_y;
   ball.position[2] = 0;
   ball.velocity = Eigen::Vector3d(0, 0, 0);
 }
@@ -252,8 +252,8 @@ void kin::DetachBall(state::SoccerObject& ball, float detach_velocity) {
   float separation_distance = 0.2f;  // Distance to separate ball from robot
 
   // Position ball in front of robot using the same front direction
-  ball.position[0] = robot_center.x() + separation_distance * front_dir.x() - ball.size[0] / 2.0f;
-  ball.position[1] = robot_center.y() + separation_distance * front_dir.y() - ball.size[1] / 2.0f;
+  ball.position[0] = robot_center.x() + separation_distance * front_dir.x();
+  ball.position[1] = robot_center.y() + separation_distance * front_dir.y();
   // Set ball velocity for natural detachment
   ball.velocity[0] = detach_vel_x;
   ball.velocity[1] = detach_vel_y;
