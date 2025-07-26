@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
   robot_obj.radius_m = 0.09f;
   soccer_objects.push_back(robot_obj);
 
-  kin::BallModel ball_obj;
+  state::Ball ball_obj;
   soccer_objects.push_back(ball_obj);
   
   // Initialize OpenGL simulation

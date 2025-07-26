@@ -4,7 +4,6 @@
 #include <map>
 
 #include "SoccerObject.h"
-#include "BallModel.h"
 
 namespace kin {
 
@@ -36,7 +35,7 @@ void ApplyKickToBall(state::SoccerObject& ball, const Eigen::Vector2d& kick_dire
 Eigen::Vector2d PredictBallPosition(const state::SoccerObject& ball, double prediction_time);
 
 // Global ball model instance
-extern BallModel global_ball_model;
+extern state::Ball global_ball_model;
 
 }  // namespace kin
 

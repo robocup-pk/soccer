@@ -62,6 +62,7 @@ class SoccerObject {
   bool is_dribbling = false;  // When true, robot uses dribble physics instead of holding
 };
 
+<<<<<<< HEAD
 // Ball class inheriting from SoccerObject with proper mass and radius and physics
 class Ball : public SoccerObject {
  public:
@@ -106,6 +107,10 @@ private:
   void ApplyAirResistance(Eigen::Vector3d& velocity, double dt);
 >>>>>>> 55c9ca2b (Kick, Dribble, Testing, Demos)
 };
+=======
+// Forward declaration - Ball class is defined in BallModel.h
+class Ball;
+>>>>>>> a9683026 (Fix BallObject Placement)
 
 void InitSoccerObjects(std::vector<SoccerObject>& soccer_objects);
 

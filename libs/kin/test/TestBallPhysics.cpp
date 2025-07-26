@@ -1,15 +1,15 @@
 #include <iostream>
 #include <vector>
+#include "SoccerObject.h"
 #include "BallModel.h"
 #include "Kinematics.h"
 #include "Kick.h"
-#include "SoccerObject.h"
 
 // Test case 1: Basic ball physics with no external forces
 void TestBasicBallPhysics() {
     std::cout << "\n=== Test 1: Basic Ball Physics ===" << std::endl;
     
-    kin::BallModel ball_model;
+    state::Ball ball_model;
     
     // Create a ball with initial velocity
     Eigen::Vector3d position(0, 0, 0);
@@ -32,7 +32,7 @@ void TestBasicBallPhysics() {
 void TestKickApplication() {
     std::cout << "\n=== Test 2: Kick Application ===" << std::endl;
     
-    kin::BallModel ball_model;
+    state::Ball ball_model;
     
     // Create stationary ball
     Eigen::Vector3d velocity(0, 0, 0);

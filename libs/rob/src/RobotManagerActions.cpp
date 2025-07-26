@@ -2,6 +2,7 @@
 #include "RobotManager.h"
 #include "Kinematics.h"
 #include "Dribble.h"
+#include "BallModel.h"
 #include "Utils.h"
 #include <cmath>
 #include <iostream>
@@ -173,7 +174,7 @@ void rob::RobotManager::ExecuteDribbleAction(std::vector<state::SoccerObject>& s
             velocity_match_force.y() = robot_velocity.y() * 3.0;
             
             // Apply velocity matching force to keep ball moving with robot
-            if (auto* ball_model = dynamic_cast<kin::BallModel*>(ball)) {
+            if (auto* ball_model = dynamic_cast<state::Ball*>(ball)) {
                 ball_model->ApplyDribbleForce(ball->velocity, velocity_match_force);
             } else {
                 ball->velocity.x() += velocity_match_force.x() * 0.3;
@@ -193,7 +194,7 @@ void rob::RobotManager::ExecuteDribbleAction(std::vector<state::SoccerObject>& s
             pull_force.y() = (robot_front.y() - ball_center.y()) * 20.0;
             
             // Apply pull force to bring ball closer
-            if (auto* ball_model = dynamic_cast<kin::BallModel*>(ball)) {
+            if (auto* ball_model = dynamic_cast<state::Ball*>(ball)) {
                 ball_model->ApplyDribbleForce(ball->velocity, pull_force);
             } else {
                 ball->velocity.x() += pull_force.x() * 0.1;
