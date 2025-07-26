@@ -17,6 +17,7 @@ class SoccerObject {
                Eigen::Vector3d acceleration_ = Eigen::Vector3d::Zero(), float mass_kg_ = 1);
   SoccerObject(const rob::RobotManager& robot_manager);
   SoccerObject& operator=(rob::RobotManager& robot_manager);
+  ~SoccerObject();
 
   // Getters
   inline Eigen::Vector3d GetPosition() const { return position; }

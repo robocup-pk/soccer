@@ -90,3 +90,7 @@ void state::SoccerObject::Move(float dt) {
 }
 
 Eigen::Vector3d state::SoccerObject::GetCenterPosition() { return position; }
+
+state::SoccerObject::~SoccerObject() {
+    attached_to = nullptr;  
+}
