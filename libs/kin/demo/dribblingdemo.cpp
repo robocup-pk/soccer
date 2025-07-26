@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
         double dist = (ball_position - robot_pos).head<2>().norm();
         if (dist < 0.3) {  // If close enough to ball, start dribbling
             std::cout << "[DribblingDemo] Robot close to ball, starting dribble..." << std::endl;
-            robot_manager.ExecuteDribbleAction(soccer_objects);  // Execute dribble action
+            kin::ExecuteDribble(soccer_objects);  // Execute dribble action directly
         } else {
             std::cout << "[DribblingDemo] Robot moving towards ball..." << std::endl;
             //robot_manager.MoveTowards(ball_position);  // Move towards the ball if not close enough

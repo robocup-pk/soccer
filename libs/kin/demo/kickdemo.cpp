@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
     
     // Set positions
     Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0);     // Robot starts at origin
-    Eigen::Vector3d ball_position(1.5, 0.5, 0.0);
+    Eigen::Vector3d ball_position(1.5, -0.5, 0.0);
     
     // Initialize robot pose
     Eigen::Vector3d robot_pose_ref = robot_start_pose;
@@ -73,11 +73,10 @@ int main(int argc, char* argv[]) {
         double dist = sqrt((ball_position - robot_pos).head<2>().squaredNorm());
         cout<<"Distance: "<<dist<<endl;
         
-        // Set kick action when close to ball - robot manager will execute it
-        if (dist < 0.3) {  // Use same distance as ExecuteKickAction (30cm)
-            cout<<"Setting kick action"<<endl;
-            //robot_manager.KickBall();  // Set the action, let robot manager execute it
-            robot_manager.ExecuteKickAction(soccer_objects);
+        // Execute kick when close to ball
+        if (dist < 0.3) {  // Use same distance as ExecuteKick (30cm)
+            cout<<"Executing kick action"<<endl;
+            kin::ExecuteKick(soccer_objects);  // Execute kick directly
             //Now after kick exit the screen
             std::cout << "Robot kicked the ball. Exiting demo." << std::endl;
         }

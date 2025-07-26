@@ -46,12 +46,6 @@ class RobotManager {
   // Actions
   void KickBall();
   void PassBall();
-  
-  // Action execution methods (for integration with soccer objects)
-  void ExecuteKickAction(std::vector<state::SoccerObject>& soccer_objects);
-  void ExecutePassAction(std::vector<state::SoccerObject>& soccer_objects, 
-                        const Eigen::Vector2d& target_position);
-  void ExecuteDribbleAction(std::vector<state::SoccerObject>& soccer_objects);
 
   // Used by the outside world
   void SetBodyVelocity(Eigen::Vector3d& velocity_fBody);
