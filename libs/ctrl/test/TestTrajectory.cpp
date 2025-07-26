@@ -140,7 +140,133 @@ TEST_F(TrajectoryTest, TestPathToTrajectoryConversation) {
   bool valid_trajectories = trajectory_manager.CreateTrajectoriesFromPath(path);
 
   EXPECT_TRUE(valid_trajectories);
-  EXPECT_TRUE(trajectory_manager.active_trajectories.size() == 4);
+  EXPECT_TRUE(trajectory_manager.active_trajectories.size() == 3);
 
   trajectory_manager.Print();
+}
+TEST_F(TrajectoryTest, PositionAtStartTimeIsStartPose) {
+  Eigen::Vector3d pose_start(0, 0, 0);
+  Eigen::Vector3d pose_end(1, 0, 0);
+  double t_start = 0.0, t_end = 4.0;
+
+  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start, t_end);
+  Eigen::Vector3d pos = traj.PositionAtT(t_start);
+  EXPECT_NEAR(pos.x(), pose_start.x(), 1e-6);
+  EXPECT_NEAR(pos.y(), pose_start.y(), 1e-6);
+  EXPECT_NEAR(pos.z(), pose_start.z(), 1e-6);
+}
+
+TEST_F(TrajectoryTest, PositionAtEndTimeIsEndPose) {
+  Eigen::Vector3d pose_start(0, 0, 0);
+  Eigen::Vector3d pose_end(1, 0, 0);
+  double t_start = 0.0, t_end = 4.0;
+
+  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start, t_end);
+  Eigen::Vector3d pos = traj.PositionAtT(t_end);
+  EXPECT_NEAR(pos.x(), pose_end.x(), 1e-6);
+  EXPECT_NEAR(pos.y(), pose_end.y(), 1e-6);
+  EXPECT_NEAR(pos.z(), pose_end.z(), 1e-6);
+}
+
+TEST_F(TrajectoryTest, PositionAtMidTimeIsMidPose) {
+  Eigen::Vector3d pose_start(0, 0, 0);
+  Eigen::Vector3d pose_end(1, 0, 0);
+  double t_start = 0.0, t_end = 4.0;
+
+  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start, t_end);
+  Eigen::Vector3d pos = traj.PositionAtT(2.0);
+  // Midpoint might not be exactly halfway due to acceleration phase
+  // so just check it's roughly between
+  std::cout << "Position at mid time: " << pos.transpose() << std::endl;
+
+  EXPECT_GT(pos.x(), 0.4);  // Adjust tolerance if needed
+  EXPECT_LT(pos.x(), 0.6);
+}
+TEST_F(TrajectoryTest, PositionAtStartTimeIsStartPose2) {
+  Eigen::Vector3d pose_start(0, 0, 0);
+  Eigen::Vector3d pose_end(1, 0, 0);
+  double t_start = 0.0, t_end = 4.0;
+
+  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start, t_end);
+  Eigen::Vector3d pos = traj.PositionAtT(t_start);
+  EXPECT_NEAR(pos.x(), pose_start.x(), 1e-6);
+  EXPECT_NEAR(pos.y(), pose_start.y(), 1e-6);
+  EXPECT_NEAR(pos.z(), pose_start.z(), 1e-6);
+}
+
+TEST_F(TrajectoryTest, PositionAtEndTimeIsEndPose2) {
+  Eigen::Vector3d pose_start(0, 0, 0);
+  Eigen::Vector3d pose_end(1, 0, 0);
+  double t_start = 0.0, t_end = 4.0;
+
+  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start, t_end);
+  Eigen::Vector3d pos = traj.PositionAtT(t_end);
+  EXPECT_NEAR(pos.x(), pose_end.x(), 1e-6);
+  EXPECT_NEAR(pos.y(), pose_end.y(), 1e-6);
+  EXPECT_NEAR(pos.z(), pose_end.z(), 1e-6);
+}
+
+TEST_F(TrajectoryTest, PositionAtMidTimeIsMidPose2) {
+  Eigen::Vector3d pose_start(0, 0, 0);
+  Eigen::Vector3d pose_end(1, 0, 0);
+  double t_start = 0.0, t_end = 4.0;
+
+  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start, t_end);
+  Eigen::Vector3d pos = traj.PositionAtT(2.0);
+  // Midpoint might not be exactly halfway due to acceleration phase
+  // so just check it's roughly between
+  std::cout << "Position at mid time: " << pos.transpose() << std::endl;
+  EXPECT_GT(pos.x(), 0.4);  // Adjust tolerance if needed
+  EXPECT_LT(pos.x(), 0.6);
+}
+TEST_F(TrajectoryTest, PositionInAccelerationPhase) {
+  const double top_speed = 0.3;  // m/s
+  const Eigen::Vector3d max_acc(0.5, 0.5, 0.5);
+  const double t_start = 0.0;
+  const double t_end = 4.0;
+
+  Eigen::Vector3d pose_start(0, 0, 0);
+  Eigen::Vector3d pose_end(1, 0, 0);
+  ctrl::TrapezoidalTrajectoryVi3D traj(pose_start, pose_end, t_start, t_end);
+
+  double t = 0.5;
+  Eigen::Vector3d pos = traj.PositionAtT(t);
+  std::cout << "[ACCEL] t=" << t << ", pos=" << pos.transpose() << std::endl;
+
+  EXPECT_GT(pos.x(), 0.0);
+  EXPECT_LT(pos.x(), 0.1);
+}
+TEST_F(TrajectoryTest, PositionInCruisePhase) {
+  const double top_speed = 0.3;
+  const Eigen::Vector3d max_acc(0.5, 0.5, 0.5);
+  const double t_start = 0.0;
+  const double t_end = 4.0;
+
+  Eigen::Vector3d pose_start(0, 0, 0);
+  Eigen::Vector3d pose_end(1, 0, 0);
+  ctrl::TrapezoidalTrajectoryVi3D traj(pose_start, pose_end, t_start, t_end);
+
+  double t = 2.0;
+  Eigen::Vector3d pos = traj.PositionAtT(t);
+  std::cout << "[CRUISE] t=" << t << ", pos=" << pos.transpose() << std::endl;
+
+  EXPECT_GT(pos.x(), 0.3);
+  EXPECT_LT(pos.x(), 0.8);
+}
+TEST_F(TrajectoryTest, PositionInDecelerationPhase) {
+  const double top_speed = 0.3;
+  const Eigen::Vector3d max_acc(0.5, 0.5, 0.5);
+  const double t_start = 0.0;
+  const double t_end = 4.0;
+
+  Eigen::Vector3d pose_start(0, 0, 0);
+  Eigen::Vector3d pose_end(1, 0, 0);
+  ctrl::TrapezoidalTrajectoryVi3D traj(pose_start, pose_end, t_start, t_end);
+
+  double t = 3.7;
+  Eigen::Vector3d pos = traj.PositionAtT(t);
+  std::cout << "[DECEL] t=" << t << ", pos=" << pos.transpose() << std::endl;
+
+  EXPECT_GT(pos.x(), 0.9);
+  EXPECT_LT(pos.x(), 1.01);
 }

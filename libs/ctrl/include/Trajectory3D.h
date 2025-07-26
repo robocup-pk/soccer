@@ -14,6 +14,8 @@ class Trajectory3D {
 
   virtual Eigen::Vector3d VelocityAtT(double t) = 0;
 
+    virtual Eigen::Vector3d PositionAtT(double t) = 0;
+
   // Helpers
   virtual void Print() = 0;
   virtual Eigen::Vector3d TotalDistance() = 0;
