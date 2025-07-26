@@ -19,10 +19,12 @@ int main(int argc, char* argv[]) {
   std::vector<state::SoccerObject> soccer_objects;
   state::InitSoccerObjects(soccer_objects);
 
-  for (int i = 0; i < soccer_objects.size() / 2; i++) {
-    soccer_objects[i].position = cfg::SystemConfig::team_one_start_formation[i];
-    soccer_objects[i + soccer_objects.size() / 2].position =
-        cfg::SystemConfig::team_two_start_formation[i];
+  if (soccer_objects.size() > 12) {
+    for (int i = 0; i < soccer_objects.size() / 2; i++) {
+      soccer_objects[i].position = cfg::SystemConfig::team_one_start_formation[i];
+      soccer_objects[i + soccer_objects.size() / 2].position =
+          cfg::SystemConfig::team_two_start_formation[i];
+    }
   }
 
   // Simulation - OpenGL
@@ -40,7 +42,6 @@ int main(int argc, char* argv[]) {
     // ref::CheckCollisions(soccer_objects);
     kin::CheckAndResolveCollisions(soccer_objects);
 
-    // Step: Simulation
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
       std::cout << "[main] Simulation finished" << std::endl;
       break;

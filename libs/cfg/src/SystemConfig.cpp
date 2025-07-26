@@ -24,12 +24,12 @@ const Eigen::Vector3d cfg::SystemConfig::init_robot_acceleration_mpsps = Eigen::
 // team 1 initial formation
 const std::vector<Eigen::Vector3d> cfg::SystemConfig::team_one_start_formation = []() {
   std::vector<Eigen::Vector3d> v(SystemConfig::num_robots);
-  v[0] = Eigen::Vector3d(-0.5f, -0.0f, 0);
-  v[1] = Eigen::Vector3d(-0.3f, 0.3f, 0);
-  v[2] = Eigen::Vector3d(-0.3f, -0.3f, 0);
-  v[3] = Eigen::Vector3d(-0.7f, -0.3f, 0);
-  v[4] = Eigen::Vector3d(-0.7f, 0.3f, 0);
-  v[5] = Eigen::Vector3d(-0.9f, -0.0f, 0);
+  if (SystemConfig::num_robots >= 1) v[0] = Eigen::Vector3d(-0.5f, -0.0f, 0);
+  if (SystemConfig::num_robots >= 2) v[1] = Eigen::Vector3d(-0.3f, 0.3f, 0);
+  if (SystemConfig::num_robots >= 3) v[2] = Eigen::Vector3d(-0.3f, -0.3f, 0);
+  if (SystemConfig::num_robots >= 4) v[3] = Eigen::Vector3d(-0.7f, -0.3f, 0);
+  if (SystemConfig::num_robots >= 5) v[4] = Eigen::Vector3d(-0.7f, 0.3f, 0);
+  if (SystemConfig::num_robots >= 6) v[5] = Eigen::Vector3d(-0.9f, -0.0f, 0);
   return v;
 }();
 
@@ -37,11 +37,11 @@ const std::vector<Eigen::Vector3d> cfg::SystemConfig::team_one_start_formation =
 const std::vector<Eigen::Vector3d> cfg::SystemConfig::team_two_start_formation = []() {
   std::vector<Eigen::Vector3d> v(SystemConfig::num_robots);
 
-  v[0] = Eigen::Vector3d(0.5f, 0.0f, M_PI);
-  v[1] = Eigen::Vector3d(0.3f, 0.3f, M_PI);
-  v[2] = Eigen::Vector3d(0.3f, -0.3f, M_PI);
-  v[3] = Eigen::Vector3d(0.7f, -0.3f, M_PI);
-  v[4] = Eigen::Vector3d(0.7f, 0.3f, M_PI);
-  v[5] = Eigen::Vector3d(0.9f, -0.0f, M_PI);
+  if (SystemConfig::num_robots >= 1) v[0] = Eigen::Vector3d(0.5f, 0.0f, M_PI);
+  if (SystemConfig::num_robots >= 2) v[1] = Eigen::Vector3d(0.3f, 0.3f, M_PI);
+  if (SystemConfig::num_robots >= 3) v[2] = Eigen::Vector3d(0.3f, -0.3f, M_PI);
+  if (SystemConfig::num_robots >= 4) v[3] = Eigen::Vector3d(0.7f, -0.3f, M_PI);
+  if (SystemConfig::num_robots >= 5) v[4] = Eigen::Vector3d(0.7f, 0.3f, M_PI);
+  if (SystemConfig::num_robots >= 6) v[5] = Eigen::Vector3d(0.9f, -0.0f, M_PI);
   return v;
 }();

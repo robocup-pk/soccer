@@ -72,7 +72,7 @@ std::pair<Eigen::Vector4d, int> hw::SensorDriver::GetSensorsData() {
       motors_rpms[i] = motors[i].GetRpm();
     }
     new_data_available = true;
-    return {motors_rpms, ((gyro_mdeg_ps / 1000.0) * M_PI / 180.0)};
+    return {motors_rpms, gyro.GetAngularVelocityRadps()};
   }
 
   std::vector<int> rpm(4, 0);
