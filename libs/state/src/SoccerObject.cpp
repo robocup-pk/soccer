@@ -3,7 +3,7 @@
 #include "SoccerObject.h"
 #include "SystemConfig.h"
 #include "Kinematics.h"
-
+#include "BallModel.h"
 void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) {
   for (int i = 0; i < cfg::SystemConfig::num_robots / 2; ++i) {
     // Robots (team one)
@@ -17,6 +17,7 @@ void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) 
         cfg::SystemConfig::init_robot_velocity_mps,
         cfg::SystemConfig::init_robot_acceleration_mpsps, cfg::SystemConfig::robot_mass_kg));
   }
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 <<<<<<< HEAD
@@ -57,6 +58,17 @@ void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) 
       cfg::SystemConfig::init_ball_velocity_mps, cfg::SystemConfig::init_ball_acceleration_mpsps,
       1));
 >>>>>>> 2cdab88a (Temp Changes)
+=======
+
+  // Create ball as SoccerObject to avoid object slicing
+  soccer_objects.push_back(
+      state::SoccerObject("ball",
+                          Eigen::Vector3d(-cfg::SystemConfig::ball_radius_m + 1, cfg::SystemConfig::ball_radius_m, 0),
+                          Eigen::Vector2d(cfg::SystemConfig::ball_radius_m * 2, cfg::SystemConfig::ball_radius_m * 2),
+                          cfg::SystemConfig::init_ball_velocity_mps,
+                          cfg::SystemConfig::init_ball_acceleration_mpsps,
+                          0.046f));
+>>>>>>> 34a1ea5e (Refactor kick/dribble architecture: move ExecuteKick/ExecuteDribble from RobotManager to kin namespace Increasing loose Coupling.)
 }
 
 bool state::SoccerObject::IsPointInFrontSector(Eigen::Vector2d point) {
@@ -64,7 +76,7 @@ bool state::SoccerObject::IsPointInFrontSector(Eigen::Vector2d point) {
   Eigen::Vector2d robot_center(center.x(), center.y());
 
   // Calculate front direction using same coordinate system as ball attachment
-  float rotation_rad = (position[2]);
+  float rotation_rad = position[2]; // Use the z-component as the angle
   Eigen::Vector2d front_dir(cos(rotation_rad), sin(rotation_rad));
 
   Eigen::Vector2d to_point = point - robot_center;
@@ -139,11 +151,12 @@ state::SoccerObject& state::SoccerObject::operator=(rob::RobotManager& robot_man
       this->attached_to) {
     kin::DetachBall(*this->attached_to, 6.5f);
   }
-  if(robot_manager.GetRobotAction() == rob::RobotAction::DRIBBLE_BALL && this->name != "ball" &&
-      this->attached_to) {
-    kin::DetachBall(*this->attached_to, 1.0f);
+
+  if (robot_manager.GetRobotAction() == rob::RobotAction::DRIBBLE_BALL) {
+    // Dribble action is handled by kin::ExecuteDribble function
+    // This is called from the main game loop, not here
   }
-  // Reset attachment state
+
   robot_manager.SetRobotAction(rob::RobotAction::MOVE);
   return *this;
 }
@@ -158,7 +171,6 @@ void state::SoccerObject::Move(float dt) {
   position[2] = util::WrapAngle(position[2]);
 }
 
-<<<<<<< HEAD
 Eigen::Vector3d state::SoccerObject::GetCenterPosition() { return position; }
 
 <<<<<<< HEAD
@@ -168,6 +180,7 @@ state::SoccerObject::~SoccerObject() { attached_to = nullptr; }
 =======
 state::SoccerObject::~SoccerObject() {
     attached_to = nullptr;  
+<<<<<<< HEAD
 =======
 Eigen::Vector3d state::SoccerObject::GetCenterPosition() {
   return Eigen::Vector3d(position[0] + size[0] / 2, position[1] + size[1] / 2, position[2]);
@@ -333,3 +346,6 @@ void state::Ball::ApplyAirResistance(Eigen::Vector3d& velocity, double dt) {
 =======
 >>>>>>> 5dcaf147 (Fix BallObject Placement)
 >>>>>>> a9683026 (Fix BallObject Placement)
+=======
+}
+>>>>>>> 34a1ea5e (Refactor kick/dribble architecture: move ExecuteKick/ExecuteDribble from RobotManager to kin namespace Increasing loose Coupling.)

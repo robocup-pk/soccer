@@ -1,5 +1,8 @@
 # Recursively search for header and source files in the include and src directories
 set(HEADERS
+    include/ActionExecutor.h
+    include/DribbleExecutor.h
+    include/KickExecutor.h
     include/Dribble.h
     include/Kick.h
     include/Kinematics.h
@@ -7,6 +10,9 @@ set(HEADERS
 )
 
 set(SOURCES
+    src/ActionExecutor.cpp
+    src/DribbleExecutor.cpp
+    src/KickExecutor.cpp
     src/Dribble.cpp
     src/Kick.cpp
     src/Kinematics.cpp

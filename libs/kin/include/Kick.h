@@ -3,6 +3,7 @@
 
 #include <Eigen/Dense>
 #include "SoccerObject.h"
+#include "KickExecutor.h"
 
 namespace kin {
 
@@ -11,6 +12,16 @@ namespace kin {
 // Returns true if kick was successful, false if constraints not met
 bool Kick(state::SoccerObject& robot, state::SoccerObject& ball, 
           double kick_power = 3.0, bool force_kick = false);
+
+// Backward compatibility functions - delegate to new architecture
+inline bool ExecuteKick(std::vector<state::SoccerObject>& soccer_objects) {
+    return KickExecutor::ExecuteKickAction(soccer_objects);
+}
+
+inline bool ExecutePass(std::vector<state::SoccerObject>& soccer_objects, 
+                       const Eigen::Vector2d& target_position) {
+    return KickExecutor::ExecutePassAction(soccer_objects, target_position);
+}
 
 // SSL-specific kick parameters and constraints
 namespace ssl {

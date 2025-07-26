@@ -1,6 +1,7 @@
 #include "Dribble.h"
 #include "BallModel.h"
 #include "Kinematics.h"
+#include "Utils.h"
 #include <iostream>
 #include <cmath>
 
@@ -43,5 +44,9 @@ bool Dribble(state::SoccerObject& robot, state::Ball& ball, double dribble_power
 
     return true; // Always succeeds in this simplified model
 }
+
+// Old ExecuteDribble function removed
+// Now handled by DribbleExecutor class with proper OOP architecture
+// Backward compatibility maintained through inline function in header
 
 }  // namespace kin
