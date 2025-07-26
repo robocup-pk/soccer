@@ -15,8 +15,8 @@
 
 namespace vis {
 int team_one_selected_player = 0;
-int team_two_selected_player =
-    cfg::SystemConfig::num_robots / 2;  // cfg::SystemConfig::num_robots / 2;
+int team_two_selected_player = (cfg::SystemConfig::num_robots > 1) ? 
+    cfg::SystemConfig::num_robots / 2 : 0;
 inline Eigen::Vector2d g_mouse_click_position;
 inline bool g_mouse_clicked = false;
 }  // namespace vis
