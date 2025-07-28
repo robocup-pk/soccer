@@ -3,6 +3,12 @@
 #include "AutoRef.h"
 #include "Kinematics.h"
 #include "SoccerField.h"
+#include "Game.h"
+
+namespace ref {
+int team_one_score = 0;
+int team_two_score = 0;
+}  // namespace ref
 
 void ref::CheckCollisions(std::vector<state::SoccerObject>& soccer_objects) {
   for (auto& obj : soccer_objects) {
@@ -46,7 +52,7 @@ void ref::CheckCollisions(std::vector<state::SoccerObject>& soccer_objects) {
   }
 
   ref::CheckForGoals(soccer_objects);
-  
+
   for (auto& obj : soccer_objects) {
     if (!kin::IsInsideBoundary(obj)) {
       std::cout << "[ref::CheckCollisions] Robot " << obj.name << " is outside the boundary"
@@ -59,7 +65,7 @@ void ref::CheckCollisions(std::vector<state::SoccerObject>& soccer_objects) {
     if (ref::IsOutsidePlayingField(obj) && !obj.is_attached) {
       std::cout << "[ref::CheckCollisions] Robot " << obj.name << " is outside the playing field"
                 << std::endl;
-      if(obj.name == "ball"){
+      if (obj.name == "ball") {
         obj.velocity = Eigen::Vector3d::Zero();
         obj.position = Eigen::Vector3d::Zero();
       }
@@ -111,11 +117,15 @@ void ref::CheckForGoals(std::vector<state::SoccerObject>& soccer_objects) {
            bottom >= left_goal_y2) ||
           (right >= left_goal_x1 && right <= left_goal_x2 && top >= left_goal_y1 &&
            bottom <= left_goal_y2)) {
-        std::cout << "[ref::CheckForGoals] Goal scored by the right team!" << std::endl;
+        team_two_score++;
+        std::cout << "[ref::CheckForGoals] Goal by red team. Red team score:  " << team_two_score
+                  << std::endl;
         goal_scored = true;
       } else if (right >= right_goal_x1 && right <= right_goal_x2 && top <= right_goal_y1 &&
                  bottom >= right_goal_y2) {
-        std::cout << "[ref::CheckForGoals] Goal scored by the left team!" << std::endl;
+        team_one_score++;
+        std::cout << "[ref::CheckForGoals] Goal by yellow team. Yellow team score:  "
+                  << team_one_score << std::endl;
         goal_scored = true;
       }
 
@@ -134,6 +144,12 @@ void ref::CheckForGoals(std::vector<state::SoccerObject>& soccer_objects) {
         obj.velocity = Eigen::Vector3d::Zero();
 
         std::cout << "[ref::CheckForGoals] Ball position reset to origin after goal." << std::endl;
+        ref::Game::MoveToFormation(cfg::SystemConfig::team_one_start_formation,
+                                   cfg::SystemConfig::team_two_start_formation, soccer_objects);
+
+        for (auto& obj : soccer_objects) {
+          obj.velocity = Eigen::Vector3d(0, 0, 0);
+        }
       }
 
       break;
@@ -151,4 +167,33 @@ bool ref::IsOutsidePlayingField(state::SoccerObject& obj) {
   float bottom = obj.position[1];
 
   return (left < -half_width || right > half_width || top > half_height || bottom < -half_height);
+}
+
+ref::AutoRef::AutoRef() {
+  team_one_score = 0;
+  team_two_score = 0;
+  state = Kickoff;
+}
+
+// GAME EVENTS
+
+// ATTACKER DOUBLE TOUCHED BALL
+
+/* When the ball is brought into play following a kick-off or free kick, the kicker is not
+allowed to touch the ball until it has been touched by another robot or the game has been
+stopped. The ball must have moved at least 0.05 meters to be considered as in play. A double
+touch results in a stop followed by a free kick from the same ball position. */
+
+bool ref::AutoRef::AttackerDoubleTouchedBall(GameState state, bool released_ball,
+                                             double disp_ball_since_kickoff,
+                                             state::SoccerObject& player) {
+  if (state == Kickoff && released_ball &&
+      disp_ball_since_kickoff <
+          0.05) {  // player = player who initiated kickoff, released_ball is if it kicked ball
+    if (player.is_attached) {  // is attached is for if it double touches the ball again after it
+      // released it
+      return true;
+    }
+  }
+  return false;
 }

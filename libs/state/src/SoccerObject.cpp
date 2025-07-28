@@ -16,8 +16,7 @@ void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) 
   }
 
   soccer_objects.push_back(state::SoccerObject(
-      "ball",
-      Eigen::Vector3d(-cfg::SystemConfig::ball_radius_m + 1, cfg::SystemConfig::ball_radius_m, 0),
+      "ball", Eigen::Vector3d(0, 0, 0),
       Eigen::Vector2d(cfg::SystemConfig::ball_radius_m * 2, cfg::SystemConfig::ball_radius_m * 2),
       cfg::SystemConfig::init_ball_velocity_mps, cfg::SystemConfig::init_ball_acceleration_mpsps,
       1));
@@ -91,6 +90,4 @@ void state::SoccerObject::Move(float dt) {
 
 Eigen::Vector3d state::SoccerObject::GetCenterPosition() { return position; }
 
-state::SoccerObject::~SoccerObject() {
-    attached_to = nullptr;  
-}
+state::SoccerObject::~SoccerObject() { attached_to = nullptr; }

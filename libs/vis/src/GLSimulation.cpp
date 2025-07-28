@@ -372,9 +372,6 @@ void vis::ProcessInputTwoTeams(GLFWwindow* gl_window,
     double mouse_click_left_pos_y = vis::g_mouse_click_position[1];
     double robot_width = (cfg::SystemConfig::robot_size_m)[0];
 
-    std::cout << "[DEBUG] mouse click x: " << mouse_click_left_pos_x
-              << " y: " << mouse_click_left_pos_y << std::endl;
-
     double robot_center_x;
     double robot_center_y;
     Eigen::Vector3d v = Eigen::Vector3d::Zero();

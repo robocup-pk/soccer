@@ -13,19 +13,15 @@
 #include "RobotManager.h"
 #include "SoccerField.h"
 #include "AutoRef.h"
+#include "Game.h"
 
 int main(int argc, char* argv[]) {
   // TODO: Game State
   std::vector<state::SoccerObject> soccer_objects;
   state::InitSoccerObjects(soccer_objects);
 
-  if (soccer_objects.size() > 12) {
-    for (int i = 0; i < soccer_objects.size() / 2; i++) {
-      soccer_objects[i].position = cfg::SystemConfig::team_one_start_formation[i];
-      soccer_objects[i + soccer_objects.size() / 2].position =
-          cfg::SystemConfig::team_two_start_formation[i];
-    }
-  }
+  ref::Game::MoveToFormation(cfg::SystemConfig::team_one_start_formation,
+                             cfg::SystemConfig::team_two_start_formation, soccer_objects);
 
   // Simulation - OpenGL
   vis::GLSimulation gl_simulation;
@@ -34,6 +30,7 @@ int main(int argc, char* argv[]) {
   glfwSetMouseButtonCallback(gl_window, vis::MouseButtonCallback);
 
   while (1) {
+
     float dt = util::CalculateDt();
 
     vis::ProcessInputTwoTeams(gl_window, soccer_objects);
@@ -41,6 +38,7 @@ int main(int argc, char* argv[]) {
 
     // ref::CheckCollisions(soccer_objects);
     kin::CheckAndResolveCollisions(soccer_objects);
+    ref::CheckForGoals(soccer_objects);
 
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
       std::cout << "[main] Simulation finished" << std::endl;
