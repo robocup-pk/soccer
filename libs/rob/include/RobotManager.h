@@ -10,6 +10,7 @@
 #include "HardwareManager.h"
 #include "MotionController.h"
 #include "TrajectoryManager.h"
+#include "RobotPositions.h"
 
 namespace rob {
 
@@ -97,6 +98,8 @@ class RobotManager {
   // Home position
   bool initialized_pose_home;
   Eigen::Vector3d pose_home_fWorld;
+  cfg::RobotHomePosition home_position;
+  bool start_from_home;
 
   // Idle
   double start_time_idle_s;

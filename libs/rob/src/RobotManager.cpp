@@ -7,6 +7,7 @@
 #include "Utils.h"
 #include "Trajectory3D.h"
 #include "Waypoint.h"
+#include "RobotPositions.h"
 
 rob::RobotManager::RobotManager() {
   std::cout << "[rob::RobotManager::RobotManager]" << std::endl;
@@ -14,7 +15,9 @@ rob::RobotManager::RobotManager() {
   robot_state = RobotState::CALIBRATING;
   start_time_idle_s = util::GetCurrentTime();
   velocity_fBody << 0, 0, 0;
-  initialized_pose_home = false;
+  home_position = cfg::RobotHomePosition::CENTER_FORWARD;
+  InitializeHome(cfg::RobotHomeCoordinates.at(home_position));
+  start_from_home = false;
   finished_motion = true;
   num_sensor_readings_failed = 0;
   rob_manager_running.store(true);
@@ -82,9 +85,8 @@ void rob::RobotManager::ControlLogic() {
       // finished_motion = true;
       break;
     case RobotState::GOING_HOME:
-      std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
-      // std::tie(finished_motion, velocity_fBody_) =
-      //     motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
+      // std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
+      std::tie(finished_motion, velocity_fBody_) = motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
       break;
     case RobotState::AUTONOMOUS_DRIVING:
       std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
@@ -107,9 +109,10 @@ void rob::RobotManager::ControlLogic() {
 void rob::RobotManager::SenseLogic() {
   std::optional<Eigen::Vector4d> motors_rpms = hardware_manager.NewMotorsRpms();
   std::optional<double> w_radps = hardware_manager.NewGyroAngularVelocity();
+   
   std::optional<Eigen::Vector3d> pose_from_camera = hardware_manager.NewCameraData();
   if (motors_rpms.has_value()) state_estimator.NewMotorsData(motors_rpms.value());
-  if (w_radps.has_value()) state_estimator.NewGyroData(w_radps.value());
+  if (w_radps.has_value() && hardware_manager.IsGyroCalibrated()) state_estimator.NewGyroData(w_radps.value());
   if (pose_from_camera.has_value()) state_estimator.NewCameraData(pose_from_camera.value());
 
   {
@@ -118,24 +121,24 @@ void rob::RobotManager::SenseLogic() {
     pose_fWorld = state_estimator.GetPose();
   }
 
-  if (!hardware_manager.IsGyroCalibrated()) {
+   if (!hardware_manager.IsGyroCalibrated()) {
     std::cout << "[rob::RobotManager::SenseLogic] Gyro is not calibrated. Waiting for calibration."
               << std::endl;
     robot_state = RobotState::CALIBRATING;
     return;
   }
 
-  // Print pose every few seconds
-  // static int num = 0;
-  // ++num;
-  // if (num % 200 == 0)
-  //   std::cout << "[rob::RobotManager::SenseLogic] Pose (est): " << pose_fWorld.transpose()
-  //             << std::endl;
-
-  // Set home pose
-  if (!initialized_pose_home && state_estimator.initialized_pose) {
-    pose_home_fWorld = state_estimator.GetPoseInit();
-    initialized_pose_home = true;
+  if (state_estimator.initialized_pose && initialized_pose_home && !start_from_home) {
+    if ((pose_fWorld - pose_home_fWorld).norm() > 0.05) {
+      std::cout
+          << "[rob::RobotManager::SenseLogic] Robot is not at home, Going to Home from Pose: "
+          << pose_fWorld.transpose() << std::endl;
+      robot_state = RobotState::GOING_HOME;
+    } else {
+      start_from_home = true;
+      std::cout << "[rob::RobotManager::SenseLogic] Robot is at home, starting from home."
+                << std::endl;
+    }
   }
 }
 
