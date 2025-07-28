@@ -83,10 +83,10 @@ std::pair<Eigen::Vector4d, int> hw::SensorDriver::GetSensorsData() {
     size_t available_bytes = shared_serial_port->GetNumberOfBytesAvailable();
 
     if (available_bytes < 21) {
-      // std::cout << "[hw::SensorDriver::GetSensorsData] Not enough data available: "
-      //           << available_bytes << " bytes, need at least 21" << std::endl;
-      // std::cout << "[hw::SensorDriver::GetSensorsData] Available Bytes: " << available_bytes
-      //           << std::endl;
+      std::cout << "[hw::SensorDriver::GetSensorsData] Not enough data available: "
+                << available_bytes << " bytes, need at least 21" << std::endl;
+      std::cout << "[hw::SensorDriver::GetSensorsData] Available Bytes: " << available_bytes
+                << std::endl;
       return {Eigen::Vector4d(), 0};
     }
 
@@ -126,6 +126,9 @@ std::pair<Eigen::Vector4d, int> hw::SensorDriver::GetSensorsData() {
   for (int i = 0; i < 4; ++i) {
     std::memcpy(&rpm[i], &buffer[i * 4], sizeof(int32_t));
   }
+
+  float dt = util::CalculateDt();
+  std::cout << "[hw::SensorDriver::GetSensorsData] dt: " << dt << " seconds" << std::endl;
 
   std::memcpy(&gyro_mdeg_ps, &buffer[16], sizeof(int32_t));
 
