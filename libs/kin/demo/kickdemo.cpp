@@ -12,7 +12,7 @@
 #include "Utils.h"
 using namespace std;
 int main(int argc, char* argv[]) {
-    std::cout << "[KickDemo] Simple RRTX + TrajectoryManager + Kick Demo" << std::endl;
+    std::cout << "[KickDemo] Simple RRTX + BangBangTrajectory + Kick Demo" << std::endl;
     
     if (cfg::SystemConfig::num_robots != 1) {
         std::cout << "[KickDemo] Set num_robots to 1. Exiting!" << std::endl;

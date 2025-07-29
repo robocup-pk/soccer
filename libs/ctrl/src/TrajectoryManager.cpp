@@ -37,8 +37,8 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
     t_end_s += T;
     std::cout << "[ctrl::TrajectoryManager::CreateTrajectoriesFromPath] Added new traj "
               << path_index << std::endl;
-    auto traj = std::make_unique<ctrl::TrapezoidalTrajectoryVi3D>(pose_start, pose_end, t_start_s,
-                                                                  t_end_s, v0);
+    auto traj = std::make_unique<ctrl::BangBangTrajectory3D>(pose_start, pose_end, t_start_s,
+                                                           t_end_s, v0);
     if (traj)
       trajectories.push(std::move(traj));
     else
