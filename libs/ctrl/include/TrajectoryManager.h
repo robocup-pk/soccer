@@ -7,6 +7,7 @@
 
 #include "Trajectory3D.h"
 #include "TrapezoidalTrajectoryVi3D.h"
+#include "BangBangTrajectory3D.h"
 #include "Utils.h"
 
 namespace ctrl {
