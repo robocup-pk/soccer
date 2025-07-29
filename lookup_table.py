@@ -1,5 +1,5 @@
- """
- lookup_table.py  –  friction‑safe acceleration lookup for omni‑drive robot
+"""
+lookup_table.py  –  friction‑safe acceleration lookup for omni‑drive robot
  -------------------------------------------------------------------------
  Implements the one‑time Monte‑Carlo procedure described in Purwin & D’Andrea
  to pre‑compute a table of safe linear accelerations a_max(ϕ) as a function of
@@ -17,8 +17,8 @@
  >>> a_safe, alpha_max = lut.query(direction_rad)
 
  Author: ChatGPT‑o3  (2025‑07‑29)
- -------------------------------------------------------------------------
- """
+-------------------------------------------------------------------------
+"""
 
 from __future__ import annotations
 
