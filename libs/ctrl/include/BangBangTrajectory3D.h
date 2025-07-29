@@ -138,7 +138,7 @@ private:
     // Motor velocity conversion (max RPM 280)
     Eigen::Vector3d ConvertToMotorVelocities(const Eigen::Vector3d& body_velocity);
     double max_rpm_ = 300.0;
-    double wheel_radius_ = 40.0;  // 40mm wheels
+    double wheel_radius_ = 0.040;  // 40mm wheels converted to meters
 };
 
 } // namespace ctrl

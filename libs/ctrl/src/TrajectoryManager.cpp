@@ -24,10 +24,11 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
     Eigen::Vector3d h(pose_end - pose_start);
     Eigen::Vector3d v0(0, 0, 0);
     
-    // For BangBangTrajectory3D: Let the trajectory compute its own optimal time
-    // Don't force slow trapezoidal timing!
-    double distance = h.norm();
-    double T = 2.0;  // Placeholder - BangBangTrajectory3D will override this
+    // For BangBangTrajectory3D: Use reasonable time based on distance
+    double distance = h.norm() / 1000.0;  // Convert from mm to m
+    // Estimate time based on distance and typical robot speed
+    double typical_speed = 1.0;  // m/s - realistic for SSL robots
+    double T = std::max(0.5, distance / typical_speed);  // Minimum 0.5s, realistic time
     
     if (path_index == 1) v0 = FindV0AtT(t_start_s);
     std::cout << "Trajectory " << path_index << ": distance=" << distance << "m, duration=" << T << "s" << std::endl;
@@ -53,7 +54,7 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
 }
 
 Eigen::Vector3d ctrl::TrajectoryManager::GetVelocityAtT(double current_time_s) {
-  double kp = 0.0;  // Proportional gain for velocity correction
+  double kp = 0.5;  // Proportional gain for velocity correction (was 0.0)
   Eigen::Vector3d Current_speed = current_trajectory->VelocityAtT(current_time_s);
   Eigen::Vector3d Current_position_fWorld = p_fworld;
 
