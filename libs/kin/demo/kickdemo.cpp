@@ -66,19 +66,18 @@ int main(int argc, char* argv[]) {
     // Add ball to robot manager's goal queue
     robot_manager.SetPath(targetPath);
 
-    while (true) {
+    bool kick_executed = false;  // Flag to ensure kick is executed only once
 
-        // Check distance between robot and ball
-        Eigen::Vector3d robot_pos = robot_manager.GetPoseInWorldFrame();
-        double dist = sqrt((ball_position - robot_pos).head<2>().squaredNorm());
-        cout<<"Distance: "<<dist<<endl;
-        
-        // Execute kick when close to ball
-        if (dist < 0.3) {  // Use same distance as ExecuteKick (30cm)
-            cout<<"Executing kick action"<<endl;
+    while (true) {
+        // Check if path is finished before executing kick
+        if (robot_manager.GetRobotState() == "IDLE" && !kick_executed) {
+            std::cout << "Executing kick action" << std::endl;
             kin::ExecuteKick(soccer_objects);  // Execute kick directly
-            //Now after kick exit the screen
+            kick_executed = true;  // Set flag to true after kicking
+
+            // Optional: exit after kicking
             std::cout << "Robot kicked the ball. Exiting demo." << std::endl;
+            break; 
         }
         
         double current_time = util::GetCurrentTime();

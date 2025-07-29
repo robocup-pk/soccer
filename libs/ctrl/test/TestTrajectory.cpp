@@ -7,6 +7,7 @@
 
 #include "Trajectory3D.h"
 #include "TrajectoryManager.h"
+#include "BangBangTrajectory3D.h"
 
 class TrajectoryTest : public ::testing::Test {
  protected:
@@ -24,7 +25,7 @@ TEST_F(TrajectoryTest, TestIsFeasibleOnlyForwardMotion) {
 
   EXPECT_TRUE(feasible);
 
-  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start_s, t_finish_s);
+  auto traj = ctrl::BangBangTrajectory3D(pose_start, pose_end, t_start_s, t_finish_s);
 
   traj.Print();
 
@@ -47,7 +48,7 @@ TEST_F(TrajectoryTest, TestIsFeasibleOnlyBackwardMotion) {
 
   EXPECT_TRUE(feasible);
 
-  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start_s, t_finish_s);
+  auto traj = ctrl::BangBangTrajectory3D(pose_start, pose_end, t_start_s, t_finish_s);
 
   traj.Print();
 
@@ -70,7 +71,7 @@ TEST_F(TrajectoryTest, TestIsFeasibleSidewaysMotion) {
 
   EXPECT_TRUE(feasible);
 
-  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start_s, t_finish_s);
+  auto traj = ctrl::BangBangTrajectory3D(pose_start, pose_end, t_start_s, t_finish_s);
 
   traj.Print();
 
@@ -93,7 +94,7 @@ TEST_F(TrajectoryTest, TestIsFeasibleDiagonalMotion) {
 
   EXPECT_TRUE(feasible);
 
-  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start_s, t_finish_s);
+  auto traj = ctrl::BangBangTrajectory3D(pose_start, pose_end, t_start_s, t_finish_s);
 
   traj.Print();
 
@@ -116,7 +117,7 @@ TEST_F(TrajectoryTest, TestIsFeasibleDiagonalAndRotationMotion) {
 
   EXPECT_TRUE(feasible);
 
-  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start_s, t_finish_s);
+  auto traj = ctrl::BangBangTrajectory3D(pose_start, pose_end, t_start_s, t_finish_s);
 
   traj.Print();
 
@@ -149,7 +150,7 @@ TEST_F(TrajectoryTest, PositionAtStartTimeIsStartPose) {
   Eigen::Vector3d pose_end(1, 0, 0);
   double t_start = 0.0, t_end = 4.0;
 
-  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start, t_end);
+  auto traj = ctrl::BangBangTrajectory3D(pose_start, pose_end, t_start, t_end);
   Eigen::Vector3d pos = traj.PositionAtT(t_start);
   EXPECT_NEAR(pos.x(), pose_start.x(), 1e-6);
   EXPECT_NEAR(pos.y(), pose_start.y(), 1e-6);
@@ -161,7 +162,7 @@ TEST_F(TrajectoryTest, PositionAtEndTimeIsEndPose) {
   Eigen::Vector3d pose_end(1, 0, 0);
   double t_start = 0.0, t_end = 4.0;
 
-  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start, t_end);
+  auto traj = ctrl::BangBangTrajectory3D(pose_start, pose_end, t_start, t_end);
   Eigen::Vector3d pos = traj.PositionAtT(t_end);
   EXPECT_NEAR(pos.x(), pose_end.x(), 1e-6);
   EXPECT_NEAR(pos.y(), pose_end.y(), 1e-6);
@@ -173,7 +174,7 @@ TEST_F(TrajectoryTest, PositionAtMidTimeIsMidPose) {
   Eigen::Vector3d pose_end(1, 0, 0);
   double t_start = 0.0, t_end = 4.0;
 
-  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start, t_end);
+  auto traj = ctrl::BangBangTrajectory3D(pose_start, pose_end, t_start, t_end);
   Eigen::Vector3d pos = traj.PositionAtT(2.0);
   // Midpoint might not be exactly halfway due to acceleration phase
   // so just check it's roughly between
@@ -187,7 +188,7 @@ TEST_F(TrajectoryTest, PositionAtStartTimeIsStartPose2) {
   Eigen::Vector3d pose_end(1, 0, 0);
   double t_start = 0.0, t_end = 4.0;
 
-  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start, t_end);
+  auto traj = ctrl::BangBangTrajectory3D(pose_start, pose_end, t_start, t_end);
   Eigen::Vector3d pos = traj.PositionAtT(t_start);
   EXPECT_NEAR(pos.x(), pose_start.x(), 1e-6);
   EXPECT_NEAR(pos.y(), pose_start.y(), 1e-6);
@@ -199,7 +200,7 @@ TEST_F(TrajectoryTest, PositionAtEndTimeIsEndPose2) {
   Eigen::Vector3d pose_end(1, 0, 0);
   double t_start = 0.0, t_end = 4.0;
 
-  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start, t_end);
+  auto traj = ctrl::BangBangTrajectory3D(pose_start, pose_end, t_start, t_end);
   Eigen::Vector3d pos = traj.PositionAtT(t_end);
   EXPECT_NEAR(pos.x(), pose_end.x(), 1e-6);
   EXPECT_NEAR(pos.y(), pose_end.y(), 1e-6);
@@ -211,7 +212,7 @@ TEST_F(TrajectoryTest, PositionAtMidTimeIsMidPose2) {
   Eigen::Vector3d pose_end(1, 0, 0);
   double t_start = 0.0, t_end = 4.0;
 
-  auto traj = ctrl::TrapezoidalTrajectoryVi3D(pose_start, pose_end, t_start, t_end);
+  auto traj = ctrl::BangBangTrajectory3D(pose_start, pose_end, t_start, t_end);
   Eigen::Vector3d pos = traj.PositionAtT(2.0);
   // Midpoint might not be exactly halfway due to acceleration phase
   // so just check it's roughly between
@@ -227,7 +228,7 @@ TEST_F(TrajectoryTest, PositionInAccelerationPhase) {
 
   Eigen::Vector3d pose_start(0, 0, 0);
   Eigen::Vector3d pose_end(1, 0, 0);
-  ctrl::TrapezoidalTrajectoryVi3D traj(pose_start, pose_end, t_start, t_end);
+  ctrl::BangBangTrajectory3D traj(pose_start, pose_end, t_start, t_end);
 
   double t = 0.5;
   Eigen::Vector3d pos = traj.PositionAtT(t);
@@ -244,7 +245,7 @@ TEST_F(TrajectoryTest, PositionInCruisePhase) {
 
   Eigen::Vector3d pose_start(0, 0, 0);
   Eigen::Vector3d pose_end(1, 0, 0);
-  ctrl::TrapezoidalTrajectoryVi3D traj(pose_start, pose_end, t_start, t_end);
+  ctrl::BangBangTrajectory3D traj(pose_start, pose_end, t_start, t_end);
 
   double t = 2.0;
   Eigen::Vector3d pos = traj.PositionAtT(t);
@@ -261,7 +262,7 @@ TEST_F(TrajectoryTest, PositionInDecelerationPhase) {
 
   Eigen::Vector3d pose_start(0, 0, 0);
   Eigen::Vector3d pose_end(1, 0, 0);
-  ctrl::TrapezoidalTrajectoryVi3D traj(pose_start, pose_end, t_start, t_end);
+  ctrl::BangBangTrajectory3D traj(pose_start, pose_end, t_start, t_end);
 
   double t = 3.7;
   Eigen::Vector3d pos = traj.PositionAtT(t);

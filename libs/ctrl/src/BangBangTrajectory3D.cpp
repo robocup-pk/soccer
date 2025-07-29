@@ -77,10 +77,10 @@ void BangBangTrajectory3D::InitializeAccelerationEnvelope() {
     // Create robot parameters exactly like BangBangTrajectory.cpp
     auto robot_description = kin::GetRobotDescription();
     RobotParams params;
-    params.mass_kg = 2.3;
+    params.mass_kg = 2.7;
     params.inertia_z = 0.0085;
     params.friction_coeff = 0.8;
-    params.wheel_force_max = 1.5;
+    params.wheel_force_max = 2.0;
 
     // Copy wheel configuration from RobotDescription (normalized as system expects)
     params.wheel_angles_rad = robot_description.wheel_angles_rad;

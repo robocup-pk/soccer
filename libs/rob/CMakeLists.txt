@@ -1,6 +1,7 @@
 set(SOURCES
     src/RobotManager.cpp
     src/RobotManagerActions.cpp
+    src/BangBangTrajectoryManager.cpp
 )
 
 file(GLOB_RECURSE HEADERS "include/*.h")

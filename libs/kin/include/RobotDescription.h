@@ -2,6 +2,7 @@
 #define ROBOT_DESCRIPTION_H
 
 #include <vector>
+#include <cmath>
 
 namespace kin {
 
