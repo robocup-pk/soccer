@@ -23,10 +23,11 @@ BangBangTrajectory3D::BangBangTrajectory3D(Eigen::Vector3d pose_start, Eigen::Ve
     this->pose_start = pose_start;
     this->pose_end = pose_end;
     this->t_start_s = t_start_s;
-    this->t_finish_s = t_end_s;
     this->v0 = v0;
     this->h = pose_end - pose_start;
-    this->T = t_finish_s - t_start_s;
+    
+    // DON'T use the forced slow t_end_s from TrajectoryManager!
+    // BangBang trajectories compute their own optimal time
 
     // Initialize acceleration envelope only once (optimized lookup table)
     InitializeAccelerationEnvelope();
@@ -50,6 +51,10 @@ BangBangTrajectory3D::BangBangTrajectory3D(Eigen::Vector3d pose_start, Eigen::Ve
     
     // Apply jerk limiting for smooth motion profiles
     ApplyJerkLimiting();
+
+    // Set optimal finish time (ignore TrajectoryManager's slow timing!)
+    this->t_finish_s = t_start_s + complete_trajectory.total_execution_time;
+    this->T = complete_trajectory.total_execution_time;
 
     // Debug output matching TrapezoidalTrajectoryVi3D format
     std::cout << "[ctrl::BangBangTrajectory3D] Complete BangBang trajectory generated (Full Paper Implementation)" << std::endl;
@@ -154,23 +159,58 @@ TrajectoryComplete3D BangBangTrajectory3D::GenerateCompleteTrajectory(const Eige
     double movement_angle = std::atan2(displacement[1], displacement[0]);
     auto [a_max_trans, alpha_max_rot] = GetMaxAcceleration(movement_angle);
     
-    // Generate individual DOF trajectories using full 5-case algorithm (Section 4)
+    // Regenerate trajectories with synchronized accelerations (Section 5)
+    double optimal_alpha = FindOptimalAlpha(displacement[0], displacement[1], initial_velocity[0], initial_velocity[1], 2.0, a_max_trans);
+    trajectory.translation.alpha = optimal_alpha;
+
     trajectory.translation.x_trajectory = GenerateSingleDOF(
-        0.0, displacement[0], initial_velocity[0], 0.0, 2.0, a_max_trans);
+        0.0, displacement[0], initial_velocity[0], 0.0, 2.0, a_max_trans * std::cos(optimal_alpha));
     trajectory.translation.y_trajectory = GenerateSingleDOF(
-        0.0, displacement[1], initial_velocity[1], 0.0, 2.0, a_max_trans);
+        0.0, displacement[1], initial_velocity[1], 0.0, 2.0, a_max_trans * std::sin(optimal_alpha));
+    
+    // Synchronize final times
+    double translation_time = std::max(trajectory.translation.x_trajectory.total_time, trajectory.translation.y_trajectory.total_time);
+    trajectory.translation.total_execution_time = translation_time;
+
+    // Generate rotation trajectory
     trajectory.rotation = GenerateSingleDOF(
         0.0, displacement[2], initial_velocity[2], 0.0, 10.0, alpha_max_rot);
-    
-    // Synchronize X-Y trajectories using α-parameterization (Section 5)
-    SynchronizeTranslationTrajectories(trajectory.translation);
-    
-    // Set total execution time
-    double translation_time = trajectory.translation.total_execution_time;
     double rotation_time = trajectory.rotation.total_time;
+
+    // Final trajectory time is the max of translation and rotation
     trajectory.total_execution_time = std::max(translation_time, rotation_time);
     
     return trajectory;
+}
+
+double BangBangTrajectory3D::FindOptimalAlpha(
+    double xf, double yf, double x_dot_0, double y_dot_0,
+    double v_max, double a_max) {
+    
+    // Bisection algorithm to find optimal alpha (Section 5 from paper)
+    auto calculate_time = [&](double a_max_scaled) {
+        DOFTrajectory3D traj_x = GenerateSingleDOF(0, xf, x_dot_0, 0, v_max, a_max_scaled);
+        DOFTrajectory3D traj_y = GenerateSingleDOF(0, yf, y_dot_0, 0, v_max, a_max_scaled);
+        return std::max(traj_x.total_time, traj_y.total_time);
+    };
+
+    double alpha_low = 0.01, alpha_high = 1.0;
+    double t_max = calculate_time(a_max);
+
+    for (int i = 0; i < 50; ++i) {
+        double alpha = (alpha_low + alpha_high) / 2.0;
+        double t_alpha = calculate_time(a_max / std::cos(alpha));
+        
+        if (std::abs(t_alpha - t_max / std::sin(alpha)) < 1e-4) {
+            return alpha;
+        }
+        if (t_alpha < t_max / std::sin(alpha)) {
+            alpha_low = alpha;
+        } else {
+            alpha_high = alpha;
+        }
+    }
+    return (alpha_low + alpha_high) / 2.0;
 }
 
 DOFTrajectory3D BangBangTrajectory3D::GenerateSingleDOF(

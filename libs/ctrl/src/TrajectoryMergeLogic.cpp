@@ -67,8 +67,8 @@ void ctrl::TrajectoryManager::MergeNewTrajectoriesAtCurrentTime(Trajectories&& n
   Eigen::Vector3d pose_end = new_trajectory_merge->GetPoseEnd();
   double t_start_s = new_trajectory_merge->GetTStart();
   double t_finish_s = new_trajectory_merge->GetTFinish();
-  std::unique_ptr<ctrl::TrapezoidalTrajectoryVi3D> merged_traj =
-      std::make_unique<ctrl::TrapezoidalTrajectoryVi3D>(pose_start, pose_end, t_start_s,
+  std::unique_ptr<ctrl::BangBangTrajectory3D> merged_traj =
+      std::make_unique<ctrl::BangBangTrajectory3D>(pose_start, pose_end, t_start_s,
                                                         t_finish_s, v0);
 
   current_trajectory->SetTFinish(new_traj_t_start_s);
@@ -126,8 +126,8 @@ void ctrl::TrajectoryManager::MergeNewTrajectoriesAtT(Trajectories&& new_traject
   Eigen::Vector3d pose_end = new_trajectory_merge->GetPoseEnd();
   double t_start_s = new_trajectory_merge->GetTStart();
   double t_finish_s = new_trajectory_merge->GetTFinish();
-  std::unique_ptr<ctrl::TrapezoidalTrajectoryVi3D> merged_traj =
-      std::make_unique<ctrl::TrapezoidalTrajectoryVi3D>(pose_start, pose_end, t_start_s,
+  std::unique_ptr<ctrl::BangBangTrajectory3D> merged_traj =
+      std::make_unique<ctrl::BangBangTrajectory3D>(pose_start, pose_end, t_start_s,
                                                         t_finish_s, v0);
   if (merged_traj) {
     std::cout << "[ctrl::TrajectoryManager::MergeNewTrajectoryAtT] Merged Trajectory: \n";
@@ -159,7 +159,7 @@ void ctrl::TrajectoryManager::MergeNewTrajectoriesInFuture(Trajectories&& new_tr
               << active_traj_t_finish_s << " " << t << std::endl;
     // Step 1: Make a zero-velocity trajectory
     std::unique_lock<std::mutex> lock(active_traj_mutex);
-    active_trajectories.push(std::make_unique<ctrl::TrapezoidalTrajectoryVi3D>(
+    active_trajectories.push(std::make_unique<ctrl::BangBangTrajectory3D>(
         Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0), active_traj_t_finish_s, t));
   }
 
