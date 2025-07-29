@@ -14,14 +14,15 @@
 #include "SoccerField.h"
 #include "AutoRef.h"
 #include "Game.h"
+#include <cmath>
 
 int main(int argc, char* argv[]) {
   // TODO: Game State
   std::vector<state::SoccerObject> soccer_objects;
   state::InitSoccerObjects(soccer_objects);
-
   ref::Game::MoveToFormation(cfg::SystemConfig::team_one_start_formation,
                              cfg::SystemConfig::team_two_start_formation, soccer_objects);
+  ref::Game game;
 
   // Simulation - OpenGL
   vis::GLSimulation gl_simulation;
@@ -30,15 +31,20 @@ int main(int argc, char* argv[]) {
   glfwSetMouseButtonCallback(gl_window, vis::MouseButtonCallback);
 
   while (1) {
-
     float dt = util::CalculateDt();
+
+    game.UpdateGameState(soccer_objects);
+
+    ref::ViolatedKickOffSetUp(soccer_objects, 1, game);
+    ref::ViolatedKickOffSetUp(soccer_objects, 2, game);
+    // referee.AttackerDoubleTouchedBall(soccer_objects);
 
     vis::ProcessInputTwoTeams(gl_window, soccer_objects);
     kin::UpdateKinematics(soccer_objects, dt);
 
     // ref::CheckCollisions(soccer_objects);
     kin::CheckAndResolveCollisions(soccer_objects);
-    ref::CheckForGoals(soccer_objects);
+    game.DoGoals(soccer_objects);
 
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
       std::cout << "[main] Simulation finished" << std::endl;

@@ -4,10 +4,12 @@
 #include "Kinematics.h"
 #include "SoccerField.h"
 #include "Game.h"
+#include "Dimensions.h"
 
 namespace ref {
-int team_one_score = 0;
-int team_two_score = 0;
+state::SoccerObject* kicker = nullptr;
+bool kicker_released_ball = false;
+
 }  // namespace ref
 
 void ref::CheckCollisions(std::vector<state::SoccerObject>& soccer_objects) {
@@ -15,7 +17,10 @@ void ref::CheckCollisions(std::vector<state::SoccerObject>& soccer_objects) {
     if (obj.name == "ball" && obj.is_attached) {
       state::SoccerObject& robot = *obj.attached_to;
       kin::UpdateAttachedBallPosition(robot, obj);
+      kicker = &robot;
       break;
+    } else {
+      kicker_released_ball = true;
     }
   }
 
@@ -51,7 +56,7 @@ void ref::CheckCollisions(std::vector<state::SoccerObject>& soccer_objects) {
     }
   }
 
-  ref::CheckForGoals(soccer_objects);
+  // ref::CheckForGoals(soccer_objects);
 
   for (auto& obj : soccer_objects) {
     if (!kin::IsInsideBoundary(obj)) {
@@ -86,77 +91,6 @@ bool ref::CheckCollisionWithWall(state::SoccerObject& obj) {
           bottom <= -half_height);
 }
 
-void ref::CheckForGoals(std::vector<state::SoccerObject>& soccer_objects) {
-  for (auto& obj : soccer_objects) {
-    if (obj.name == "ball") {
-      double left_goal_x1 = -(((vis::SoccerField::GetInstance().playing_area_width_mm / 2.0f) +
-                               vis::SoccerField::GetInstance().goal_width_mm)) /
-                            1000.0f;
-      double left_goal_x2 =
-          -((vis::SoccerField::GetInstance().playing_area_width_mm / 2.0f)) / 1000.0f;
-
-      double left_goal_y1 = (vis::SoccerField::GetInstance().goal_height_mm / 2.0f) / 1000.0f;
-      double left_goal_y2 = -((vis::SoccerField::GetInstance().goal_height_mm / 2.0f) / 1000.0f);
-
-      double right_goal_x1 =
-          (vis::SoccerField::GetInstance().playing_area_width_mm / 2.0f) / 1000.0f;
-      double right_goal_x2 = ((vis::SoccerField::GetInstance().playing_area_width_mm / 2.0f) +
-                              vis::SoccerField::GetInstance().goal_width_mm) /
-                             1000.0f;
-
-      double right_goal_y1 = (vis::SoccerField::GetInstance().goal_height_mm / 2.0f) / 1000.0f;
-      double right_goal_y2 = -((vis::SoccerField::GetInstance().goal_height_mm / 2.0f) / 1000.0f);
-
-      bool goal_scored = false;
-      float left = obj.position[0];
-      float right = obj.position[0] + obj.size[0];
-      float top = obj.position[1] + obj.size[1];
-      float bottom = obj.position[1];
-
-      if ((left >= left_goal_x1 && left <= left_goal_x2 && top <= left_goal_y1 &&
-           bottom >= left_goal_y2) ||
-          (right >= left_goal_x1 && right <= left_goal_x2 && top >= left_goal_y1 &&
-           bottom <= left_goal_y2)) {
-        team_two_score++;
-        std::cout << "[ref::CheckForGoals] Goal by red team. Red team score:  " << team_two_score
-                  << std::endl;
-        goal_scored = true;
-      } else if (right >= right_goal_x1 && right <= right_goal_x2 && top <= right_goal_y1 &&
-                 bottom >= right_goal_y2) {
-        team_one_score++;
-        std::cout << "[ref::CheckForGoals] Goal by yellow team. Yellow team score:  "
-                  << team_one_score << std::endl;
-        goal_scored = true;
-      }
-
-      if (goal_scored) {
-        if (obj.is_attached) {
-          obj.is_attached = false;
-          state::SoccerObject* robot = obj.attached_to;
-          if (robot) {
-            robot->is_attached = false;
-            robot->attached_to = nullptr;
-          }
-          obj.attached_to = nullptr;
-        }
-
-        obj.position = Eigen::Vector3d::Zero();
-        obj.velocity = Eigen::Vector3d::Zero();
-
-        std::cout << "[ref::CheckForGoals] Ball position reset to origin after goal." << std::endl;
-        ref::Game::MoveToFormation(cfg::SystemConfig::team_one_start_formation,
-                                   cfg::SystemConfig::team_two_start_formation, soccer_objects);
-
-        for (auto& obj : soccer_objects) {
-          obj.velocity = Eigen::Vector3d(0, 0, 0);
-        }
-      }
-
-      break;
-    }
-  }
-}
-
 bool ref::IsOutsidePlayingField(state::SoccerObject& obj) {
   float half_width = (vis::SoccerField::GetInstance().playing_area_width_mm / 2.0f) / 1000.0f;
   float half_height = (vis::SoccerField::GetInstance().playing_area_height_mm / 2.0f) / 1000.0f;
@@ -169,31 +103,92 @@ bool ref::IsOutsidePlayingField(state::SoccerObject& obj) {
   return (left < -half_width || right > half_width || top > half_height || bottom < -half_height);
 }
 
-ref::AutoRef::AutoRef() {
-  team_one_score = 0;
-  team_two_score = 0;
-  state = Kickoff;
-}
-
 // GAME EVENTS
 
-// ATTACKER DOUBLE TOUCHED BALL
+// Violated KickOff Configuration
+/*
+  When the kick-off command is issued, all robots have to move to their own half of the field
+  excluding the center circle. However, one robot of the attacking team is also allowed to be
+  inside the whole center circle. This robot will be referred to as the kicker. No robot is allowed
+  to touch the ball.
+*/
+
+bool ref::ViolatedKickOffSetUp(std::vector<state::SoccerObject>& soccer_objects, int team_id,
+                               Game& g) {
+  if (g.state != ref::Game::Kickoff) {
+    return false;
+  }
+
+  if (team_id == 1) {
+    for (int i = 0; i < soccer_objects.size(); i++) {
+      if (soccer_objects[i].team_id == 1 &&
+          (soccer_objects[i].position[0] + cfg::SystemConfig::robot_size_m[0] / 2.0 > 0 ||
+           (g.team_with_ball == 1 && RobotInCenterCircle(soccer_objects[i].position) &&
+            i != cfg::SystemConfig::team_one_kicker) ||
+           (g.team_with_ball != 1 && RobotInCenterCircle(soccer_objects[i].position)))) {
+        std::cout << "[ref::ViolatedKickOffSetUp] team 1 violated kickoff start arrangement"
+                  << std::endl;
+        return true;
+      }
+    }
+  } else {
+    for (int i = 0; i < soccer_objects.size(); i++) {
+      if (soccer_objects[i].team_id == 2 &&
+          (soccer_objects[i].position[0] - cfg::SystemConfig::robot_size_m[0] / 2.0 < 0 ||
+           (g.team_with_ball == 2 && RobotInCenterCircle(soccer_objects[i].position) &&
+            i != cfg::SystemConfig::team_two_kicker) ||
+           (g.team_with_ball != 2 && RobotInCenterCircle(soccer_objects[i].position)))) {
+        std::cout << "[ref::ViolatedKickOffSetUp] team 2 violated kickoff start arrangement"
+                  << std::endl;
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/* helper for ViolateKickOffSetUp */
+bool ref::RobotInCenterCircle(Eigen::Vector3d v) {
+  double x = v[0];
+  double y = v[1];
+  double r_1 = cfg::SystemConfig::robot_size_m[0] / 2.0;
+  double r_2 = 0.2;
+
+  if (std::sqrt(std::abs(x * x) + std::abs(y * y)) <= r_1 + r_2) {
+    return true;
+  }
+  return false;
+}
+
+// #1 ATTACKER DOUBLE TOUCHED BALL
 
 /* When the ball is brought into play following a kick-off or free kick, the kicker is not
 allowed to touch the ball until it has been touched by another robot or the game has been
 stopped. The ball must have moved at least 0.05 meters to be considered as in play. A double
 touch results in a stop followed by a free kick from the same ball position. */
 
-bool ref::AutoRef::AttackerDoubleTouchedBall(GameState state, bool released_ball,
-                                             double disp_ball_since_kickoff,
-                                             state::SoccerObject& player) {
-  if (state == Kickoff && released_ball &&
-      disp_ball_since_kickoff <
-          0.05) {  // player = player who initiated kickoff, released_ball is if it kicked ball
-    if (player.is_attached) {  // is attached is for if it double touches the ball again after it
-      // released it
-      return true;
-    }
-  }
-  return false;
-}
+// bool ref::AttackerDoubleTouchedBall(std::vector<state::SoccerObject>& soccer_objects, Game g) {
+//   if (state == Kickoff) {
+//     double ball_displacement = 0;
+//     for (auto& obj : soccer_objects) {
+//       if (obj.name == "ball" && !obj.is_attached) {
+//         double x2 = soccer_objects[cfg::SystemConfig::num_robots - 1].position[0];
+//         double y2 = soccer_objects[cfg::SystemConfig::num_robots - 1].position[0];
+//         ball_displacement = std::sqrt((x2 * x2) + (y2 * y2));
+//         std::cout << "[ref::AttackerDoubleTouchedBall] ball displacement: " << ball_displacement
+//                   << std::endl;
+//       }
+//     }
+//     if (ball_displacement >= 0.05) {  // 0.05
+//       state = Run;
+//     } else {
+//       if (kicker != nullptr && kicker->is_attached && kicker_released_ball) {
+//         std::cout << "[AutoRef::AttackerDoubleTouchedBall] foul" << std::endl;
+//         return true;
+//       }
+//     }
+
+//     return false;
+//   }
+// }

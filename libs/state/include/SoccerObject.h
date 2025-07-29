@@ -12,7 +12,7 @@ class SoccerObject {
  public:
   // Constructors
   SoccerObject() = default;
-  SoccerObject(std::string name_, Eigen::Vector3d position_, Eigen::Vector2d size_,
+  SoccerObject(std::string name_, Eigen::Vector3d position_, Eigen::Vector2d size_, int team_id,
                Eigen::Vector3d velocity_ = Eigen::Vector3d::Zero(),
                Eigen::Vector3d acceleration_ = Eigen::Vector3d::Zero(), float mass_kg_ = 1);
   SoccerObject(const rob::RobotManager& robot_manager);
@@ -34,6 +34,7 @@ class SoccerObject {
   Eigen::Vector2d size;
   float radius_m;
   float mass_kg;
+  int team_id;
 
   std::string name;
 

@@ -4,37 +4,17 @@
 #include <vector>
 
 #include "SoccerObject.h"
+#include "Game.h"
 
 namespace ref {
 void CheckCollisions(std::vector<state::SoccerObject>& soccer_objects);
-void CheckForGoals(std::vector<state::SoccerObject>& soccer_objects);
 bool CheckCollisionWithWall(state::SoccerObject& obj);
 bool IsOutsidePlayingField(state::SoccerObject& obj);
 
-class AutoRef {
- public:
-  enum GameState {
-    Halt,
-    Timeout,
-    Stop,
-    PrepareKickoff,
-    BallPlacement,
-    PreparePenalty,
-    Kickoff,
-    FreeKick,
-    Penalty,
-    Run
-  };
-
-  AutoRef();
-  bool AttackerDoubleTouchedBall(GameState state, bool released_ball,
-                                 double disp_ball_since_kickoff, state::SoccerObject& player);
-
-  GameState state;
-  int team_one_score;
-  int team_two_score;
-};
-
+// bool AttackerDoubleTouchedBall(std::vector<state::SoccerObject>& soccer_objects, Game g);
+bool ViolatedKickOffSetUp(std::vector<state::SoccerObject>& soccer_objects, int team_id, Game& g);
+// helper for ViolatedKickOffSetUp
+bool RobotInCenterCircle(Eigen::Vector3d v);
 };  // namespace ref
 
 #endif  // AUTOREF_H

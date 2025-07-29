@@ -28,6 +28,10 @@ struct SystemConfig {
   // Robot Team
   static const std::vector<Eigen::Vector3d> team_one_start_formation;
   static const std::vector<Eigen::Vector3d> team_two_start_formation;
+
+  // players that are responsible for initiating the free kick
+  static const int team_one_kicker = 0;
+  static const int team_two_kicker = num_robots / 2;
 };
 }  // namespace cfg
 

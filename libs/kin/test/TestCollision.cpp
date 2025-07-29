@@ -6,8 +6,8 @@
 // Position, Velocity, Acceleration, Size, Mass, Texture
 
 TEST(CollisionTest, NoCollision) {
-  state::SoccerObject obj1("obj1", Eigen::Vector3d(1, 1, 0), Eigen::Vector2d(5, 5));
-  state::SoccerObject obj2("obj2", Eigen::Vector3d(10, 10, 0), Eigen::Vector2d(5, 5));
+  state::SoccerObject obj1("obj1", Eigen::Vector3d(1, 1, 0), Eigen::Vector2d(5, 5), 10);
+  state::SoccerObject obj2("obj2", Eigen::Vector3d(10, 10, 0), Eigen::Vector2d(5, 5), 10);
   EXPECT_FALSE(kin::CheckCircularCollision(obj1, obj2));
 }
 
@@ -15,23 +15,23 @@ TEST(CollisionTest, JustTouching) {
   // --->x
   // |
   // y
-  state::SoccerObject obj1("obj1", Eigen::Vector3d(0, 0, 0), Eigen::Vector2d(4, 4));
-  state::SoccerObject obj2("obj2", Eigen::Vector3d(4, 0, 0), Eigen::Vector2d(4, 4));
+  state::SoccerObject obj1("obj1", Eigen::Vector3d(0, 0, 0), Eigen::Vector2d(4, 4), 10);
+  state::SoccerObject obj2("obj2", Eigen::Vector3d(4, 0, 0), Eigen::Vector2d(4, 4), 10);
   // Center distance = 4, radii = 2 + 2
   EXPECT_TRUE(kin::CheckCircularCollision(obj1, obj2));
 }
 
 TEST(CollisionTest, Overlapping) {
-  state::SoccerObject obj1("obj1", Eigen::Vector3d(0, 0, 0), Eigen::Vector2d(4, 4));
-  state::SoccerObject obj2("obj2", Eigen::Vector3d(2, 0, 0), Eigen::Vector2d(4, 4));
+  state::SoccerObject obj1("obj1", Eigen::Vector3d(0, 0, 0), Eigen::Vector2d(4, 4), 10);
+  state::SoccerObject obj2("obj2", Eigen::Vector3d(2, 0, 0), Eigen::Vector2d(4, 4), 10);
   EXPECT_TRUE(kin::CheckCircularCollision(obj1, obj2));
 }
 
 TEST(ResolveCircularCollisionTest, SymmetricCollision_EqualMass) {
   // Two equal-sized objects, moving directly toward each other with equal speed
-  state::SoccerObject obj1("obj1", Eigen::Vector3d(0.0f, 0.0f, 0), Eigen::Vector2d(4.0f, 4.0f),
+  state::SoccerObject obj1("obj1", Eigen::Vector3d(0.0f, 0.0f, 0), Eigen::Vector2d(4.0f, 4.0f), 10,
                            Eigen::Vector3d(2.0f, 0.0f, 0));
-  state::SoccerObject obj2("obj2", Eigen::Vector3d(3.0f, 0.0f, 0), Eigen::Vector2d(4.0f, 4.0f),
+  state::SoccerObject obj2("obj2", Eigen::Vector3d(3.0f, 0.0f, 0), Eigen::Vector2d(4.0f, 4.0f), 10,
                            Eigen::Vector3d(-2.0f, 0.0f, 0));
 
   EXPECT_TRUE(kin::CheckCircularCollision(obj1, obj2));
@@ -49,10 +49,10 @@ TEST(ResolveCircularCollisionTest, SymmetricCollision_EqualMass) {
 
 TEST(ResolveCircularCollisionTest, AsymmetricMasses) {
   state::SoccerObject obj1("light", Eigen::Vector3d(0.0f, 0.0f, 0), Eigen::Vector2d(4.0f, 4.0f),
-                           Eigen::Vector3d(5.0f, 0.0f, 0), Eigen::Vector3d(0, 0, 0),
+                           10, Eigen::Vector3d(5.0f, 0.0f, 0), Eigen::Vector3d(0, 0, 0),
                            1);  // Light (mass 1)
   state::SoccerObject obj2("heavy", Eigen::Vector3d(2.0f, 0.0f, 0), Eigen::Vector2d(4.0f, 4.0f),
-                           Eigen::Vector3d(0.0f, 0.0f, 0), Eigen::Vector3d(0, 0, 0),
+                           10, Eigen::Vector3d(0.0f, 0.0f, 0), Eigen::Vector3d(0, 0, 0),
                            100);  // Heavy (mass 100)
 
   ASSERT_TRUE(kin::CheckCircularCollision(obj1, obj2));
@@ -66,8 +66,10 @@ TEST(ResolveCircularCollisionTest, AsymmetricMasses) {
 }
 
 TEST(ResolveCircularCollisionTest, OverlapResolved) {
-  state::SoccerObject obj1("obj1", Eigen::Vector3d(0.0f, 0.0f, 0), Eigen::Vector2d(4.0f, 4.0f));
-  state::SoccerObject obj2("obj2", Eigen::Vector3d(1.0f, 0.0f, 0), Eigen::Vector2d(4.0f, 4.0f));
+  state::SoccerObject obj1("obj1", Eigen::Vector3d(0.0f, 0.0f, 0), Eigen::Vector2d(4.0f, 4.0f),
+                           10);
+  state::SoccerObject obj2("obj2", Eigen::Vector3d(1.0f, 0.0f, 0), Eigen::Vector2d(4.0f, 4.0f),
+                           10);
 
   ASSERT_TRUE(kin::CheckCircularCollision(obj1, obj2));
   kin::ResolveCircularCollision(obj1, obj2);
