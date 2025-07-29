@@ -6,8 +6,7 @@
 #include <Eigen/Dense>
 
 #include "Trajectory3D.h"
-#include "TrapezoidalTrajectoryVi3D.h"
-#include "BangBangTrajectory3D.h"
+class Trajectory3D;
 #include "Utils.h"
 
 namespace ctrl {

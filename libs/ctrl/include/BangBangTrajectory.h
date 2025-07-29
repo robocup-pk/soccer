@@ -1,12 +1,15 @@
 #ifndef BANG_BANG_TRAJECTORY_H
 #define BANG_BANG_TRAJECTORY_H
 
+#include "RobotDescription.h"
 #include <Eigen/Dense>
 #include <vector>
 #include <tuple>
 #include <memory>
 #include "AccelerationEnvelope.h"
-#include "RobotDescription.h"
+namespace kin {
+    class RobotDescription;
+}
 
 // Forward declarations
 namespace rob {

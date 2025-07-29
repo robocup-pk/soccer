@@ -3,6 +3,8 @@
 
 #include "Utils.h"
 #include "TrajectoryManager.h"
+#include "BangBangTrajectory3D.h"
+#include "TrapezoidalTrajectoryVi3D.h"
 #include "SystemConfig.h"
 
 /*

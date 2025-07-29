@@ -2,6 +2,8 @@
 #include <iostream>
 
 #include "TrajectoryManager.h"
+#include "BangBangTrajectory3D.h"
+//#include "TrapezoidalTrajectoryVi3D.h"
 
 void ctrl::TrajectoryManager::MergeNewTrajectories(Trajectories&& new_trajectories) {
   if (new_trajectories.empty()) return;

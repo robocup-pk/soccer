@@ -3,64 +3,54 @@
 
 #include <optional>
 #include <memory>
-#include <vector>
-#include <mutex>
 #include <Eigen/Dense>
 
 #include "Trajectory3D.h"
 #include "AccelerationEnvelope.h"
+#include <mutex>
 
 namespace ctrl {
 
-// Enums and structures for BangBangTrajectory3D (to avoid conflicts with BangBangTrajectory.h)
+// Enum for 5 cases from Section 4 of Purwin & D'Andrea paper
 enum class BangBangCase3D {
-    CASE_1,      // w_dot_0 < 0 (moving away from destination)
-    CASE_2_1,    // Accelerate to v_max
-    CASE_2_2,    // Cruise at v_max  
-    CASE_2_3,    // Decelerate to target
-    CASE_3       // w_dot_0 > v_max (too fast)
+    CASE_1,     // w_dot_0 < 0: reverse direction first
+    CASE_2_1,   // accelerate to max velocity
+    CASE_2_2,   // cruise at max velocity  
+    CASE_2_3,   // decelerate to destination
+    CASE_3      // w_dot_0 > v_max: decelerate first
 };
 
-// Trajectory structures matching the exact paper implementation
+// Single DOF bang-bang trajectory segment
 struct TrajectorySegment3D {
     BangBangCase3D case_type;
-    double control_effort;    // u (acceleration)
-    double duration;         // Δt
-    double distance_traveled; // Δw
-    double final_velocity;   // w_dot at end
+    double control_effort;      // qw(t): acceleration command
+    double duration;            // t': segment duration
+    double distance_traveled;   // w': distance covered in segment
+    double final_velocity;      // w_dot': velocity at end of segment
 };
 
+// Complete trajectory for one degree of freedom
 struct DOFTrajectory3D {
     std::vector<TrajectorySegment3D> segments;
     double total_time;
     double total_distance;
 };
 
-// Complete Translation and Rotation trajectories (Section 5-7 from paper)
+// 2D trajectory combining x and y DOFs with synchronization
 struct TranslationTrajectory3D {
     DOFTrajectory3D x_trajectory;
     DOFTrajectory3D y_trajectory;
-    double alpha;               // Synchronization parameter (Section 5)
     double total_execution_time;
+    double alpha;               // synchronization parameter α
 };
 
+// Complete 3DOF trajectory including rotation
 struct TrajectoryComplete3D {
     TranslationTrajectory3D translation;
     DOFTrajectory3D rotation;
     double total_execution_time;
 };
 
-/**
- * @brief BangBang trajectory implementation that exactly matches TrapezoidalTrajectoryVi3D interface
- * 
- * This class provides a drop-in replacement for TrapezoidalTrajectoryVi3D with:
- * - Exact same constructor signature
- * - Same virtual function implementations (VelocityAtT, PositionAtT, etc.)
- * - Same variable usage and normalization as existing system
- * - Optimized lookup table that runs once with cached interpolation
- * - Velocity output (not acceleration) for motor control (max RPM 280)
- * - Jerk handling similar to TrapezoidalTrajectory3D
- */
 class BangBangTrajectory3D : public Trajectory3D {
 public:
     /**
@@ -99,9 +89,7 @@ private:
     Eigen::Vector3d h;  // Total displacement
     Eigen::Vector3d v0; // Initial velocity
 
-    // Complete paper implementation structures (now defined above)
-    
-    // BangBang trajectory data (full paper implementation)
+    // Store trajectories for evaluation
     DOFTrajectory3D x_trajectory_dof;
     DOFTrajectory3D y_trajectory_dof;
     DOFTrajectory3D theta_trajectory_dof;
@@ -119,9 +107,11 @@ private:
     };
     static AccelCache accel_cache_;
     
-    // Core trajectory generation functions (full paper implementation)
+    // Helper functions for complete paper implementation
     void InitializeAccelerationEnvelope();
     std::pair<double, double> GetMaxAcceleration(double direction_angle);
+    
+    // Core trajectory generation from paper
     TrajectoryComplete3D GenerateCompleteTrajectory(const Eigen::Vector3d& displacement, const Eigen::Vector3d& initial_velocity);
     DOFTrajectory3D GenerateSingleDOF(double w0, double wf, double w_dot_0, double w_dot_f, double v_max, double a_max);
     
@@ -132,28 +122,23 @@ private:
     TrajectorySegment3D HandleCase2_3(double w_dot_0, double remaining_distance, double w_dot_f, double a_max);
     TrajectorySegment3D HandleCase3(double w_dot_0, double v_max, double a_max);
     
-    // Section 5: X-Y synchronization via α-parameterization and bisection algorithm
+    // Section 5: X-Y synchronization
+    double FindOptimalAlpha(double xf, double yf, double x_dot_0, double y_dot_0, double v_max, double a_max);
     void SynchronizeTranslationTrajectories(TranslationTrajectory3D& translation);
     DOFTrajectory3D ScaleTrajectoryByAlpha(const DOFTrajectory3D& original, double alpha);
     
-    // Trajectory evaluation functions
+    // Trajectory evaluation
     double EvaluateTrajectoryAtTime(const DOFTrajectory3D& trajectory, double t, bool get_velocity);
-    
-    // Jerk handling for smooth motion profiles (similar to TrapezoidalTrajectory3D)
-    void ApplyJerkLimiting();
     void SmoothTrajectoryTransitions(DOFTrajectory3D& trajectory, double min_time);
-    double jerk_limit_ = 50.0;  // Similar to TrapezoidalTrajectory3D
-
-    // Bisection algorithm for finding optimal α (Section 5)
-    double FindOptimalAlpha(
-        double xf, double yf, double x_dot_0, double y_dot_0,
-        double v_max, double a_max
-    );
+    
+    // Jerk handling for smooth motion profiles
+    void ApplyJerkLimiting();
+    double jerk_limit_ = 50.0;  // Similar to
     
     // Motor velocity conversion (max RPM 280)
     Eigen::Vector3d ConvertToMotorVelocities(const Eigen::Vector3d& body_velocity);
-    double max_rpm_ = 280.0;
-    double wheel_radius_ = 0.025;  // 25mm wheels
+    double max_rpm_ = 300.0;
+    double wheel_radius_ = 40.0;  // 40mm wheels
 };
 
 } // namespace ctrl

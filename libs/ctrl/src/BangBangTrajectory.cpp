@@ -1,4 +1,5 @@
 #include "BangBangTrajectory.h"
+#include "RobotDescription.h"
 #include "RobotManager.h"
 #include "Utils.h"
 #include <cmath>
