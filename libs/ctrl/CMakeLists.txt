@@ -1,4 +1,13 @@
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+set(SOURCES
+    src/AccelerationEnvelope.cpp
+    src/BangBangTrajectory.cpp
+    src/BangBangTrajectory3D.cpp
+    src/MotionController.cpp
+    src/Trajectory3D.cpp
+    src/TrajectoryManager.cpp
+    src/TrajectoryMergeLogic.cpp
+)
+
 file(GLOB_RECURSE HEADERS "include/*.h")
 
 # Find Python for acceleration envelope integration

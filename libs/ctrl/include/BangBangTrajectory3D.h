@@ -143,6 +143,12 @@ private:
     void ApplyJerkLimiting();
     void SmoothTrajectoryTransitions(DOFTrajectory3D& trajectory, double min_time);
     double jerk_limit_ = 50.0;  // Similar to TrapezoidalTrajectory3D
+
+    // Bisection algorithm for finding optimal α (Section 5)
+    double FindOptimalAlpha(
+        double xf, double yf, double x_dot_0, double y_dot_0,
+        double v_max, double a_max
+    );
     
     // Motor velocity conversion (max RPM 280)
     Eigen::Vector3d ConvertToMotorVelocities(const Eigen::Vector3d& body_velocity);
