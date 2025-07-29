@@ -1,5 +1,7 @@
 # Collect all test source files
 file(GLOB TEST_SOURCES "*.cpp")
+# Exclude heavy integration test that requires full Python/numpy stack
+list(REMOVE_ITEM TEST_SOURCES ${CMAKE_CURRENT_LIST_DIR}/test_bangbang_trajectory.cpp)
 
 foreach(test_src ${TEST_SOURCES})
   # Get the filename without extension to use as target name

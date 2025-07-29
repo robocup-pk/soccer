@@ -25,7 +25,8 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
     Eigen::Vector3d v0(0, 0, 0);
     
     // For BangBangTrajectory3D: Use reasonable time based on distance
-    double distance = h.norm() / 1000.0;  // Convert from mm to m
+    // Path points are now provided in meters, so no conversion is required
+    double distance = h.norm();
     // Estimate time based on distance and typical robot speed
     double typical_speed = 1.0;  // m/s - realistic for SSL robots
     double T = std::max(0.5, distance / typical_speed);  // Minimum 0.5s, realistic time

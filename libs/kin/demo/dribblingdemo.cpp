@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
     //Now use TrajectoryManager to generate a path
     vector<Eigen::Vector3d> targetPath;
     for (int i = 0; i < path.size(); ++i) {
-        targetPath.push_back(Eigen::Vector3d(path[i].x * 1000, path[i].y * 1000, path[i].angle));
+        targetPath.push_back(Eigen::Vector3d(path[i].x, path[i].y, path[i].angle));
     }
     // Add ball to robot manager's goal queue
     robot_manager.SetPath(targetPath);

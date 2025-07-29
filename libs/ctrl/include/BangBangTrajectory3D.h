@@ -88,6 +88,7 @@ private:
     double T;           // Total trajectory time
     Eigen::Vector3d h;  // Total displacement
     Eigen::Vector3d v0; // Initial velocity
+    Eigen::Vector3d a_const; // constant acceleration for simplified model
 
     // Store trajectories for evaluation
     DOFTrajectory3D x_trajectory_dof;
