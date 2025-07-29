@@ -27,9 +27,12 @@ void AccelerationEnvelope::InitializePython() {
         }
     }
     
-    // Add current directory to Python path
-    PyRun_SimpleString("import sys");
-    PyRun_SimpleString("sys.path.append('/home/kodek/my_project/soccer')");
+    // Add project root to Python path so lookup_table.py can be imported
+    PyRun_SimpleString("import sys, os, site");
+    PyRun_SimpleString("site.main() if hasattr(site, 'main') else None");
+    std::string repo_root = std::string(CMAKE_BUILD_DIR) + "/..";
+    std::string cmd = std::string("sys.path.append('") + repo_root + "')";
+    PyRun_SimpleString(cmd.c_str());
 }
 
 void AccelerationEnvelope::BuildLookupTable() {

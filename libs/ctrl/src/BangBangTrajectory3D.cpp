@@ -23,58 +23,16 @@ BangBangTrajectory3D::BangBangTrajectory3D(Eigen::Vector3d pose_start, Eigen::Ve
     this->pose_start = pose_start;
     this->pose_end = pose_end;
     this->t_start_s = t_start_s;
+    this->t_finish_s = t_end_s;
     this->v0 = v0;
     this->h = pose_end - pose_start;
-    
-    // Initialize acceleration envelope only once (optimized lookup table)
-    InitializeAccelerationEnvelope();
 
-    // Fix coordinate system conversion - kickdemo appears to use mm units
-    Eigen::Vector3d h_normalized = h;
-    
-    // Check if values are in mm (typical soccer field coordinates are much smaller than 10m)
-    if (std::abs(h_normalized[0]) > 10.0 || std::abs(h_normalized[1]) > 10.0) {
-        std::cout << "[BangBangTrajectory3D] Converting coordinates from mm to m: " 
-                  << h.transpose() << " -> ";
-        h_normalized.head<2>() /= 1000.0;  // Convert mm to m
-        std::cout << h_normalized.transpose() << std::endl;
-    }
+    // Total duration
+    T = t_finish_s - t_start_s;
+    if (T <= 0) T = 1.0;
 
-    // Generate complete BangBang trajectory using FULL paper implementation
-    TrajectoryComplete3D complete_trajectory = GenerateCompleteTrajectory(h_normalized, v0);
-    
-    // Store trajectories for evaluation
-    x_trajectory_dof = complete_trajectory.translation.x_trajectory;
-    y_trajectory_dof = complete_trajectory.translation.y_trajectory;
-    theta_trajectory_dof = complete_trajectory.rotation;
-    
-    // Apply jerk limiting for smooth motion profiles
-    ApplyJerkLimiting();
-
-    // Use the expected time from TrajectoryManager for consistency
-    double optimal_time = complete_trajectory.total_execution_time;
-    double expected_time = t_end_s - t_start_s;
-    
-    // Use expected time if reasonable, otherwise use optimal
-    double actual_time = (expected_time > 0.1 && expected_time < 10.0) ? expected_time : std::max(optimal_time, 1.0);
-    
-    std::cout << "[BangBangTrajectory3D] Optimal: " << optimal_time 
-              << "s, Expected: " << expected_time 
-              << "s, Using: " << actual_time << "s" << std::endl;
-    
-    // Use the calculated time
-    this->t_finish_s = t_start_s + actual_time;
-    this->T = actual_time;
-
-    // Debug output matching TrapezoidalTrajectoryVi3D format
-    std::cout << "[ctrl::BangBangTrajectory3D] Complete BangBang trajectory generated (Full Paper Implementation)" << std::endl;
-    std::cout << "[ctrl::BangBangTrajectory3D] X segments: " << x_trajectory_dof.segments.size() 
-              << ", time: " << x_trajectory_dof.total_time << "s" << std::endl;
-    std::cout << "[ctrl::BangBangTrajectory3D] Y segments: " << y_trajectory_dof.segments.size() 
-              << ", time: " << y_trajectory_dof.total_time << "s" << std::endl;
-    std::cout << "[ctrl::BangBangTrajectory3D] θ segments: " << theta_trajectory_dof.segments.size() 
-              << ", time: " << theta_trajectory_dof.total_time << "s" << std::endl;
-    std::cout << "[ctrl::BangBangTrajectory3D] Total execution time: " << complete_trajectory.total_execution_time << "s" << std::endl;
+    // Simplified symmetric bang-bang acceleration (triangular profile)
+    a_const = 4.0 * h / (T * T);
 }
 
 void BangBangTrajectory3D::InitializeAccelerationEnvelope() {
@@ -525,81 +483,48 @@ double BangBangTrajectory3D::EvaluateTrajectoryAtTime(const DOFTrajectory3D& tra
 }
 
 Eigen::Vector3d BangBangTrajectory3D::VelocityAtT(double t_sec) {
-    // Handle timing correctly according to paper Section 4
-    if (t_sec < t_start_s) {
+    if (t_sec < t_start_s || t_sec >= t_finish_s) {
         return Eigen::Vector3d(0, 0, 0);
     }
-    
-    double t_relative = t_sec - t_start_s;
-    
-    // Return zero velocity when trajectory is complete (paper requirement)
-    if (t_sec >= t_finish_s || t_relative >= T) {
-        return Eigen::Vector3d(0, 0, 0);
+
+    double t_rel = t_sec - t_start_s;
+    Eigen::Vector3d vel;
+    if (t_rel <= T / 2.0) {
+        vel = v0 + a_const * t_rel;
+    } else {
+        double t2 = t_rel - T / 2.0;
+        Eigen::Vector3d v_mid = v0 + a_const * (T / 2.0);
+        vel = v_mid - a_const * t2;
     }
-    
-    // Scale time to trajectory duration for proper evaluation
-    double trajectory_duration = std::max({x_trajectory_dof.total_time, y_trajectory_dof.total_time, theta_trajectory_dof.total_time});
-    double scaled_t = (trajectory_duration > 0) ? t_relative * trajectory_duration / T : t_relative;
-    
-    // Evaluate velocity at the scaled time using bang-bang segments
-    Eigen::Vector3d v_fWorld;
-    v_fWorld[0] = EvaluateTrajectoryAtTime(x_trajectory_dof, scaled_t, true);
-    v_fWorld[1] = EvaluateTrajectoryAtTime(y_trajectory_dof, scaled_t, true);
-    v_fWorld[2] = EvaluateTrajectoryAtTime(theta_trajectory_dof, scaled_t, true);
-    
-    // Scale velocities back to match expected duration
-    if (trajectory_duration > 0 && T > 0) {
-        double velocity_scale = trajectory_duration / T;
-        v_fWorld *= velocity_scale;
-    }
-    
-    // Apply reasonable velocity limits
-    v_fWorld[0] = std::clamp(v_fWorld[0], -2.0, 2.0);
-    v_fWorld[1] = std::clamp(v_fWorld[1], -2.0, 2.0);
-    v_fWorld[2] = std::clamp(v_fWorld[2], -5.0, 5.0);
-    
-    // Debug output for debugging robot not moving
-    if (std::abs(v_fWorld[0]) > 0.01 || std::abs(v_fWorld[1]) > 0.01) {
-        std::cout << "[BangBangTrajectory3D::VelocityAtT] t=" << t_sec 
-                  << ", t_rel=" << t_relative << ", T=" << T 
-                  << ", v=" << v_fWorld.transpose() << std::endl;
-    }
-    
-    return v_fWorld;
+    return vel;
 }
 
 Eigen::Vector3d BangBangTrajectory3D::PositionAtT(double t_sec) {
-    // Handle timing correctly for position evaluation
     if (t_sec < t_start_s) {
         return Eigen::Vector3d(0, 0, 0);
     }
-    
-    double t_relative = t_sec - t_start_s;
-    
-    // Return final position when trajectory is complete
-    if (t_sec >= t_finish_s || t_relative >= T) {
-        return h;  // Total displacement (final position)
+    if (t_sec >= t_finish_s) {
+        return h;
     }
-    
-    // Scale time to trajectory duration for proper evaluation
-    double trajectory_duration = std::max({x_trajectory_dof.total_time, y_trajectory_dof.total_time, theta_trajectory_dof.total_time});
-    double scaled_t = (trajectory_duration > 0) ? t_relative * trajectory_duration / T : t_relative;
-    
-    // Evaluate position at scaled time using bang-bang segments
-    Eigen::Vector3d position_fworld;
-    position_fworld[0] = EvaluateTrajectoryAtTime(x_trajectory_dof, scaled_t, false);
-    position_fworld[1] = EvaluateTrajectoryAtTime(y_trajectory_dof, scaled_t, false);
-    position_fworld[2] = EvaluateTrajectoryAtTime(theta_trajectory_dof, scaled_t, false);
 
-    return position_fworld;
+    double t_rel = t_sec - t_start_s;
+    Eigen::Vector3d pos;
+    if (t_rel <= T / 2.0) {
+        pos = v0 * t_rel + 0.5 * a_const * t_rel * t_rel;
+    } else {
+        double t2 = t_rel - T / 2.0;
+        Eigen::Vector3d pos_mid = v0 * (T / 2.0) + 0.5 * a_const * (T / 2.0) * (T / 2.0);
+        Eigen::Vector3d v_mid = v0 + a_const * (T / 2.0);
+        pos = pos_mid + v_mid * t2 - 0.5 * a_const * t2 * t2;
+    }
+    return pos;
 }
 
 void BangBangTrajectory3D::Print() {
-    std::cout << "[ctrl::BangBangTrajectory3D::Print] BangBang Trajectory Info (Full Paper Implementation). ";
-    std::cout << "Pose: " << pose_start.transpose() << " -> " << pose_end.transpose();
-    std::cout << ". Time: " << t_start_s << " -> " << t_finish_s;
-    std::cout << ". v0: " << v0.transpose() << std::endl;
-    std::cout << "  All 5 cases implemented, acceleration envelope from lookup table, X-Y synchronization" << std::endl;
+    std::cout << "[BangBangTrajectory3D] start=" << pose_start.transpose()
+              << " end=" << pose_end.transpose()
+              << " duration=" << T << "s"
+              << " a=" << a_const.transpose() << std::endl;
 }
 
 Eigen::Vector3d BangBangTrajectory3D::TotalDistance() {

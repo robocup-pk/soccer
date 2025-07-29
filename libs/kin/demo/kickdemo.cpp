@@ -10,6 +10,9 @@
 #include "Kinematics.h"
 #include "Kick.h"
 #include "Utils.h"
+
+// Run demo without graphical output when true
+static const bool HEADLESS = true;
 using namespace std;
 int main(int argc, char* argv[]) {
     std::cout << "[KickDemo] Simple RRTX + BangBangTrajectory + Kick Demo" << std::endl;
@@ -23,7 +26,9 @@ int main(int argc, char* argv[]) {
     std::vector<state::SoccerObject> soccer_objects;
     state::InitSoccerObjects(soccer_objects);
     vis::GLSimulation gl_simulation;
-    gl_simulation.InitGameObjects(soccer_objects);
+    if (!HEADLESS) {
+        gl_simulation.InitGameObjects(soccer_objects);
+    }
     rob::RobotManager robot_manager;
     
     // Set positions
@@ -59,9 +64,9 @@ int main(int argc, char* argv[]) {
     for(int i = 0; i < path.size(); ++i){
         cout << "Waypoint " << i << ": (" << path[i].x << ", " << path[i].y << ", " << path[i].angle << ")" << std::endl;
     }
-    // Convert path to Eigen::Vector3d format for RobotManager
+    // Convert path to Eigen::Vector3d format for RobotManager (meters)
     for(int i = 0; i < path.size(); ++i) {
-        targetPath.push_back(Eigen::Vector3d(path[i].x * 1000, path[i].y * 1000, path[i].angle ));
+        targetPath.push_back(Eigen::Vector3d(path[i].x, path[i].y, path[i].angle));
     }
     // Add ball to robot manager's goal queue
     robot_manager.SetPath(targetPath);
@@ -72,15 +77,8 @@ int main(int argc, char* argv[]) {
         // Check if path is finished before executing kick
         if (robot_manager.GetRobotState() == "IDLE" && !kick_executed) {
             // Debug: Check robot and ball positions
-            Eigen::Vector3d robot_pos_raw = robot_manager.GetPoseInWorldFrame();
+            Eigen::Vector3d robot_pos = robot_manager.GetPoseInWorldFrame();
             Eigen::Vector3d ball_pos = ball_position;
-            
-            // Check if robot position needs conversion from mm to m
-            Eigen::Vector3d robot_pos = robot_pos_raw;
-            if (std::abs(robot_pos_raw[0]) > 10.0 || std::abs(robot_pos_raw[1]) > 10.0) {
-                robot_pos = robot_pos_raw / 1000.0;  // Convert mm to m
-                std::cout << "Converting robot position from mm to m: [" << robot_pos_raw.transpose() << "] -> [" << robot_pos.transpose() << "]" << std::endl;
-            }
             
             double distance = (robot_pos - ball_pos).head<2>().norm();
             
@@ -102,7 +100,7 @@ int main(int argc, char* argv[]) {
                 std::cout << "Approach direction: [" << direction.transpose() << "]" << std::endl;
                 std::cout << "Target approach position: [" << ball_approach.transpose() << "]" << std::endl;
                 
-                direct_path.push_back(ball_approach * 1000);  // Convert to mm
+                direct_path.push_back(ball_approach);  // Path now in meters
                 robot_manager.SetPath(direct_path);
             } else if (distance <= 0.30) {  // Within kick range
                 std::cout << "Robot close enough to ball! Distance: " << distance << "m" << std::endl;
@@ -122,7 +120,8 @@ int main(int argc, char* argv[]) {
         double current_time = util::GetCurrentTime();
         double dt = util::CalculateDt();
         
-        vis::ProcessInput(gl_simulation.GetRawGLFW(), soccer_objects); 
+        if (!HEADLESS)
+            vis::ProcessInput(gl_simulation.GetRawGLFW(), soccer_objects);
         // Update robot and physics
         robot_manager.ControlLogic();
         robot_manager.SenseLogic();
@@ -139,8 +138,16 @@ int main(int argc, char* argv[]) {
         kin::UpdateKinematics(soccer_objects, dt);
         kin::CheckAndResolveCollisions(soccer_objects);
         
-        if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
-            break;
+        if (!HEADLESS) {
+            if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
+                break;
+            }
+        } else {
+            // In headless mode, print robot pose for debugging and sleep a bit
+            Eigen::Vector3d robot_pos = robot_manager.GetPoseInWorldFrame();
+            std::cout << "[KickDemo] t=" << current_time
+                      << " robot=" << robot_pos.transpose() << std::endl;
+            util::WaitMs(20);  // rough 50Hz update
         }
     }
 

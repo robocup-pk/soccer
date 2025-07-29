@@ -25,7 +25,7 @@ bool Kick(state::SoccerObject& robot, state::SoccerObject& ball, double kick_pow
                              std::pow(ball_center.y() - robot_center.y(), 2));
   
   // SSL constraint 1: Ball must be within kicking range (typically 20-30cm)
-  if (distance > ssl::MAX_KICK_DISTANCE && !force_kick) {
+  if ((distance - ssl::MAX_KICK_DISTANCE) > 1e-6 && !force_kick) {
     std::cout << "[Kick] Ball too far away: " << distance << "m (max: " << ssl::MAX_KICK_DISTANCE << "m)" << std::endl;
     return false;
   }

@@ -96,7 +96,13 @@ void state::SoccerObject::Move(float dt) {
   position[2] = util::WrapAngle(position[2]);
 }
 
-Eigen::Vector3d state::SoccerObject::GetCenterPosition() { return position; }
+Eigen::Vector3d state::SoccerObject::GetCenterPosition() {
+  // Position stores the bottom-left of the bounding box. Convert to center.
+  Eigen::Vector3d center = position;
+  center.x() += size.x() / 2.0;
+  center.y() += size.y() / 2.0;
+  return center;
+}
 
 state::SoccerObject::~SoccerObject() {
     attached_to = nullptr;  
