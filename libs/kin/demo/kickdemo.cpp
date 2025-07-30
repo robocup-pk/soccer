@@ -13,9 +13,26 @@
 
 // Run demo without graphical output when true
 static const bool HEADLESS = false;
+
+// Demo configuration
+enum class DemoMode {
+    ORIGINAL,    // Use original trajectory system
+    BangBang      // Use BangBang-based M_TrajectoryManager
+};
+
 using namespace std;
 int main(int argc, char* argv[]) {
+    // Parse command line arguments for demo mode
+    DemoMode demo_mode = DemoMode::ORIGINAL;  // Default
+    if (argc > 1) {
+        std::string mode_arg = argv[1];
+        if (mode_arg == "bangbang" || mode_arg == "m") {
+            demo_mode = DemoMode::BangBang;
+        }
+    }
+    
     std::cout << "[KickDemo] Simple RRTX + BangBangTrajectory + Kick Demo" << std::endl;
+    std::cout << "[KickDemo] Demo Mode: " << (demo_mode == DemoMode::ORIGINAL ? "ORIGINAL" : "BANGBANG") << std::endl;
     
     if (cfg::SystemConfig::num_robots != 1) {
         std::cout << "[KickDemo] Set num_robots to 1. Exiting!" << std::endl;
@@ -68,8 +85,16 @@ int main(int argc, char* argv[]) {
     for(int i = 0; i < path.size(); ++i) {
         targetPath.push_back(Eigen::Vector3d(path[i].x, path[i].y, path[i].angle));
     }
-    // Add ball to robot manager's goal queue
-    robot_manager.SetPath(targetPath);
+    // Set trajectory manager type and path based on demo mode
+    if (demo_mode == DemoMode::BangBang) {
+        std::cout << "[KickDemo] Using BangBang-based M_TrajectoryManager" << std::endl;
+        robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BangBang);
+        robot_manager.SetMPath(targetPath);
+    } else {
+        std::cout << "[KickDemo] Using original TrajectoryManager" << std::endl;
+        robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::ORIGINAL);
+        robot_manager.SetPath(targetPath);
+    }
 
     bool kick_executed = false;  // Flag to ensure kick is executed only once
 

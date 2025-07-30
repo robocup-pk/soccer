@@ -18,6 +18,7 @@ rob::RobotManager::RobotManager() {
   finished_motion = true;
   num_sensor_readings_failed = 0;
   rob_manager_running.store(true);
+  trajectory_manager_type_ = TrajectoryManagerType::ORIGINAL;  // Default to original
 
 #ifdef BUILD_ON_PI
   state_estimator.initialized_pose = false;
@@ -93,6 +94,9 @@ void rob::RobotManager::ControlLogic() {
     case RobotState::AUTONOMOUS_DRIVING:
       std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
       break;
+    case RobotState::M_AUTONOMOUS_DRIVING:
+      std::tie(finished_motion, velocity_fBody_) = m_trajectory_manager.Update(pose_fWorld);
+      break;
   }
 
   if (finished_motion) robot_state = RobotState::IDLE;
@@ -166,6 +170,37 @@ void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path_fWorld, double
     std::cout << "[rob::RobotManager::SetPath] Give path is invalid. Failed to create "
                  "trajectories\nPath: ";
   }
+}
+
+void rob::RobotManager::SetMPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
+  bool is_path_valid;
+  {
+    // Print the path
+    std::cout << "[rob::RobotManager::SetMPath] BangBang-based trajectory: ";
+    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
+      std::cout << path_fWorld[i].transpose() << " -> ";
+    }
+    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
+
+    // Create trajectories using M_TrajectoryManager
+    is_path_valid = m_trajectory_manager.CreateTrajectoriesFromPath(path_fWorld, t_start_s);
+    std::cout << "[rob::RobotManager::SetMPath] Finish creating M_trajectories" << std::endl;
+  }
+
+  if (is_path_valid) {
+    std::unique_lock<std::mutex> lock(robot_state_mutex);
+    robot_state = RobotState::M_AUTONOMOUS_DRIVING;
+    trajectory_manager_type_ = TrajectoryManagerType::BangBang;
+  } else {
+    std::cout << "[rob::RobotManager::SetMPath] Given path is invalid. Failed to create "
+                 "M_trajectories\nPath: ";
+  }
+}
+
+void rob::RobotManager::SetTrajectoryManagerType(TrajectoryManagerType type) {
+  trajectory_manager_type_ = type;
+  std::cout << "[rob::RobotManager::SetTrajectoryManagerType] Set to " 
+            << (type == TrajectoryManagerType::ORIGINAL ? "ORIGINAL" : "BANGBANG") << std::endl;
 }
 
 void rob::RobotManager::SetBodyVelocity(Eigen::Vector3d& velocity_fBody) {
