@@ -20,17 +20,20 @@ int main(int argc, char* argv[]) {
     rob::RobotManager robot_manager;
     
     // Set initial robot pose
-    Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0);
+    Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0); // Robot starts at origin facing up
     robot_manager.InitializePose(robot_start_pose);
-    int N = 36;
-
+    int N = 5;
+    double theta_final = M_PI / 2.0;
     vector<Eigen::Vector3d> waypoints;
-    for (int i = 0; i <= N; ++i) {
-        double θ = (2*M_PI*i)/N;
-        waypoints.push_back(Eigen::Vector3d(cos(θ), sin(θ), 0.0));
+    //waypoints.push_back(Eigen::Vector3d(0.0, 0.0, -M_PI_2/2.0)); // Generate waypoints in a circle
+    waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0)); // Start at origin
+    for (int i = 1; i <= N; ++i) {
+        waypoints.push_back(Eigen::Vector3d(N/i, N/i, 0)); // Generate waypoints in a circle
     }
-
-    robot_manager.SetPath(waypoints, util::GetCurrentTime());
+    //waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0));
+    //waypoints.push_back(Eigen::Vector3d(1.0, 1.0, 0));
+    robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BangBang);
+    robot_manager.SetMPath(waypoints, util::GetCurrentTime());
     // Add goals to the queue
     
     while (true) {
@@ -48,6 +51,7 @@ int main(int argc, char* argv[]) {
         
         // Sense logic for RobotManager
         robot_manager.SenseLogic();
+
         
         // Update soccer objects with current robot pose
         soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();
