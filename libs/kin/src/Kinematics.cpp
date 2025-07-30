@@ -77,7 +77,8 @@ void kin::ResolveCollisionWithWall(std::vector<state::SoccerObject>& soccer_obje
     if ((right >= boundary_x && soccer_object.velocity[0] >= 0) ||
         (left <= -boundary_x && soccer_object.velocity[0] <= 0)) {
       soccer_object.position[0] =
-          std::clamp(soccer_object.position[0], -boundary_x + (soccer_object.size[0]), boundary_x - (soccer_object.size[0]));
+          std::clamp(soccer_object.position[0], -boundary_x + (soccer_object.size[0]),
+                     boundary_x - (soccer_object.size[0]));
       soccer_object.velocity[0] *= -cfg::SystemConfig::wall_velocity_damping_factor;
     }
 
@@ -85,17 +86,17 @@ void kin::ResolveCollisionWithWall(std::vector<state::SoccerObject>& soccer_obje
     if ((top > boundary_y && soccer_object.velocity[1] >= 0) ||
         (bottom < -boundary_y && soccer_object.velocity[1] <= 0)) {
       soccer_object.position[1] =
-          std::clamp(soccer_object.position[1], -boundary_y + (soccer_object.size[1]), boundary_y - (soccer_object.size[1]));
+          std::clamp(soccer_object.position[1], -boundary_y + (soccer_object.size[1]),
+                     boundary_y - (soccer_object.size[1]));
       soccer_object.velocity[1] *= -cfg::SystemConfig::wall_velocity_damping_factor;
     }
-
   }
 }
 
 bool kin::IsInsideBoundary(const state::SoccerObject& obj) {
   float half_width = (vis::SoccerField::GetInstance().width_mm / 2) / 1000.0f;
   float half_height = (vis::SoccerField::GetInstance().height_mm / 2) / 1000.0f;
-  float left = obj.position[0]- (obj.size[0] / 2);
+  float left = obj.position[0] - (obj.size[0] / 2);
   float right = obj.position[0] + (obj.size[0] / 2);
   float top = obj.position[1] + (obj.size[1] / 2);
   float bottom = obj.position[1] - (obj.size[1] / 2);
@@ -260,6 +261,7 @@ void kin::DetachBall(state::SoccerObject& ball, float detach_velocity) {
   ball.velocity[2] = 0;
 
   // Clear attachment state
+
   ball.is_attached = false;
   robot->is_attached = false;
   robot->attached_to = nullptr;

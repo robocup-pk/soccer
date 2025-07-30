@@ -35,16 +35,17 @@ int main(int argc, char* argv[]) {
 
     game.UpdateGameState(soccer_objects);
 
-    ref::ViolatedKickOffSetUp(soccer_objects, 1, game);
-    ref::ViolatedKickOffSetUp(soccer_objects, 2, game);
-    // referee.AttackerDoubleTouchedBall(soccer_objects);
+    // ref::ViolatedKickOffSetUp(soccer_objects, 1, game);
+    // ref::ViolatedKickOffSetUp(soccer_objects, 2, game);
+    ref::AttackerDoubleTouchedBall(soccer_objects, game);
 
     vis::ProcessInputTwoTeams(gl_window, soccer_objects);
     kin::UpdateKinematics(soccer_objects, dt);
 
-    // ref::CheckCollisions(soccer_objects);
-    kin::CheckAndResolveCollisions(soccer_objects);
     game.DoGoals(soccer_objects);
+
+    game.CheckCollisions(soccer_objects);
+    kin::CheckAndResolveCollisions(soccer_objects);
 
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
       std::cout << "[main] Simulation finished" << std::endl;

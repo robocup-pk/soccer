@@ -6,103 +6,6 @@
 #include "Game.h"
 #include "Dimensions.h"
 
-namespace ref {
-state::SoccerObject* kicker = nullptr;
-bool kicker_released_ball = false;
-
-}  // namespace ref
-
-void ref::CheckCollisions(std::vector<state::SoccerObject>& soccer_objects) {
-  for (auto& obj : soccer_objects) {
-    if (obj.name == "ball" && obj.is_attached) {
-      state::SoccerObject& robot = *obj.attached_to;
-      kin::UpdateAttachedBallPosition(robot, obj);
-      kicker = &robot;
-      break;
-    } else {
-      kicker_released_ball = true;
-    }
-  }
-
-  for (int i = 0; i < soccer_objects.size(); ++i) {
-    for (int j = i + 1; j < soccer_objects.size(); ++j) {
-      state::SoccerObject& obj1 = soccer_objects[i];
-      state::SoccerObject& obj2 = soccer_objects[j];
-
-      if (kin::CheckCircularCollision(obj1, obj2)) {
-        if (!(obj1.name == "ball" || obj2.name == "ball")) {
-          std::cout << "[ref::CheckCollisions] Detected collision between: " << obj1.name
-                    << " and " << obj2.name << std::endl;
-        }
-
-        if (obj1.name == "ball") {
-          if (kin::IsBallInFrontOfRobot(obj2, obj1)) {
-            if (obj1.is_attached) continue;  // Skip only this pair
-
-            kin::HandleBallSticking(obj2, obj1);
-            continue;  // Continue to next pair
-          }
-        }
-
-        if (obj2.name == "ball") {
-          if (kin::IsBallInFrontOfRobot(obj1, obj2)) {
-            if (obj2.is_attached) continue;  // Skip only this pair
-
-            kin::HandleBallSticking(obj1, obj2);
-            continue;  // Continue to next pair
-          }
-        }
-      }
-    }
-  }
-
-  // ref::CheckForGoals(soccer_objects);
-
-  for (auto& obj : soccer_objects) {
-    if (!kin::IsInsideBoundary(obj)) {
-      std::cout << "[ref::CheckCollisions] Robot " << obj.name << " is outside the boundary"
-                << std::endl;
-    }
-    if (ref::CheckCollisionWithWall(obj)) {
-      std::cout << "[ref::CheckCollisions] Robot " << obj.name << " is colliding with the wall"
-                << std::endl;
-    }
-    if (ref::IsOutsidePlayingField(obj) && !obj.is_attached) {
-      std::cout << "[ref::CheckCollisions] Robot " << obj.name << " is outside the playing field"
-                << std::endl;
-      if (obj.name == "ball") {
-        obj.velocity = Eigen::Vector3d::Zero();
-        obj.position = Eigen::Vector3d::Zero();
-      }
-    }
-  }
-}
-
-bool ref::CheckCollisionWithWall(state::SoccerObject& obj) {
-  float half_width = (vis::SoccerField::GetInstance().width_mm / 2) / 1000.0f;
-  float half_height = (vis::SoccerField::GetInstance().height_mm / 2) / 1000.0f;
-
-  float left = obj.position[0];
-  float right = obj.position[0] + obj.size[0];
-  float top = obj.position[1] + obj.size[1];
-  float bottom = obj.position[1];
-
-  return (left <= -half_width || right >= half_width || top >= half_height ||
-          bottom <= -half_height);
-}
-
-bool ref::IsOutsidePlayingField(state::SoccerObject& obj) {
-  float half_width = (vis::SoccerField::GetInstance().playing_area_width_mm / 2.0f) / 1000.0f;
-  float half_height = (vis::SoccerField::GetInstance().playing_area_height_mm / 2.0f) / 1000.0f;
-
-  float left = obj.position[0];
-  float right = obj.position[0] + obj.size[0];
-  float top = obj.position[1] + obj.size[1];
-  float bottom = obj.position[1];
-
-  return (left < -half_width || right > half_width || top > half_height || bottom < -half_height);
-}
-
 // GAME EVENTS
 
 // Violated KickOff Configuration
@@ -168,27 +71,19 @@ allowed to touch the ball until it has been touched by another robot or the game
 stopped. The ball must have moved at least 0.05 meters to be considered as in play. A double
 touch results in a stop followed by a free kick from the same ball position. */
 
-// bool ref::AttackerDoubleTouchedBall(std::vector<state::SoccerObject>& soccer_objects, Game g) {
-//   if (state == Kickoff) {
-//     double ball_displacement = 0;
-//     for (auto& obj : soccer_objects) {
-//       if (obj.name == "ball" && !obj.is_attached) {
-//         double x2 = soccer_objects[cfg::SystemConfig::num_robots - 1].position[0];
-//         double y2 = soccer_objects[cfg::SystemConfig::num_robots - 1].position[0];
-//         ball_displacement = std::sqrt((x2 * x2) + (y2 * y2));
-//         std::cout << "[ref::AttackerDoubleTouchedBall] ball displacement: " << ball_displacement
-//                   << std::endl;
-//       }
-//     }
-//     if (ball_displacement >= 0.05) {  // 0.05
-//       state = Run;
-//     } else {
-//       if (kicker != nullptr && kicker->is_attached && kicker_released_ball) {
-//         std::cout << "[AutoRef::AttackerDoubleTouchedBall] foul" << std::endl;
-//         return true;
-//       }
-//     }
-
-//     return false;
-//   }
-// }
+bool ref::AttackerDoubleTouchedBall(std::vector<state::SoccerObject>& soccer_objects, Game& g) {
+  if (g.state == ref::Game::Kickoff) {
+    if (g.team_with_ball == 1) {
+      if (soccer_objects[cfg::SystemConfig::team_one_kicker].is_attached && g.kicker_released) {
+        std::cout << "[AutoRef::AttackerDoubleTouchedBall] Team 1 Double touch foul" << std::endl;
+        return true;
+      }
+    } else if (g.team_with_ball == 2) {
+      if (soccer_objects[cfg::SystemConfig::team_two_kicker].is_attached && g.kicker_released) {
+        std::cout << "[AutoRef::AttackerDoubleTouchedBall] Team 2 Double touch foul" << std::endl;
+        return true;
+      }
+    }
+  }
+  return false;
+}

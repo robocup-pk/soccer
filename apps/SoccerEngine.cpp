@@ -56,7 +56,6 @@ int main(int argc, char* argv[]) {
     // Step: Rule checking on current soccer objects
     // 1. Kinematics (Collisions, Max speeds)
     // kin::CheckAndResolveCollisions(soccer_objects);
-    ref::CheckCollisions(soccer_objects);
     // 2.
     // 3.
 
