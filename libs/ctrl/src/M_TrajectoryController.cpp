@@ -456,15 +456,22 @@ void M_TrajectoryManager::generateTrajectoryFromPath(
     Eigen::Vector3d displacement = final_destination - start_pose;
     Eigen::Vector2d primary_direction = displacement.head<2>().normalized();
     
+    // Debug: Print trajectory information like Sumatra does
+    double angular_displacement = M_TrajectoryPlanner::normalizeAngle(final_destination[2] - start_pose[2]);
+    std::cout << "[M_TrajectoryManager] Generating trajectory:" << std::endl;
+    std::cout << "  Position: [" << start_pose.head<2>().transpose() << "] -> [" << final_destination.head<2>().transpose() << "]" << std::endl;
+    std::cout << "  Rotation: " << start_pose[2] << " -> " << final_destination[2] 
+              << " (displacement: " << angular_displacement << " rad = " << (angular_displacement * 180.0 / 3.14159) << "°)" << std::endl;
+    
     // Set primary direction in constraints for async trajectory generation
     M_MoveConstraints optimized_constraints = move_constraints_;
     optimized_constraints.primary_direction = primary_direction;
     
-    // Apply conservative velocity limits to prevent safety stops (robot limit is 5 rad/s)
+    // Apply ultra conservative velocity limits to prevent safety stops (robot limit is 5 rad/s)
     optimized_constraints.vel_max = std::min(move_constraints_.vel_max, 0.8);      // Conservative linear
     optimized_constraints.acc_max = std::min(move_constraints_.acc_max, 2.0);
-    optimized_constraints.vel_max_w = std::min(move_constraints_.vel_max_w, 1.2);  // Ultra conservative angular limit
-    optimized_constraints.acc_max_w = std::min(move_constraints_.acc_max_w, 2.5);  // Ultra conservative angular acceleration
+    optimized_constraints.vel_max_w = std::min(move_constraints_.vel_max_w, 0.5);  // Ultra conservative angular limit
+    optimized_constraints.acc_max_w = std::min(move_constraints_.acc_max_w, 1.0);  // Ultra conservative angular acceleration
     
     auto trajectory = M_TrajectoryPlanner::generatePositionTrajectory(
         optimized_constraints, start_pose, robot_state.velocity, final_destination);
@@ -473,7 +480,8 @@ void M_TrajectoryManager::generateTrajectoryFromPath(
         controller_.addTrajectoryToQueue(trajectory, start_time, "direct_path");
         std::cout << "[M_TrajectoryManager] Generated direct trajectory (time: " 
                   << trajectory->getTotalTime() << "s, max_vel: " 
-                  << optimized_constraints.vel_max << "m/s)" << std::endl;
+                  << optimized_constraints.vel_max << "m/s, max_vel_w: "
+                  << optimized_constraints.vel_max_w << "rad/s)" << std::endl;
     } else {
         std::cerr << "[M_TrajectoryManager] Failed to generate direct trajectory" << std::endl;
     }

@@ -50,8 +50,10 @@ int main(int argc, char* argv[]) {
     
     // Set positions
     Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0);     // Robot starts at origin
-    Eigen::Vector3d ball_position(-1.5, 0.5, 0.0);
+    Eigen::Vector3d ball_position(1.5, -0.5, 0.0);
     
+    Eigen::Vector3d direction = (ball_position - robot_start_pose);
+    double angle = std::atan2(direction.y(), direction.x());
     // Initialize robot pose
     Eigen::Vector3d robot_pose_ref = robot_start_pose;
     robot_manager.InitializePose(robot_pose_ref);
@@ -67,7 +69,7 @@ int main(int argc, char* argv[]) {
     }
     //Give source and destination for RRTX
     state::Waypoint source(robot_start_pose[0], robot_start_pose[1], 0.0);
-    state::Waypoint destination(ball_position[0], ball_position[1], 0.0);
+    state::Waypoint destination(ball_position[0], ball_position[1], 0.0);  // Use angle to face the ball  
     // Create RRTX instance
     state::Path path;
     // Find path from robot to ball
@@ -88,7 +90,7 @@ int main(int argc, char* argv[]) {
     // Convert path to Eigen::Vector3d format for RobotManager (meters)
     // Add starting position first
     targetPath.push_back(robot_start_pose);  // Start position
-    targetPath.push_back(Eigen::Vector3d(ball_position[0], ball_position[1], 0.0));  // Target position
+    targetPath.push_back(Eigen::Vector3d(ball_position[0], ball_position[1], angle));  // Target position
     // Set trajectory manager type and path based on demo mode
     if (demo_mode == DemoMode::BangBang) {
         std::cout << "[KickDemo] Using BangBang-based M_TrajectoryManager" << std::endl;
