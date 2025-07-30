@@ -31,8 +31,36 @@ BangBangTrajectory3D::BangBangTrajectory3D(Eigen::Vector3d pose_start, Eigen::Ve
     T = t_finish_s - t_start_s;
     if (T <= 0) T = 1.0;
 
-    // Simplified symmetric bang-bang acceleration (triangular profile)
-    a_const = 4.0 * h / (T * T);
+    // Calculate acceleration based on realistic SSL robot limits
+    // Use max acceleration of 3.0 m/s² and max velocity of 2.0 m/s
+    double distance = h.norm();
+    double max_accel = 3.0;  // m/s² - realistic for SSL robots
+    double max_vel = 2.0;    // m/s - realistic velocity limit
+    
+    // Check if we can reach target within time T with acceleration limits
+    double min_time_needed = 2.0 * distance / max_vel;  // Time for triangular profile
+    if (T > min_time_needed) {
+        // Use trapezoidal profile with cruise phase
+        double t_accel = max_vel / max_accel;  // Time to reach max velocity
+        double cruise_distance = distance - max_vel * t_accel;  // Distance at constant velocity
+        if (cruise_distance > 0) {
+            // Standard trapezoidal profile: accelerate, cruise, decelerate
+            a_const = h * (max_accel / distance);
+        } else {
+            // Triangular profile: accelerate then decelerate
+            a_const = h * (2.0 / T);
+        }
+    } else {
+        // Use maximum safe acceleration for the available time
+        a_const = h * (2.0 / T);
+    }
+    
+    // Apply safety limits to prevent excessive accelerations
+    for (int i = 0; i < 3; i++) {
+        if (std::abs(a_const[i]) > max_accel) {
+            a_const[i] = (a_const[i] > 0) ? max_accel : -max_accel;
+        }
+    }
 }
 
 void BangBangTrajectory3D::InitializeAccelerationEnvelope() {
@@ -496,6 +524,15 @@ Eigen::Vector3d BangBangTrajectory3D::VelocityAtT(double t_sec) {
         Eigen::Vector3d v_mid = v0 + a_const * (T / 2.0);
         vel = v_mid - a_const * t2;
     }
+    
+    // Apply velocity limits to prevent safety stops
+    double max_vel = 1.0;  // m/s - under RobotManager safety limit
+    double max_omega = 2.5; // rad/s - under safety limit
+    
+    vel[0] = std::clamp(vel[0], -max_vel, max_vel);
+    vel[1] = std::clamp(vel[1], -max_vel, max_vel);
+    vel[2] = std::clamp(vel[2], -max_omega, max_omega);
+    
     return vel;
 }
 

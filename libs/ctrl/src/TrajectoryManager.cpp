@@ -24,12 +24,12 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
     Eigen::Vector3d h(pose_end - pose_start);
     Eigen::Vector3d v0(0, 0, 0);
     
-    // For BangBangTrajectory3D: Use reasonable time based on distance
+    // For BangBangTrajectory3D: Use realistic time based on distance
     // Path points are now provided in meters, so no conversion is required
     double distance = h.norm();
-    // Estimate time based on distance and typical robot speed
-    double typical_speed = 1.0;  // m/s - realistic for SSL robots
-    double T = std::max(0.5, distance / typical_speed);  // Minimum 0.5s, realistic time
+    // Use realistic robot speed for SSL robots
+    double target_speed = 1.5;  // m/s - realistic SSL robot speed
+    double T = std::max(0.2, distance / target_speed);  // Minimum 0.2s, realistic time
     
     if (path_index == 1) v0 = FindV0AtT(t_start_s);
     std::cout << "Trajectory " << path_index << ": distance=" << distance << "m, duration=" << T << "s" << std::endl;
@@ -55,14 +55,26 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
 }
 
 Eigen::Vector3d ctrl::TrajectoryManager::GetVelocityAtT(double current_time_s) {
-  double kp = 0.5;  // Proportional gain for velocity correction (was 0.0)
+  double kp = 0.0;  // Further reduced proportional gain to prevent oscillation
   Eigen::Vector3d Current_speed = current_trajectory->VelocityAtT(current_time_s);
   Eigen::Vector3d Current_position_fWorld = p_fworld;
 
-  Eigen::Vector3d Final_determined_velocity =
-      Current_speed +
-      kp * (current_trajectory->PositionAtT(current_time_s) - Current_position_fWorld);
-      std::cout << "[ctrl::TrajectoryManager::GetVelocityAtT] Error: "<<(current_trajectory->PositionAtT(current_time_s) - Current_position_fWorld).transpose() << std::endl;
+  Eigen::Vector3d position_error = current_trajectory->PositionAtT(current_time_s) - Current_position_fWorld;
+  
+  // Apply safety limits to the correction term
+  Eigen::Vector3d correction = kp * position_error;
+  correction[0] = std::clamp(correction[0], -0.3, 0.3);  // Max 0.3 m/s correction
+  correction[1] = std::clamp(correction[1], -0.3, 0.3);  // Max 0.3 m/s correction  
+  correction[2] = std::clamp(correction[2], -2.0, 2.0);  // Max 2.0 rad/s correction
+
+  Eigen::Vector3d Final_determined_velocity = Current_speed + correction;
+  
+  // Apply final velocity limits - well under RobotManager safety limits
+  Final_determined_velocity[0] = std::clamp(Final_determined_velocity[0], -1.0, 1.0);
+  Final_determined_velocity[1] = std::clamp(Final_determined_velocity[1], -1.0, 1.0);
+  Final_determined_velocity[2] = std::clamp(Final_determined_velocity[2], -2.0, 2.0);
+  
+  std::cout << "[ctrl::TrajectoryManager::GetVelocityAtT] Error: " << position_error.transpose() << std::endl;
   std::cout << "[ctrl::TrajectoryManager::GetVelocityAtT] Final_determinedvelocity: "
             << Final_determined_velocity.transpose()  << std::endl;
 
