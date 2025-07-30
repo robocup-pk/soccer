@@ -23,44 +23,48 @@ BangBangTrajectory3D::BangBangTrajectory3D(Eigen::Vector3d pose_start, Eigen::Ve
     this->pose_start = pose_start;
     this->pose_end = pose_end;
     this->t_start_s = t_start_s;
-    this->t_finish_s = t_end_s;
     this->v0 = v0;
     this->h = pose_end - pose_start;
-
-    // Total duration
-    T = t_finish_s - t_start_s;
-    if (T <= 0) T = 1.0;
-
-    // Calculate acceleration based on realistic SSL robot limits
-    // Use max acceleration of 3.0 m/s² and max velocity of 2.0 m/s
-    double distance = h.norm();
-    double max_accel = 3.0;  // m/s² - realistic for SSL robots
-    double max_vel = 2.0;    // m/s - realistic velocity limit
     
-    // Check if we can reach target within time T with acceleration limits
-    double min_time_needed = 2.0 * distance / max_vel;  // Time for triangular profile
-    if (T > min_time_needed) {
-        // Use trapezoidal profile with cruise phase
-        double t_accel = max_vel / max_accel;  // Time to reach max velocity
-        double cruise_distance = distance - max_vel * t_accel;  // Distance at constant velocity
-        if (cruise_distance > 0) {
-            // Standard trapezoidal profile: accelerate, cruise, decelerate
-            a_const = h * (max_accel / distance);
-        } else {
-            // Triangular profile: accelerate then decelerate
-            a_const = h * (2.0 / T);
-        }
-    } else {
-        // Use maximum safe acceleration for the available time
-        a_const = h * (2.0 / T);
-    }
-    
-    // Apply safety limits to prevent excessive accelerations
-    for (int i = 0; i < 3; i++) {
-        if (std::abs(a_const[i]) > max_accel) {
-            a_const[i] = (a_const[i] > 0) ? max_accel : -max_accel;
+    // DON'T use the forced slow t_end_s from TrajectoryManager!
+    // BangBang trajectories compute their own optimal time
+
+    // Initialize acceleration envelope only once (optimized lookup table)
+    InitializeAccelerationEnvelope();
+
+    // Normalize wheel positions as assumed by existing system
+    Eigen::Vector3d h_normalized = h;
+    if (h_normalized.head<2>().norm() > 0.001) {
+        // Handle coordinate system conversion (kickdemo multiplies by 1000)
+        if (std::abs(h_normalized[0]) > 100 || std::abs(h_normalized[1]) > 100) {
+            h_normalized.head<2>() /= 1000.0;  // Convert mm to m
         }
     }
+
+    // Generate complete BangBang trajectory using FULL paper implementation
+    TrajectoryComplete3D complete_trajectory = GenerateCompleteTrajectory(h_normalized, v0);
+    
+    // Store trajectories for evaluation
+    x_trajectory_dof = complete_trajectory.translation.x_trajectory;
+    y_trajectory_dof = complete_trajectory.translation.y_trajectory;
+    theta_trajectory_dof = complete_trajectory.rotation;
+    
+    // Apply jerk limiting for smooth motion profiles
+    ApplyJerkLimiting();
+
+    // Set optimal finish time (ignore TrajectoryManager's slow timing!)
+    this->t_finish_s = t_start_s + complete_trajectory.total_execution_time;
+    this->T = complete_trajectory.total_execution_time;
+
+    // Debug output matching TrapezoidalTrajectoryVi3D format
+    std::cout << "[ctrl::BangBangTrajectory3D] Complete BangBang trajectory generated (Full Paper Implementation)" << std::endl;
+    std::cout << "[ctrl::BangBangTrajectory3D] X segments: " << x_trajectory_dof.segments.size() 
+              << ", time: " << x_trajectory_dof.total_time << "s" << std::endl;
+    std::cout << "[ctrl::BangBangTrajectory3D] Y segments: " << y_trajectory_dof.segments.size() 
+              << ", time: " << y_trajectory_dof.total_time << "s" << std::endl;
+    std::cout << "[ctrl::BangBangTrajectory3D] θ segments: " << theta_trajectory_dof.segments.size() 
+              << ", time: " << theta_trajectory_dof.total_time << "s" << std::endl;
+    std::cout << "[ctrl::BangBangTrajectory3D] Total execution time: " << complete_trajectory.total_execution_time << "s" << std::endl;
 }
 
 void BangBangTrajectory3D::InitializeAccelerationEnvelope() {
@@ -75,8 +79,8 @@ void BangBangTrajectory3D::InitializeAccelerationEnvelope() {
     RobotParams params;
     params.mass_kg = 2.7;
     params.inertia_z = 0.0085;
-    params.friction_coeff = 0.8;
-    params.wheel_force_max = 2.0;
+    params.friction_coeff = 0.75;
+    params.wheel_force_max = 1.5;
 
     // Copy wheel configuration from RobotDescription (normalized as system expects)
     params.wheel_angles_rad = robot_description.wheel_angles_rad;
@@ -155,26 +159,22 @@ TrajectoryComplete3D BangBangTrajectory3D::GenerateCompleteTrajectory(const Eige
     double movement_angle = std::atan2(displacement[1], displacement[0]);
     auto [a_max_trans, alpha_max_rot] = GetMaxAcceleration(movement_angle);
     
-    // Use proper maximum velocity from paper (Section 4)
-    double v_max = 2.0;  // m/s - from paper table 1
-    
-    // Generate independent DOF trajectories first
+    // Regenerate trajectories with synchronized accelerations (Section 5)
+    double optimal_alpha = FindOptimalAlpha(displacement[0], displacement[1], initial_velocity[0], initial_velocity[1], 2.0, a_max_trans);
+    trajectory.translation.alpha = optimal_alpha;
+
     trajectory.translation.x_trajectory = GenerateSingleDOF(
-        0.0, displacement[0], initial_velocity[0], 0.0, v_max, a_max_trans);
+        0.0, displacement[0], initial_velocity[0], 0.0, 2.0, a_max_trans * std::cos(optimal_alpha));
     trajectory.translation.y_trajectory = GenerateSingleDOF(
-        0.0, displacement[1], initial_velocity[1], 0.0, v_max, a_max_trans);
-    
-    // Apply proper synchronization using α-parameterization (Section 5)
-    SynchronizeTranslationTrajectories(trajectory.translation);
+        0.0, displacement[1], initial_velocity[1], 0.0, 2.0, a_max_trans * std::sin(optimal_alpha));
     
     // Synchronize final times
     double translation_time = std::max(trajectory.translation.x_trajectory.total_time, trajectory.translation.y_trajectory.total_time);
     trajectory.translation.total_execution_time = translation_time;
 
-    // Generate rotation trajectory with proper angular velocity limit
-    double omega_max = 5.0;  // rad/s - reasonable for SSL robots
+    // Generate rotation trajectory
     trajectory.rotation = GenerateSingleDOF(
-        0.0, displacement[2], initial_velocity[2], 0.0, omega_max, alpha_max_rot);
+        0.0, displacement[2], initial_velocity[2], 0.0, 10.0, alpha_max_rot);
     double rotation_time = trajectory.rotation.total_time;
 
     // Final trajectory time is the max of translation and rotation
@@ -221,22 +221,8 @@ DOFTrajectory3D BangBangTrajectory3D::GenerateSingleDOF(
     trajectory.total_time = 0.0;
     trajectory.total_distance = 0.0;
     
-    // Safety checks to prevent invalid trajectories
-    if (std::abs(a_max) < 1e-6 || std::abs(v_max) < 1e-6) {
-        std::cout << "[BangBangTrajectory3D] Invalid parameters: a_max=" << a_max 
-                  << ", v_max=" << v_max << std::endl;
-        return trajectory;  // Return empty trajectory
-    }
-    
     // Normalize problem: wf >= 0 (Section 4 from paper)
     double displacement = wf - w0;
-    
-    // Handle very small displacements
-    if (std::abs(displacement) < 1e-6) {
-        std::cout << "[BangBangTrajectory3D] Very small displacement: " << displacement << std::endl;
-        return trajectory;  // No movement needed
-    }
-    
     double sign = (displacement >= 0) ? 1.0 : -1.0;
     double w_normalized = std::abs(displacement);
     double w_dot_0_normalized = sign * w_dot_0;
@@ -271,13 +257,6 @@ DOFTrajectory3D BangBangTrajectory3D::GenerateSingleDOF(
                 // Case 2.3: Must decelerate
                 segment = HandleCase2_3(current_vel, remaining_distance, w_dot_f_normalized, a_max);
             }
-        }
-        
-        // Validate segment before adding
-        if (segment.duration < 0 || std::isnan(segment.duration) || std::isinf(segment.duration)) {
-            std::cout << "[BangBangTrajectory3D] Invalid segment duration: " << segment.duration 
-                      << " for displacement: " << displacement << std::endl;
-            break;  // Stop generating invalid segments
         }
         
         // Update state
@@ -450,20 +429,13 @@ Eigen::Vector3d BangBangTrajectory3D::ConvertToMotorVelocities(const Eigen::Vect
     // Convert linear velocity to wheel velocity (v = ω * r)
     double max_linear_velocity = (max_rpm_ * 2 * M_PI / 60.0) * wheel_radius_;  // m/s
     
-    // Add conservative limits for SSL robot (much lower than theoretical max)
-    double safe_linear_velocity = std::min(max_linear_velocity, 2.0);  // Max 2 m/s
-    double safe_angular_velocity = 5.0;  // Max 5 rad/s
+    // Limit velocities to motor constraints
+    motor_velocity[0] = std::clamp(motor_velocity[0], -max_linear_velocity, max_linear_velocity);
+    motor_velocity[1] = std::clamp(motor_velocity[1], -max_linear_velocity, max_linear_velocity);
     
-    // Debug output if velocities are very high
-    if (std::abs(body_velocity[0]) > 10.0 || std::abs(body_velocity[1]) > 10.0) {
-        std::cout << "[BangBangTrajectory3D] High velocity detected: [" << body_velocity.transpose() 
-                  << "], max_linear=" << max_linear_velocity << std::endl;
-    }
-    
-    // Limit velocities to safe constraints
-    motor_velocity[0] = std::clamp(motor_velocity[0], -safe_linear_velocity, safe_linear_velocity);
-    motor_velocity[1] = std::clamp(motor_velocity[1], -safe_linear_velocity, safe_linear_velocity);
-    motor_velocity[2] = std::clamp(motor_velocity[2], -safe_angular_velocity, safe_angular_velocity);
+    // Angular velocity constraint (empirical from robot testing)
+    double max_angular_velocity = 10.0;  // rad/s
+    motor_velocity[2] = std::clamp(motor_velocity[2], -max_angular_velocity, max_angular_velocity);
     
     return motor_velocity;
 }
@@ -473,95 +445,87 @@ double BangBangTrajectory3D::EvaluateTrajectoryAtTime(const DOFTrajectory3D& tra
         return 0.0;
     }
     
-    // If past end of trajectory, return final state
-    if (t >= trajectory.total_time) {
-        return get_velocity ? 0.0 : trajectory.total_distance;
-    }
-    
     double accumulated_time = 0.0;
     double accumulated_position = 0.0;
-    double current_velocity = 0.0;  // Track velocity properly
     
-    for (size_t i = 0; i < trajectory.segments.size(); ++i) {
-        const auto& segment = trajectory.segments[i];
-        
+    for (const auto& segment : trajectory.segments) {
         if (t <= accumulated_time + segment.duration) {
             // Time falls within this segment
             double segment_time = t - accumulated_time;
             
             if (get_velocity) {
-                // Velocity: v(t) = v0 + a*t
-                return current_velocity + segment.control_effort * segment_time;
+                // Return velocity at this point
+                double initial_velocity = 0.0;
+                if (&segment != &trajectory.segments[0]) {
+                    // Get final velocity of previous segment
+                    size_t segment_idx = &segment - &trajectory.segments[0];
+                    initial_velocity = trajectory.segments[segment_idx - 1].final_velocity;
+                }
+                
+                return initial_velocity + segment.control_effort * segment_time;
             } else {
-                // Position: x(t) = x0 + v0*t + 0.5*a*t^2
-                double segment_position = current_velocity * segment_time + 
+                // Return position at this point
+                double initial_velocity = 0.0;
+                if (&segment != &trajectory.segments[0]) {
+                    size_t segment_idx = &segment - &trajectory.segments[0];
+                    initial_velocity = trajectory.segments[segment_idx - 1].final_velocity;
+                }
+                
+                double segment_position = initial_velocity * segment_time + 
                                         0.5 * segment.control_effort * segment_time * segment_time;
                 return accumulated_position + segment_position;
             }
         }
         
-        // Move to next segment
         accumulated_time += segment.duration;
         accumulated_position += segment.distance_traveled;
-        current_velocity = segment.final_velocity;  // Update velocity for next segment
     }
     
-    // Past end of trajectory (shouldn't reach here due to check above)
-    return get_velocity ? 0.0 : trajectory.total_distance;
+    // Past end of trajectory
+    return get_velocity ? 0.0 : accumulated_position;
 }
 
 Eigen::Vector3d BangBangTrajectory3D::VelocityAtT(double t_sec) {
+    // Implementation matching TrapezoidalTrajectoryVi3D::VelocityAtT exactly
     if (t_sec < t_start_s || t_sec >= t_finish_s) {
         return Eigen::Vector3d(0, 0, 0);
     }
-
-    double t_rel = t_sec - t_start_s;
-    Eigen::Vector3d vel;
-    if (t_rel <= T / 2.0) {
-        vel = v0 + a_const * t_rel;
-    } else {
-        double t2 = t_rel - T / 2.0;
-        Eigen::Vector3d v_mid = v0 + a_const * (T / 2.0);
-        vel = v_mid - a_const * t2;
-    }
     
-    // Apply velocity limits to prevent safety stops
-    double max_vel = 1.0;  // m/s - under RobotManager safety limit
-    double max_omega = 2.5; // rad/s - under safety limit
+    double t_relative = t_sec - t_start_s;
     
-    vel[0] = std::clamp(vel[0], -max_vel, max_vel);
-    vel[1] = std::clamp(vel[1], -max_vel, max_vel);
-    vel[2] = std::clamp(vel[2], -max_omega, max_omega);
+    Eigen::Vector3d v_fWorld;
+    v_fWorld[0] = EvaluateTrajectoryAtTime(x_trajectory_dof, t_relative, true);
+    v_fWorld[1] = EvaluateTrajectoryAtTime(y_trajectory_dof, t_relative, true);
+    v_fWorld[2] = EvaluateTrajectoryAtTime(theta_trajectory_dof, t_relative, true);
     
-    return vel;
+    // Convert accelerations to velocities for motor control (max RPM 280)
+    return ConvertToMotorVelocities(v_fWorld);
 }
 
 Eigen::Vector3d BangBangTrajectory3D::PositionAtT(double t_sec) {
+    // Implementation matching TrapezoidalTrajectoryVi3D::PositionAtT exactly
     if (t_sec < t_start_s) {
         return Eigen::Vector3d(0, 0, 0);
-    }
-    if (t_sec >= t_finish_s) {
-        return h;
+    } else if (t_sec >= t_finish_s) {
+        return h;  // Total displacement
     }
 
-    double t_rel = t_sec - t_start_s;
-    Eigen::Vector3d pos;
-    if (t_rel <= T / 2.0) {
-        pos = v0 * t_rel + 0.5 * a_const * t_rel * t_rel;
-    } else {
-        double t2 = t_rel - T / 2.0;
-        Eigen::Vector3d pos_mid = v0 * (T / 2.0) + 0.5 * a_const * (T / 2.0) * (T / 2.0);
-        Eigen::Vector3d v_mid = v0 + a_const * (T / 2.0);
-        pos = pos_mid + v_mid * t2 - 0.5 * a_const * t2 * t2;
-    }
-    return pos;
+    double t_relative = t_sec - t_start_s;
+    
+    Eigen::Vector3d position_fworld;
+    position_fworld[0] = EvaluateTrajectoryAtTime(x_trajectory_dof, t_relative, false);
+    position_fworld[1] = EvaluateTrajectoryAtTime(y_trajectory_dof, t_relative, false);
+    position_fworld[2] = EvaluateTrajectoryAtTime(theta_trajectory_dof, t_relative, false);
+
+    return position_fworld;
 }
 
 void BangBangTrajectory3D::Print() {
-    std::cout << "[BangBangTrajectory3D] start=" << pose_start.transpose()
-              << " end=" << pose_end.transpose()
-              << " duration=" << T << "s"
-              << " a=" << a_const.transpose() << std::endl;
+    std::cout << "[ctrl::BangBangTrajectory3D::Print] BangBang Trajectory Info (Full Paper Implementation). ";
+    std::cout << "Pose: " << pose_start.transpose() << " -> " << pose_end.transpose();
+    std::cout << ". Time: " << t_start_s << " -> " << t_finish_s;
+    std::cout << ". v0: " << v0.transpose() << std::endl;
+    std::cout << "  All 5 cases implemented, acceleration envelope from lookup table, X-Y synchronization" << std::endl;
 }
 
 Eigen::Vector3d BangBangTrajectory3D::TotalDistance() {

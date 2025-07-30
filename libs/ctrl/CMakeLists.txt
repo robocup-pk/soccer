@@ -6,6 +6,8 @@ set(SOURCES
     src/Trajectory3D.cpp
     src/TrajectoryManager.cpp
     src/TrajectoryMergeLogic.cpp
+    src/M_TrajectoryPlanner.cpp
+    src/M_TrajectoryController.cpp
 )
 
 file(GLOB_RECURSE HEADERS "include/*.h")

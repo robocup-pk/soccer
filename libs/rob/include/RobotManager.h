@@ -10,7 +10,11 @@
 #include "HardwareManager.h"
 #include "MotionController.h"
 #include "TrajectoryManager.h"
+<<<<<<< HEAD
 #include "RobotPositions.h"
+=======
+#include "M_TrajectoryController.h"
+>>>>>>> 47173921 (New Trajactory Planner Manager with BangBang Trajactory Planner)
 
 // Forward declarations
 namespace state {
@@ -26,7 +30,13 @@ enum class RobotState {
   MANUAL_DRIVING,
   AUTONOMOUS_DRIVING,
   GOING_HOME,
-  CALIBRATING
+  CALIBRATING,
+  M_AUTONOMOUS_DRIVING  // New state for M_TrajectoryManager
+};
+
+enum class TrajectoryManagerType {
+  ORIGINAL,    // Use original TrajectoryManager
+  BangBang      // Use M_TrajectoryManager (BangBang-based)
 };
 
 enum class RobotAction {
@@ -54,8 +64,13 @@ class RobotManager {
   void GoHome();
   void InitializeHome(Eigen::Vector3d pose_home);
   void SetPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
+  void SetMPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Paper-based path
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
+  
+  // Trajectory manager selection
+  void SetTrajectoryManagerType(TrajectoryManagerType type);
+  TrajectoryManagerType GetTrajectoryManagerType() const { return trajectory_manager_type_; }
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
 
@@ -84,6 +99,9 @@ class RobotManager {
   hw::HardwareManager hardware_manager;
   ctrl::MotionController motion_controller;
   ctrl::TrajectoryManager trajectory_manager;
+  ctrl::M_TrajectoryManager m_trajectory_manager;  // Paper-based trajectory manager
+  
+  TrajectoryManagerType trajectory_manager_type_;
 
   std::thread control_thread;
   std::thread sense_thread;
