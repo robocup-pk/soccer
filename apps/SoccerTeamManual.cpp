@@ -20,9 +20,9 @@ int main(int argc, char* argv[]) {
   // TODO: Game State
   std::vector<state::SoccerObject> soccer_objects;
   state::InitSoccerObjects(soccer_objects);
-  ref::Game::MoveToFormation(cfg::SystemConfig::team_one_start_formation,
-                             cfg::SystemConfig::team_two_start_formation, soccer_objects);
   ref::Game game;
+
+  game.MoveToKickOffFormation(soccer_objects);
 
   // Simulation - OpenGL
   vis::GLSimulation gl_simulation;

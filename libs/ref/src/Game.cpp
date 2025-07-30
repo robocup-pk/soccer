@@ -8,10 +8,27 @@
 
 ref::Game::Game() { state = Kickoff; }
 
-void ref::Game::MoveToFormation(std::vector<Eigen::Vector3d> team_one_formation,
-                                std::vector<Eigen::Vector3d> team_two_formation,
-                                std::vector<state::SoccerObject>& soccer_objects) {
+void ref::Game::MoveToKickOffFormation(std::vector<state::SoccerObject>& soccer_objects) {
   if (soccer_objects.size() > 12) {
+    if (team_with_ball == 1) {
+      cfg::SystemConfig::team_one_start_formation[0] = Eigen::Vector3d(
+          -1 * cfg::SystemConfig::ball_radius_m - cfg::SystemConfig::robot_size_m[0] / 2.0, 0.0f,
+          0);
+      cfg::SystemConfig::team_two_start_formation[0] = Eigen::Vector3d(0.5f, 0.0f, M_PI);
+      soccer_objects[soccer_objects.size() - 1].attached_to =
+          &soccer_objects[cfg::SystemConfig::team_one_kicker];
+      kin::HandleBallSticking(soccer_objects[cfg::SystemConfig::team_one_kicker],
+                              soccer_objects[soccer_objects.size() - 1]);
+    } else if (team_with_ball == 2) {
+      cfg::SystemConfig::team_two_start_formation[0] = Eigen::Vector3d(
+          cfg::SystemConfig::ball_radius_m + cfg::SystemConfig::robot_size_m[0] / 2.0, 0.0f, M_PI);
+      cfg::SystemConfig::team_one_start_formation[0] = Eigen::Vector3d(-0.5f, 0.0f, 0);
+      soccer_objects[soccer_objects.size() - 1].attached_to =
+          &soccer_objects[cfg::SystemConfig::team_two_kicker];
+      kin::HandleBallSticking(soccer_objects[cfg::SystemConfig::team_two_kicker],
+                              soccer_objects[soccer_objects.size() - 1]);
+    }
+
     for (int i = 0; i < soccer_objects.size() / 2; i++) {
       soccer_objects[i].position = cfg::SystemConfig::team_one_start_formation[i];
       soccer_objects[i + soccer_objects.size() / 2].position =
@@ -155,28 +172,7 @@ void ref::Game::DoGoals(std::vector<state::SoccerObject>& soccer_objects) {
         vis::team_one_selected_player = 0;
         vis::team_two_selected_player = cfg::SystemConfig::num_robots / 2;
 
-        if (team_with_ball == 1) {
-          cfg::SystemConfig::team_one_start_formation[0] = Eigen::Vector3d(
-              -1 * cfg::SystemConfig::ball_radius_m - cfg::SystemConfig::robot_size_m[0] / 2.0,
-              0.0f, 0);
-          cfg::SystemConfig::team_two_start_formation[0] = Eigen::Vector3d(0.5f, 0.0f, M_PI);
-          soccer_objects[soccer_objects.size() - 1].attached_to =
-              &soccer_objects[cfg::SystemConfig::team_one_kicker];
-          kin::HandleBallSticking(soccer_objects[cfg::SystemConfig::team_one_kicker],
-                                  soccer_objects[soccer_objects.size() - 1]);
-        } else if (team_with_ball == 2) {
-          cfg::SystemConfig::team_two_start_formation[0] = Eigen::Vector3d(
-              cfg::SystemConfig::ball_radius_m + cfg::SystemConfig::robot_size_m[0] / 2.0, 0.0f,
-              M_PI);
-          cfg::SystemConfig::team_one_start_formation[0] = Eigen::Vector3d(-0.5f, 0.0f, 0);
-          soccer_objects[soccer_objects.size() - 1].attached_to =
-              &soccer_objects[cfg::SystemConfig::team_two_kicker];
-          kin::HandleBallSticking(soccer_objects[cfg::SystemConfig::team_two_kicker],
-                                  soccer_objects[soccer_objects.size() - 1]);
-        }
-
-        ref::Game::MoveToFormation(cfg::SystemConfig::team_one_start_formation,
-                                   cfg::SystemConfig::team_two_start_formation, soccer_objects);
+        ref::Game::MoveToKickOffFormation(soccer_objects);
 
         for (auto& obj : soccer_objects) {
           obj.velocity = Eigen::Vector3d(0, 0, 0);

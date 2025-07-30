@@ -9,9 +9,7 @@ namespace ref {
 
 class Game {
  public:
-  static void MoveToFormation(std::vector<Eigen::Vector3d> team_one_formation,
-                              std::vector<Eigen::Vector3d> team_two_formation,
-                              std::vector<state::SoccerObject>& soccer_objects);
+  void MoveToKickOffFormation(std::vector<state::SoccerObject>& soccer_objects);
   void DoGoals(std::vector<state::SoccerObject>& soccer_objects);
   void UpdateGameState(std::vector<state::SoccerObject>& soccer_objects);
   void CheckCollisions(std::vector<state::SoccerObject>& soccer_objects);
