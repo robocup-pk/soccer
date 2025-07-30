@@ -18,7 +18,7 @@ rob::RobotManager::RobotManager() {
   finished_motion = true;
   num_sensor_readings_failed = 0;
   rob_manager_running.store(true);
-  trajectory_manager_type_ = TrajectoryManagerType::ORIGINAL;  // Default to original
+  trajectory_manager_type_ = TrajectoryManagerType::BangBang;  // Default to original
 
 #ifdef BUILD_ON_PI
   state_estimator.initialized_pose = false;
@@ -182,6 +182,11 @@ void rob::RobotManager::SetMPath(std::vector<Eigen::Vector3d> path_fWorld, doubl
     }
     std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
 
+    // Update trajectory manager with current robot pose before creating trajectories
+    // Get the latest pose from state estimator (in case it hasn't been updated via SenseLogic yet)
+    pose_fWorld = state_estimator.GetPose();
+    m_trajectory_manager.UpdateRobotState(pose_fWorld, Eigen::Vector3d::Zero());
+    
     // Create trajectories using M_TrajectoryManager
     is_path_valid = m_trajectory_manager.CreateTrajectoriesFromPath(path_fWorld, t_start_s);
     std::cout << "[rob::RobotManager::SetMPath] Finish creating M_trajectories" << std::endl;

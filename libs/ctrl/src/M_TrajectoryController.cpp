@@ -403,12 +403,12 @@ M_TrajectoryManager::M_TrajectoryManager()
     , current_waypoint_index_(0)
     , path_active_(false) {
     
-    // Set default move constraints
-    move_constraints_.vel_max = 1.0;        // Conservative default
+    // Set default move constraints (respecting robot safety limits)
+    move_constraints_.vel_max = 0.8;        // Conservative linear velocity limit
     move_constraints_.acc_max = 2.0;
     move_constraints_.brk_max = 2.0;
-    move_constraints_.vel_max_w = 8.0;
-    move_constraints_.acc_max_w = 15.0;
+    move_constraints_.vel_max_w = 3.0;      // Safe angular velocity limit (robot limit is 5 rad/s)
+    move_constraints_.acc_max_w = 5.0;      // Safe angular acceleration
 }
 
 bool M_TrajectoryManager::CreateTrajectoriesFromPath(
@@ -449,17 +449,25 @@ void M_TrajectoryManager::generateTrajectoryFromPath(
     Eigen::Vector3d start_pose = current_pose_;
     Eigen::Vector3d final_destination = path.back();
     
-    // Calculate primary direction for optimal path following
+    // Calculate robot orientation angle from source to target (face towards the ball)
     Eigen::Vector3d displacement = final_destination - start_pose;
+    double target_angle = std::atan2(displacement.y(), displacement.x());
+    
+    // Update final destination with calculated orientation angle
+    final_destination[2] = target_angle;
+    
+    // Calculate primary direction for optimal path following
     Eigen::Vector2d primary_direction = displacement.head<2>().normalized();
     
     // Set primary direction in constraints for async trajectory generation
     M_MoveConstraints optimized_constraints = move_constraints_;
     optimized_constraints.primary_direction = primary_direction;
     
-    // Reduce velocity limits to prevent safety stops
-    optimized_constraints.vel_max = std::min(move_constraints_.vel_max, 0.8);  // Conservative limit
+    // Apply conservative velocity limits to prevent safety stops (robot limit is 5 rad/s)
+    optimized_constraints.vel_max = std::min(move_constraints_.vel_max, 0.8);      // Conservative linear
     optimized_constraints.acc_max = std::min(move_constraints_.acc_max, 2.0);
+    optimized_constraints.vel_max_w = std::min(move_constraints_.vel_max_w, 1.8);  // Very conservative angular limit
+    optimized_constraints.acc_max_w = std::min(move_constraints_.acc_max_w, 3.0);  // More conservative angular acceleration
     
     auto trajectory = M_TrajectoryPlanner::generatePositionTrajectory(
         optimized_constraints, start_pose, robot_state.velocity, final_destination);

@@ -49,8 +49,8 @@ int main(int argc, char* argv[]) {
     rob::RobotManager robot_manager;
     
     // Set positions
-    Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0);     // Robot starts at origin
-    Eigen::Vector3d ball_position(1.5, -0.5, 0.0);
+    Eigen::Vector3d robot_start_pose(0.0, 0.0, -M_PI);     // Robot starts at origin
+    Eigen::Vector3d ball_position(-1.5, 0.5, 0.0);
     
     // Initialize robot pose
     Eigen::Vector3d robot_pose_ref = robot_start_pose;
@@ -82,9 +82,9 @@ int main(int argc, char* argv[]) {
         cout << "Waypoint " << i << ": (" << path[i].x << ", " << path[i].y << ", " << path[i].angle << ")" << std::endl;
     }
     // Convert path to Eigen::Vector3d format for RobotManager (meters)
-    for(int i = 0; i < path.size(); ++i) {
-        targetPath.push_back(Eigen::Vector3d(path[i].x, path[i].y, path[i].angle));
-    }
+    // Add starting position first
+    targetPath.push_back(robot_start_pose);  // Start position
+    targetPath.push_back(Eigen::Vector3d(ball_position[0], ball_position[1], 0.0));  // Target position
     // Set trajectory manager type and path based on demo mode
     if (demo_mode == DemoMode::BangBang) {
         std::cout << "[KickDemo] Using BangBang-based M_TrajectoryManager" << std::endl;
@@ -141,27 +141,26 @@ int main(int argc, char* argv[]) {
                 std::cout << "Waiting for robot to settle..." << std::endl;
             }
         }
+
         
         double current_time = util::GetCurrentTime();
         double dt = util::CalculateDt();
         
         if (!HEADLESS)
             vis::ProcessInput(gl_simulation.GetRawGLFW(), soccer_objects);
-        // Update robot and physics
+
+        // Control logic for RobotManager
         robot_manager.ControlLogic();
+        
+        // Sense logic for RobotManager
         robot_manager.SenseLogic();
-        
+
         // Sync robot position to soccer objects
-        for (auto& obj : soccer_objects) {
-            if (obj.name == "robot0") {
-                obj.position = robot_manager.GetPoseInWorldFrame();
-                obj.velocity = robot_manager.GetVelocityInWorldFrame();
-                break;
-            }
-        }
+        soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();
+        soccer_objects[0].velocity = robot_manager.GetVelocityInWorldFrame();
         
-        kin::UpdateKinematics(soccer_objects, dt);
-        kin::CheckAndResolveCollisions(soccer_objects);
+        //kin::UpdateKinematics(soccer_objects, dt);
+        //kin::CheckAndResolveCollisions(soccer_objects);
         
         if (!HEADLESS) {
             if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
