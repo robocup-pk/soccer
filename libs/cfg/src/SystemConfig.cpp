@@ -22,7 +22,7 @@ const Eigen::Vector3d cfg::SystemConfig::init_robot_velocity_mps = Eigen::Vector
 const Eigen::Vector3d cfg::SystemConfig::init_robot_acceleration_mpsps = Eigen::Vector3d(0, 0, 0);
 
 // team 1 initial formation
-const std::vector<Eigen::Vector3d> cfg::SystemConfig::team_one_start_formation = []() {
+std::vector<Eigen::Vector3d> cfg::SystemConfig::team_one_start_formation = []() {
   std::vector<Eigen::Vector3d> v(SystemConfig::num_robots);
   if (SystemConfig::num_robots >= 1) v[0] = Eigen::Vector3d(-0.5f, -0.0f, 0);
   if (SystemConfig::num_robots >= 2) v[1] = Eigen::Vector3d(-0.3f, 0.3f, 0);
@@ -34,7 +34,7 @@ const std::vector<Eigen::Vector3d> cfg::SystemConfig::team_one_start_formation =
 }();
 
 // team 2 initial formation
-const std::vector<Eigen::Vector3d> cfg::SystemConfig::team_two_start_formation = []() {
+std::vector<Eigen::Vector3d> cfg::SystemConfig::team_two_start_formation = []() {
   std::vector<Eigen::Vector3d> v(SystemConfig::num_robots);
 
   if (SystemConfig::num_robots >= 1) v[0] = Eigen::Vector3d(0.5f, 0.0f, M_PI);

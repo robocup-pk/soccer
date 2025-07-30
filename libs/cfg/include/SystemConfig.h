@@ -26,8 +26,8 @@ struct SystemConfig {
   static const Eigen::Vector3d init_robot_acceleration_mpsps;
 
   // Robot Team
-  static const std::vector<Eigen::Vector3d> team_one_start_formation;
-  static const std::vector<Eigen::Vector3d> team_two_start_formation;
+  static std::vector<Eigen::Vector3d> team_one_start_formation;
+  static std::vector<Eigen::Vector3d> team_two_start_formation;
 
   // players that are responsible for initiating the free kick
   static const int team_one_kicker = 0;
