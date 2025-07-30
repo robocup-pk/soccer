@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
     //waypoints.push_back(Eigen::Vector3d(0.0, 0.0, -M_PI_2/2.0)); // Generate waypoints in a circle
     waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0)); // Start at origin
     for (int i = 1; i <= N; ++i) {
-        waypoints.push_back(Eigen::Vector3d(N/i, N/i, 0)); // Generate waypoints in a circle
+        waypoints.push_back(Eigen::Vector3d(N/i, N/i, N/i)); // Generate waypoints in a circle
     }
     //waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0));
     //waypoints.push_back(Eigen::Vector3d(1.0, 1.0, 0));

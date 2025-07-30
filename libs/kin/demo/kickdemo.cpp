@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
     rob::RobotManager robot_manager;
     
     // Set positions
-    Eigen::Vector3d robot_start_pose(0.0, 0.0, -M_PI);     // Robot starts at origin
+    Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0);     // Robot starts at origin
     Eigen::Vector3d ball_position(-1.5, 0.5, 0.0);
     
     // Initialize robot pose
@@ -81,6 +81,10 @@ int main(int argc, char* argv[]) {
     for(int i = 0; i < path.size(); ++i){
         cout << "Waypoint " << i << ": (" << path[i].x << ", " << path[i].y << ", " << path[i].angle << ")" << std::endl;
     }
+    // Convert RRTX path to Eigen::Vector3d format
+    // for (const auto& wp : path) {
+    //     targetPath.push_back(Eigen::Vector3d(wp.x, wp.y, wp.angle));
+    // }
     // Convert path to Eigen::Vector3d format for RobotManager (meters)
     // Add starting position first
     targetPath.push_back(robot_start_pose);  // Start position

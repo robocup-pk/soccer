@@ -445,18 +445,15 @@ void M_TrajectoryManager::generateTrajectoryFromPath(
     // Create robot state
     M_RobotState robot_state = createRobotState();
     
-    // Generate single trajectory directly to final destination for optimal path following
+    // Generate trajectory directly to final destination like Sumatra does
     Eigen::Vector3d start_pose = current_pose_;
     Eigen::Vector3d final_destination = path.back();
     
-    // Calculate robot orientation angle from source to target (face towards the ball)
-    Eigen::Vector3d displacement = final_destination - start_pose;
-    double target_angle = std::atan2(displacement.y(), displacement.x());
-    
-    // Update final destination with calculated orientation angle
-    final_destination[2] = target_angle;
+    // Use the target angle from the waypoint, not calculated from movement direction
+    // This matches Sumatra's approach where position and orientation are handled separately
     
     // Calculate primary direction for optimal path following
+    Eigen::Vector3d displacement = final_destination - start_pose;
     Eigen::Vector2d primary_direction = displacement.head<2>().normalized();
     
     // Set primary direction in constraints for async trajectory generation
@@ -466,8 +463,8 @@ void M_TrajectoryManager::generateTrajectoryFromPath(
     // Apply conservative velocity limits to prevent safety stops (robot limit is 5 rad/s)
     optimized_constraints.vel_max = std::min(move_constraints_.vel_max, 0.8);      // Conservative linear
     optimized_constraints.acc_max = std::min(move_constraints_.acc_max, 2.0);
-    optimized_constraints.vel_max_w = std::min(move_constraints_.vel_max_w, 1.8);  // Very conservative angular limit
-    optimized_constraints.acc_max_w = std::min(move_constraints_.acc_max_w, 3.0);  // More conservative angular acceleration
+    optimized_constraints.vel_max_w = std::min(move_constraints_.vel_max_w, 1.2);  // Ultra conservative angular limit
+    optimized_constraints.acc_max_w = std::min(move_constraints_.acc_max_w, 2.5);  // Ultra conservative angular acceleration
     
     auto trajectory = M_TrajectoryPlanner::generatePositionTrajectory(
         optimized_constraints, start_pose, robot_state.velocity, final_destination);
