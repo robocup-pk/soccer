@@ -97,6 +97,12 @@ void rob::RobotManager::ControlLogic() {
     case RobotState::M_AUTONOMOUS_DRIVING:
       std::tie(finished_motion, velocity_fBody_) = m_trajectory_manager.Update(pose_fWorld);
       break;
+    case RobotState::PURE_PURSUIT_DRIVING:
+      std::tie(finished_motion, velocity_fBody_) = pure_pursuit_manager.Update(pose_fWorld);
+      break;
+    case RobotState::HERMITE_SPLINE_DRIVING:
+      std::tie(finished_motion, velocity_fBody_) = hermite_spline_manager.Update(pose_fWorld);
+      break;
   }
 
   if (finished_motion) robot_state = RobotState::IDLE;
@@ -202,10 +208,82 @@ void rob::RobotManager::SetMPath(std::vector<Eigen::Vector3d> path_fWorld, doubl
   }
 }
 
+void rob::RobotManager::SetPurePursuitPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
+  bool is_path_valid;
+  {
+    // Print the path
+    std::cout << "[rob::RobotManager::SetPurePursuitPath] Pure Pursuit trajectory: ";
+    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
+      std::cout << path_fWorld[i].transpose() << " -> ";
+    }
+    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
+
+    // Update trajectory manager with current robot pose before creating trajectories
+    pose_fWorld = state_estimator.GetPose();
+    pure_pursuit_manager.UpdateRobotState(pose_fWorld, Eigen::Vector3d::Zero());
+    
+    // Create trajectories using Pure Pursuit Manager
+    is_path_valid = pure_pursuit_manager.CreateTrajectoriesFromPath(path_fWorld, t_start_s);
+    std::cout << "[rob::RobotManager::SetPurePursuitPath] Finish creating Pure Pursuit trajectories" << std::endl;
+  }
+
+  if (is_path_valid) {
+    std::unique_lock<std::mutex> lock(robot_state_mutex);
+    robot_state = RobotState::PURE_PURSUIT_DRIVING;
+    trajectory_manager_type_ = TrajectoryManagerType::PurePursuit;
+  } else {
+    std::cout << "[rob::RobotManager::SetPurePursuitPath] Given path is invalid. Failed to create "
+                 "Pure Pursuit trajectories\nPath: ";
+  }
+}
+
+void rob::RobotManager::SetHermiteSplinePath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
+  bool is_path_valid;
+  {
+    // Print the path
+    std::cout << "[rob::RobotManager::SetHermiteSplinePath] Hermite Spline trajectory for RRT* waypoints: ";
+    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
+      std::cout << path_fWorld[i].transpose() << " -> ";
+    }
+    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
+
+    // Initialize trajectory manager with current robot state
+    pose_fWorld = state_estimator.GetPose();
+    hermite_spline_manager.InitializeFromRobotManager(this);
+    
+    // Create trajectories using Hermite Spline Manager
+    is_path_valid = hermite_spline_manager.CreateTrajectoriesFromPath(path_fWorld, t_start_s);
+    std::cout << "[rob::RobotManager::SetHermiteSplinePath] Finish creating Hermite Spline trajectories" << std::endl;
+  }
+
+  if (is_path_valid) {
+    std::unique_lock<std::mutex> lock(robot_state_mutex);
+    robot_state = RobotState::HERMITE_SPLINE_DRIVING;
+    trajectory_manager_type_ = TrajectoryManagerType::HermiteSpline;
+  } else {
+    std::cout << "[rob::RobotManager::SetHermiteSplinePath] Given path is invalid. Failed to create "
+                 "Hermite Spline trajectories\nPath: ";
+  }
+}
+
 void rob::RobotManager::SetTrajectoryManagerType(TrajectoryManagerType type) {
   trajectory_manager_type_ = type;
-  std::cout << "[rob::RobotManager::SetTrajectoryManagerType] Set to " 
-            << (type == TrajectoryManagerType::ORIGINAL ? "ORIGINAL" : "BANGBANG") << std::endl;
+  std::string type_name;
+  switch (type) {
+    case TrajectoryManagerType::ORIGINAL:
+      type_name = "ORIGINAL";
+      break;
+    case TrajectoryManagerType::BangBang:
+      type_name = "BANGBANG";
+      break;
+    case TrajectoryManagerType::PurePursuit:
+      type_name = "PURE_PURSUIT";
+      break;
+    case TrajectoryManagerType::HermiteSpline:
+      type_name = "HERMITE_SPLINE";
+      break;
+  }
+  std::cout << "[rob::RobotManager::SetTrajectoryManagerType] Set to " << type_name << std::endl;
 }
 
 void rob::RobotManager::SetBodyVelocity(Eigen::Vector3d& velocity_fBody) {
@@ -290,10 +368,16 @@ std::string rob::RobotManager::GetRobotState() {
       return "MANUAL_DRIVING";
     case RobotState::AUTONOMOUS_DRIVING:
       return "AUTONOMOUS_DRIVING";
+    case RobotState::M_AUTONOMOUS_DRIVING:
+      return "M_AUTONOMOUS_DRIVING";
+    case RobotState::PURE_PURSUIT_DRIVING:
+      return "PURE_PURSUIT_DRIVING";
     case RobotState::GOING_HOME:
       return "GOING_HOME";
     case RobotState::INTERPOLATING_TO_POINT:
       return "INTERPOLATING_TO_POINT";
+    case RobotState::CALIBRATING:
+      return "CALIBRATING";
   }
   return "ERROR";
 }

@@ -22,18 +22,25 @@ int main(int argc, char* argv[]) {
     // Set initial robot pose
     Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0); // Robot starts at origin facing up
     robot_manager.InitializePose(robot_start_pose);
-    int N = 5;
+    int N = 20; // Number of waypoints
     double theta_final = M_PI / 2.0;
     vector<Eigen::Vector3d> waypoints;
     //waypoints.push_back(Eigen::Vector3d(0.0, 0.0, -M_PI_2/2.0)); // Generate waypoints in a circle
     waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0)); // Start at origin
     for (int i = 1; i <= N; ++i) {
-        waypoints.push_back(Eigen::Vector3d(N/i, N/i, N/i)); // Generate waypoints in a circle
+        waypoints.push_back(Eigen::Vector3d(N/i, 0.0, 0.0)); // Generate waypoints in a circle
     }
+    // for(int i = 1; i <= N; ++i) {
+    //     waypoints.push_back(Eigen::Vector3d(-N/i, 0.0, 0.0)); // Add waypoints with increasing angles
+    // }
+
     //waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0));
-    //waypoints.push_back(Eigen::Vector3d(1.0, 1.0, 0));
-    robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BangBang);
-    robot_manager.SetMPath(waypoints, util::GetCurrentTime());
+    
+    // waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0));
+    // waypoints.push_back(Eigen::Vector3d(-1.0, 0.0, 0));
+
+    robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::HermiteSpline);
+    robot_manager.SetHermiteSplinePath(waypoints, util::GetCurrentTime());
     // Add goals to the queue
     
     while (true) {

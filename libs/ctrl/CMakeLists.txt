@@ -8,6 +8,10 @@ set(SOURCES
     src/TrajectoryMergeLogic.cpp
     src/M_TrajectoryPlanner.cpp
     src/M_TrajectoryController.cpp
+    src/PurePursuitController.cpp
+    src/PurePursuitTrajectoryManager.cpp
+    src/CubicHermiteSplineTrajectory.cpp
+    src/HermiteSplineTrajectoryManager.cpp
 )
 
 file(GLOB_RECURSE HEADERS "include/*.h")
