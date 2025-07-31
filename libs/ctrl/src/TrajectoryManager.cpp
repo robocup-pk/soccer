@@ -21,16 +21,17 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
     Eigen::Vector3d pose_end(path_fWorld[path_index]);
     Eigen::Vector3d h(pose_end - pose_start);
     Eigen::Vector3d v0(0, 0, 0);
-    
+
     // Calculate trajectory duration based on distance and average velocity
     double distance = h.norm();
     double T = distance / cfg::SystemConfig::avg_velocity_fBody_mps;
     // Ensure minimum duration for feasible trapezoidal trajectories
-    // For very short distances, allow longer time to meet acceleration constraints
-    T = std::max(T, 2.0);
-    
+    // Reduced minimum duration for high-speed operation
+    T = std::max(T, 0.5);
+
     if (path_index == 1) v0 = FindV0AtT(t_start_s);
-    std::cout << "Trajectory " << path_index << ": distance=" << distance << "m, duration=" << T << "s" << std::endl;
+    std::cout << "Trajectory " << path_index << ": distance=" << distance << "m, duration=" << T
+              << "s" << std::endl;
 
     // Create Trajectory
     t_start_s = t_end_s;
@@ -53,16 +54,19 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
 }
 
 Eigen::Vector3d ctrl::TrajectoryManager::GetVelocityAtT(double current_time_s) {
-  double kp = 0.3;  // Proportional gain for velocity correction
+  double kp = 2.0;  // Higher proportional gain for aggressive velocity correction
   Eigen::Vector3d Current_speed = current_trajectory->VelocityAtT(current_time_s);
   Eigen::Vector3d Current_position_fWorld = p_fworld;
 
   Eigen::Vector3d Final_determined_velocity =
       Current_speed +
       kp * (current_trajectory->PositionAtT(current_time_s) - Current_position_fWorld);
-      std::cout << "[ctrl::TrajectoryManager::GetVelocityAtT] Error: "<<(current_trajectory->PositionAtT(current_time_s) - Current_position_fWorld).transpose() << std::endl;
+  std::cout
+      << "[ctrl::TrajectoryManager::GetVelocityAtT] Error: "
+      << (current_trajectory->PositionAtT(current_time_s) - Current_position_fWorld).transpose()
+      << std::endl;
   std::cout << "[ctrl::TrajectoryManager::GetVelocityAtT] Final_determinedvelocity: "
-            << Final_determined_velocity.transpose()  << std::endl;
+            << Final_determined_velocity.transpose() << std::endl;
 
   return Final_determined_velocity;
 }

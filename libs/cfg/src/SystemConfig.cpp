@@ -2,9 +2,12 @@
 #include "GLConfig.h"
 
 // Limits
-const double cfg::SystemConfig::avg_velocity_fBody_mps = 0.5;
-const Eigen::Vector3d cfg::SystemConfig::max_velocity_fBody_mps = Eigen::Vector3d(1, 1, 5);
-const Eigen::Vector3d cfg::SystemConfig::max_acc_m_radpsps = Eigen::Vector3d(0.5, 0.5, 0.5);
+const double cfg::SystemConfig::avg_velocity_fBody_mps =
+    0.3;  // Very slow planning velocity for testing
+const Eigen::Vector3d cfg::SystemConfig::max_velocity_fBody_mps =
+    Eigen::Vector3d(0.8, 0.8, 2.0);  // Much slower max for testing
+const Eigen::Vector3d cfg::SystemConfig::max_acc_m_radpsps =
+    Eigen::Vector3d(0.3, 0.3, 1.0);  // Much slower acceleration for testing
 
 // Wall
 const float cfg::SystemConfig::wall_velocity_damping_factor = 0.3;
@@ -16,7 +19,8 @@ const Eigen::Vector3d cfg::SystemConfig::init_ball_acceleration_mpsps = Eigen::V
 
 // Robot config
 const float cfg::SystemConfig::init_robot_speed_mps = 0;
-const float cfg::SystemConfig::max_robot_speed_mps = 1;
+const float cfg::SystemConfig::max_robot_speed_mps =
+    0.8;  // Much slower for testing
 const Eigen::Vector2d cfg::SystemConfig::robot_size_m = Eigen::Vector2d(0.204, 0.204);
 const Eigen::Vector3d cfg::SystemConfig::init_robot_velocity_mps = Eigen::Vector3d(0, 0, 0);
 const Eigen::Vector3d cfg::SystemConfig::init_robot_acceleration_mpsps = Eigen::Vector3d(0, 0, 0);
@@ -37,21 +41,11 @@ const std::vector<Eigen::Vector3d> cfg::SystemConfig::team_one_start_formation =
 // team 2 initial formation
 const std::vector<Eigen::Vector3d> cfg::SystemConfig::team_two_start_formation = []() {
   std::vector<Eigen::Vector3d> v(SystemConfig::num_robots);
-<<<<<<< HEAD
-
-  if (SystemConfig::num_robots >= 1) v[0] = Eigen::Vector3d(0.5f, 0.0f, M_PI);
-  if (SystemConfig::num_robots >= 2) v[1] = Eigen::Vector3d(0.3f, 0.3f, M_PI);
-  if (SystemConfig::num_robots >= 3) v[2] = Eigen::Vector3d(0.3f, -0.3f, M_PI);
-  if (SystemConfig::num_robots >= 4) v[3] = Eigen::Vector3d(0.7f, -0.3f, M_PI);
-  if (SystemConfig::num_robots >= 5) v[4] = Eigen::Vector3d(0.7f, 0.3f, M_PI);
-  if (SystemConfig::num_robots >= 6) v[5] = Eigen::Vector3d(0.9f, -0.0f, M_PI);
-=======
   if (v.size() > 0) v[0] = Eigen::Vector3d(0.5f, 0.0f, M_PI);
   if (v.size() > 1) v[1] = Eigen::Vector3d(0.3f, 0.3f, M_PI);
   if (v.size() > 2) v[2] = Eigen::Vector3d(0.3f, -0.3f, M_PI);
   if (v.size() > 3) v[3] = Eigen::Vector3d(0.7f, -0.3f, M_PI);
   if (v.size() > 4) v[4] = Eigen::Vector3d(0.7f, 0.3f, M_PI);
   if (v.size() > 5) v[5] = Eigen::Vector3d(0.9f, -0.0f, M_PI);
->>>>>>> 655f67ec (Refactor kick/dribble architecture: move ExecuteKick/ExecuteDribble from RobotManager to kin namespace Increasing loose Coupling.)
   return v;
 }();

@@ -9,3 +9,6 @@ target_link_libraries(soccer_engine PRIVATE state_lib vis_lib cfg_lib rob_lib ut
 
 add_executable(soccer_team_manual SoccerTeamManual.cpp)
 target_link_libraries(soccer_team_manual PRIVATE state_lib vis_lib cfg_lib rob_lib utils_lib ref_lib)
+
+add_executable(test_omnidirectional_trajectory test_omnidirectional_trajectory.cpp)
+target_link_libraries(test_omnidirectional_trajectory PRIVATE rob_lib ctrl_lib cfg_lib utils_lib)

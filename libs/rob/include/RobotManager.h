@@ -10,10 +10,11 @@
 #include "HardwareManager.h"
 #include "MotionController.h"
 #include "TrajectoryManager.h"
+#include "OmnidirectionalTrajectoryGenerator.h"
 
 // Forward declarations
 namespace state {
-  class SoccerObject;
+class SoccerObject;
 }
 
 namespace rob {
@@ -24,6 +25,7 @@ enum class RobotState {
   INTERPOLATING_TO_POINT,
   MANUAL_DRIVING,
   AUTONOMOUS_DRIVING,
+  OMNIDIRECTIONAL_DRIVING,
   GOING_HOME,
   CALIBRATING
 };
@@ -53,6 +55,9 @@ class RobotManager {
   void GoHome();
   void InitializeHome(Eigen::Vector3d pose_home);
   void SetPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
+  void SetOmnidirectionalGoal(const Eigen::Vector3d& goal);
+  void SetUseIdealPoseTracking(bool use_ideal);
+  void SetIdealPose(const Eigen::Vector3d& pose);
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
 
@@ -79,10 +84,16 @@ class RobotManager {
   Eigen::Vector3d pose_fWorld;
   Eigen::Vector3d velocity_fBody;
 
+  // Ideal pose tracking for simulation/testing (when no real robot is present)
+  Eigen::Vector3d ideal_pose_fWorld;
+  bool use_ideal_pose_tracking = true;
+  double last_control_time_s;
+
   est::StateEstimator state_estimator;
   hw::HardwareManager hardware_manager;
   ctrl::MotionController motion_controller;
   ctrl::TrajectoryManager trajectory_manager;
+  ctrl::OmnidirectionalTrajectoryGenerator omni_trajectory_generator;
 
   std::thread control_thread;
   std::thread sense_thread;

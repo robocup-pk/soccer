@@ -27,8 +27,12 @@ Eigen::VectorXd kin::RobotModel::WheelSpeedsRadpsToRobotVelocity(
 
 Eigen::Vector3d kin::RobotModel::WheelSpeedsRpmToRobotVelocity(
     const Eigen::Vector4d& wheel_speeds_rpm) {
-  // rpm to radps
-  Eigen::Vector4d wheel_speeds_radps = (2 * M_PI * wheel_speeds_rpm) / 60;
+  // Hard conversion from RPM to rad/s: rad/s = RPM * 2*π / 60
+  Eigen::Vector4d wheel_speeds_radps;
+  wheel_speeds_radps[0] = wheel_speeds_rpm[0] * 2.0 * M_PI / 60.0;
+  wheel_speeds_radps[1] = wheel_speeds_rpm[1] * 2.0 * M_PI / 60.0;
+  wheel_speeds_radps[2] = wheel_speeds_rpm[2] * 2.0 * M_PI / 60.0;
+  wheel_speeds_radps[3] = wheel_speeds_rpm[3] * 2.0 * M_PI / 60.0;
 
   Eigen::VectorXd result = forward_mapping * wheel_speeds_radps;
   return result.head<3>();
@@ -42,9 +46,16 @@ Eigen::VectorXd kin::RobotModel::RobotVelocityToWheelSpeedsRps(
 
 Eigen::Vector4d kin::RobotModel::RobotVelocityToWheelSpeedsRpm(
     const Eigen::Vector3d& robot_velocity_mps) {
-
   Eigen::Vector4d wheel_speeds_radps = RobotVelocityToWheelSpeedsRps(robot_velocity_mps).head<4>();
-  return 60 * wheel_speeds_radps / (2 * M_PI);
+
+  // Hard conversion from rad/s to RPM: RPM = rad/s * 60 / (2*π)
+  Eigen::Vector4d wheel_speeds_rpm;
+  wheel_speeds_rpm[0] = wheel_speeds_radps[0] * 60.0 / (2.0 * M_PI);
+  wheel_speeds_rpm[1] = wheel_speeds_radps[1] * 60.0 / (2.0 * M_PI);
+  wheel_speeds_rpm[2] = wheel_speeds_radps[2] * 60.0 / (2.0 * M_PI);
+  wheel_speeds_rpm[3] = wheel_speeds_radps[3] * 60.0 / (2.0 * M_PI);
+
+  return wheel_speeds_rpm;
 }
 
 Eigen::MatrixXd kin::RobotModel::InverseMapping() const { return inverse_mapping; }

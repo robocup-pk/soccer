@@ -1,0 +1,3 @@
+add_executable(omnidirectional_trajectory_demo OmnidirectionalTrajectoryDemo.cpp)
+target_link_libraries(omnidirectional_trajectory_demo ctrl_lib cfg_lib utils_lib kin_lib)
+target_include_directories(omnidirectional_trajectory_demo PRIVATE ../include)

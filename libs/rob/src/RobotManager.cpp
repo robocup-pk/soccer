@@ -7,6 +7,29 @@
 #include "Utils.h"
 #include "Trajectory3D.h"
 #include "Waypoint.h"
+#include "OmnidirectionalTrajectoryGenerator.h"
+
+std::string rob::RobotManager::GetRobotState() {
+  switch (robot_state) {
+    case RobotState::IDLE:
+      return "IDLE";
+    case RobotState::DRIVING_TO_POINT:
+      return "DRIVING_TO_POINT";
+    case RobotState::MANUAL_DRIVING:
+      return "MANUAL_DRIVING";
+    case RobotState::AUTONOMOUS_DRIVING:
+      return "AUTONOMOUS_DRIVING";
+    case RobotState::OMNIDIRECTIONAL_DRIVING:
+      return "OMNIDIRECTIONAL_DRIVING";
+    case RobotState::GOING_HOME:
+      return "GOING_HOME";
+    case RobotState::INTERPOLATING_TO_POINT:
+      return "INTERPOLATING_TO_POINT";
+    case RobotState::CALIBRATING:
+      return "CALIBRATING";
+  }
+  return "ERROR";
+}
 
 rob::RobotManager::RobotManager() {
   std::cout << "[rob::RobotManager::RobotManager]" << std::endl;
@@ -19,10 +42,19 @@ rob::RobotManager::RobotManager() {
   num_sensor_readings_failed = 0;
   rob_manager_running.store(true);
 
+  // Initialize ideal pose tracking for simulation/testing
+  ideal_pose_fWorld << 0, 0, 0;
+  use_ideal_pose_tracking = true;
+  last_control_time_s = util::GetCurrentTime();
+
 #ifdef BUILD_ON_PI
+  // On real robot, use sensor-based estimation
   state_estimator.initialized_pose = false;
+  use_ideal_pose_tracking = false;
 #else
+  // In simulation/testing, use ideal pose tracking
   state_estimator.initialized_pose = true;
+  use_ideal_pose_tracking = true;
 #endif
 
   // Disable gyro functionality when not connected (for demo/simulation mode)
@@ -58,13 +90,36 @@ void rob::RobotManager::ControlLoop() {
 void rob::RobotManager::ControlLogic() {
   Eigen::Vector3d velocity_fBody_;
 
+  // Update ideal pose based on previous commanded velocity (for simulation/testing)
+  if (use_ideal_pose_tracking) {
+    double current_time = util::GetCurrentTime();
+    double dt = current_time - last_control_time_s;
+    last_control_time_s = current_time;
+
+    if (dt > 0 && dt < 0.1) {  // Sanity check on dt
+      // Convert body velocity to world velocity
+      Eigen::Vector3d velocity_fWorld = util::RotateAboutZ(velocity_fBody, ideal_pose_fWorld[2]);
+
+      // Integrate to get new ideal pose
+      ideal_pose_fWorld[0] += velocity_fWorld[0] * dt;
+      ideal_pose_fWorld[1] += velocity_fWorld[1] * dt;
+      ideal_pose_fWorld[2] += velocity_fBody[2] * dt;  // Angular velocity is same in both frames
+
+      // Normalize angle
+      ideal_pose_fWorld[2] = util::WrapAngle(ideal_pose_fWorld[2]);
+    }
+
+    // Use ideal pose for control
+    pose_fWorld = ideal_pose_fWorld;
+  }
+
   switch (robot_state) {
     case RobotState::CALIBRATING:
       velocity_fBody_ = Eigen::Vector3d::Zero();
       if (disable_gyro_checks || hardware_manager.IsGyroCalibrated()) {
         robot_state = RobotState::IDLE;
-        std::cout << "[rob::RobotManager::ControlLogic] " 
-                  << (disable_gyro_checks ? "Gyro checks disabled" : "Gyro is calibrated") 
+        std::cout << "[rob::RobotManager::ControlLogic] "
+                  << (disable_gyro_checks ? "Gyro checks disabled" : "Gyro is calibrated")
                   << ". Going to IDLE state." << std::endl;
       }
       break;
@@ -86,12 +141,16 @@ void rob::RobotManager::ControlLogic() {
       // finished_motion = true;
       break;
     case RobotState::GOING_HOME:
-      std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
-      // std::tie(finished_motion, velocity_fBody_) =
-      //     motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
+      std::tie(finished_motion, velocity_fBody_) =
+          omni_trajectory_generator.Update(pose_fWorld, pose_home_fWorld);
       break;
     case RobotState::AUTONOMOUS_DRIVING:
       std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
+      break;
+    case RobotState::OMNIDIRECTIONAL_DRIVING:
+      std::tie(finished_motion, velocity_fBody_) =
+          omni_trajectory_generator.Update(pose_fWorld, pose_destination);
+      TryAssignNextGoal();
       break;
   }
 
@@ -104,6 +163,9 @@ void rob::RobotManager::ControlLogic() {
     velocity_fBody_ = Eigen::Vector3d::Zero();
     robot_state = RobotState::IDLE;
   }
+
+  // Store the new velocity for next iteration's pose integration
+  velocity_fBody = velocity_fBody_;
 
   hardware_manager.SetBodyVelocity(velocity_fBody_);
 }
@@ -174,9 +236,16 @@ void rob::RobotManager::SetBodyVelocity(Eigen::Vector3d& velocity_fBody) {
   robot_state = RobotState::IDLE;
 }
 
-Eigen::Vector3d rob::RobotManager::GetPoseInWorldFrame() const { return pose_fWorld; }
+Eigen::Vector3d rob::RobotManager::GetPoseInWorldFrame() const {
+  if (use_ideal_pose_tracking) {
+    return ideal_pose_fWorld;
+  } else {
+    return pose_fWorld;
+  }
+}
 Eigen::Vector3d rob::RobotManager::GetVelocityInWorldFrame() const {
-  return util::RotateAboutZ(this->velocity_fBody, -pose_fWorld[2]);
+  Eigen::Vector3d current_pose = use_ideal_pose_tracking ? ideal_pose_fWorld : pose_fWorld;
+  return util::RotateAboutZ(this->velocity_fBody, current_pose[2]);
 }
 
 void rob::RobotManager::AddGoal(const Eigen::Vector3d& goal) {
@@ -218,6 +287,15 @@ void rob::RobotManager::TryAssignNextGoal() {
   }
 }
 
+void rob::RobotManager::SetOmnidirectionalGoal(const Eigen::Vector3d& goal) {
+  std::unique_lock<std::mutex> lock(robot_state_mutex);
+  pose_destination = goal;
+  robot_state = RobotState::OMNIDIRECTIONAL_DRIVING;
+  finished_motion = false;
+  std::cout << "[rob::RobotManager::SetOmnidirectionalGoal] Omnidirectional drive to goal: "
+            << goal.transpose() << std::endl;
+}
+
 void rob::RobotManager::InitializeHome(Eigen::Vector3d pose_home) {
   pose_home_fWorld = pose_home;
   initialized_pose_home = true;
@@ -237,25 +315,6 @@ void rob::RobotManager::GoHome() {
     std::cout << "[rob::RobotManager::GoHome] Can't go home. Path invalid\n";
   }
   robot_state = RobotState::GOING_HOME;
-}
-
-std::string rob::RobotManager::GetRobotState() {
-  std::unique_lock<std::mutex> lock(robot_state_mutex);
-  switch (robot_state) {
-    case RobotState::IDLE:
-      return "IDLE";
-    case RobotState::DRIVING_TO_POINT:
-      return "DRIVING_TO_POINT";
-    case RobotState::MANUAL_DRIVING:
-      return "MANUAL_DRIVING";
-    case RobotState::AUTONOMOUS_DRIVING:
-      return "AUTONOMOUS_DRIVING";
-    case RobotState::GOING_HOME:
-      return "GOING_HOME";
-    case RobotState::INTERPOLATING_TO_POINT:
-      return "INTERPOLATING_TO_POINT";
-  }
-  return "ERROR";
 }
 
 bool rob::RobotManager::BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody) {
@@ -295,4 +354,29 @@ bool rob::RobotManager::IsGyroCalibrated() {
     return false;
   }
   return true;
+}
+
+void rob::RobotManager::SetUseIdealPoseTracking(bool use_ideal) {
+  std::unique_lock<std::mutex> lock(robot_state_mutex);
+  use_ideal_pose_tracking = use_ideal;
+  if (use_ideal) {
+    last_control_time_s = util::GetCurrentTime();
+    std::cout << "[rob::RobotManager::SetUseIdealPoseTracking] Enabled ideal pose tracking for "
+                 "simulation/testing."
+              << std::endl;
+  } else {
+    std::cout << "[rob::RobotManager::SetUseIdealPoseTracking] Disabled ideal pose tracking - "
+                 "using sensor estimation."
+              << std::endl;
+  }
+}
+
+void rob::RobotManager::SetIdealPose(const Eigen::Vector3d& pose) {
+  std::unique_lock<std::mutex> lock(robot_state_mutex);
+  ideal_pose_fWorld = pose;
+  if (use_ideal_pose_tracking) {
+    pose_fWorld = ideal_pose_fWorld;
+  }
+  std::cout << "[rob::RobotManager::SetIdealPose] Set ideal pose: " << pose.transpose()
+            << std::endl;
 }
