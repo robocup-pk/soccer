@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
     
     // Set positions
     Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0);     // Robot starts at origin
-    Eigen::Vector3d ball_position(-1.5, 0.5, 0.0);
+    Eigen::Vector3d ball_position(-1.5, -0.5, 0.0);
     
     Eigen::Vector3d direction = (ball_position - robot_start_pose);
     double angle = std::atan2(direction.y(), direction.x());
