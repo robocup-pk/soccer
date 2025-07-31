@@ -35,11 +35,11 @@ int main(int argc, char* argv[]) {
             // Test 1: Simple forward movement with reasonable spacing
             std::cout << "Test 1: Simple forward movement" << std::endl;
             waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(0.2, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(0.4, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(0.6, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(0.8, 0.0, 0.0));
             waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
+            // waypoints.push_back(Eigen::Vector3d(0.4, 0.0, 0.0));
+            // waypoints.push_back(Eigen::Vector3d(0.6, 0.0, 0.0));
+            // waypoints.push_back(Eigen::Vector3d(0.8, 0.0, 0.0));
+            // waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
             break;
         }
         case 2: {

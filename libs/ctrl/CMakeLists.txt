@@ -26,3 +26,7 @@ target_link_libraries(ctrl_lib PUBLIC cfg_lib utils_lib kin_lib Python3::Python)
 target_include_directories(ctrl_lib PUBLIC include ${Python3_INCLUDE_DIRS})
 
 add_subdirectory(test)
+
+# Test program for coordinate transformations
+add_executable(test_coordinate_transform src/test_coordinate_transform.cpp)
+target_link_libraries(test_coordinate_transform ctrl_lib kin_lib utils_lib cfg_lib Eigen3::Eigen)
