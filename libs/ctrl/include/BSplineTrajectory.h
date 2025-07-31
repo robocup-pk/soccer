@@ -106,8 +106,8 @@ private:
     bool is_trajectory_finished_;
     
     // Velocity and acceleration limits
-    double v_max_ = 1.0;        // m/s - conservative for smooth motion
-    double a_max_ = 0.5;        // m/s² - smooth acceleration
+    double v_max_ = 0.6;        // m/s - reduced for smoother motion
+    double a_max_ = 0.3;        // m/s² - reduced for smoother acceleration
     double omega_max_ = 2.0;    // rad/s - conservative angular velocity
     double alpha_max_ = 3.0;    // rad/s² - smooth angular acceleration
     

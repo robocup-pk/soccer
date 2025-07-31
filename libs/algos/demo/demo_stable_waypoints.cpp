@@ -14,11 +14,20 @@ int main(int argc, char* argv[]) {
     std::cout << "[Demo] Running Stable Waypoints Demo" << std::endl;
     std::cout << "Testing different waypoint configurations to avoid velocity explosions" << std::endl;
 
+    // Check for headless mode
+    bool headless = false;
+    if (argc > 2 && std::string(argv[2]) == "headless") {
+        headless = true;
+        std::cout << "Running in headless mode" << std::endl;
+    }
+    
     // Initialize objects
     vector<state::SoccerObject> soccer_objects;
     state::InitSoccerObjects(soccer_objects);
     vis::GLSimulation gl_simulation;
-    gl_simulation.InitGameObjects(soccer_objects);
+    if (!headless) {
+        gl_simulation.InitGameObjects(soccer_objects);
+    }
     
     // Initialize RobotManager
     rob::RobotManager robot_manager;
@@ -93,6 +102,30 @@ int main(int argc, char* argv[]) {
             waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));   // Another 180 degree turn
             break;
         }
+        case 6: {
+            // Test 6: Pure rotation around axis (no translation)
+            std::cout << "Test 6: Pure rotation around axis (no translation)" << std::endl;
+            // Robot stays at exact same position but rotates continuously in one direction
+            // Full 360 degree rotation broken into segments
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));           // 0 degrees
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, M_PI/4));        // 45 degrees
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, M_PI/2));        // 90 degrees
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 3*M_PI/4));      // 135 degrees
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, M_PI));          // 180 degrees
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 5*M_PI/4));      // 225 degrees
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 3*M_PI/2));      // 270 degrees
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 7*M_PI/4));      // 315 degrees
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 2*M_PI));        // 360 degrees (full rotation)
+            break;
+        }
+        case 7: {
+            // Test 7: Pure rotation test (using original trajectory manager)
+            std::cout << "Test 7: Pure rotation (using original trajectory)" << std::endl;
+            // Just two waypoints: start and end orientation
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));        // Start at 0 degrees
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 2*M_PI));     // Full 360 degree rotation
+            break;
+        }
     }
     
     // Print waypoints
@@ -102,9 +135,18 @@ int main(int argc, char* argv[]) {
                   << waypoints[i][1] << ", " << waypoints[i][2] << ")" << std::endl;
     }
 
-    // Set trajectory using B-Spline
-    robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BSpline);
-    robot_manager.SetBSplinePath(waypoints, util::GetCurrentTime());
+    // Set trajectory based on test case
+    if (test_case == 7) {
+        // Use original trajectory manager for pure rotation
+        std::cout << "Using original trajectory manager for pure rotation" << std::endl;
+        robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::ORIGINAL);
+        robot_manager.SetPath(waypoints, util::GetCurrentTime());
+    } else {
+        // Use B-Spline for all other cases
+        std::cout << "Using B-Spline trajectory manager" << std::endl;
+        robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BSpline);
+        robot_manager.SetBSplinePath(waypoints, util::GetCurrentTime());
+    }
     
     // Variables for monitoring
     double max_velocity_seen = 0.0;
@@ -113,13 +155,18 @@ int main(int argc, char* argv[]) {
     
     while (true) {
         // Run simulation step
-        if (!gl_simulation.RunSimulationStep(soccer_objects, util::CalculateDt())) {
-            std::cout << "[Demo] Simulation finished" << std::endl;
-            break;
+        if (!headless) {
+            if (!gl_simulation.RunSimulationStep(soccer_objects, util::CalculateDt())) {
+                std::cout << "[Demo] Simulation finished" << std::endl;
+                break;
+            }
+            
+            // Process input and update robot state
+            vis::ProcessInput(gl_simulation.GetRawGLFW(), soccer_objects);
+        } else {
+            // In headless mode, just update time
+            util::WaitMs(20);  // 50Hz update
         }
-        
-        // Process input and update robot state
-        vis::ProcessInput(gl_simulation.GetRawGLFW(), soccer_objects);
         
         // Control logic for RobotManager
         robot_manager.ControlLogic();
@@ -152,13 +199,21 @@ int main(int argc, char* argv[]) {
             Eigen::Vector3d pose = robot_manager.GetPoseInWorldFrame();
             std::cout << "[Status] Time: " << (current_time - start_time) 
                       << "s, Pose: (" << pose[0] << ", " << pose[1] << ", " << pose[2] 
-                      << "), Linear vel: " << linear_speed << " m/s" << std::endl;
+                      << " rad = " << pose[2] * 180.0 / M_PI << " deg"
+                      << "), Linear vel: " << linear_speed << " m/s, Angular vel: " 
+                      << velocity[2] << " rad/s" << std::endl;
             last_print_time = current_time;
         }
         
-        // Stop after 30 seconds
+        // Stop after 30 seconds or when trajectory is complete
         if (current_time - start_time > 30.0) {
             std::cout << "[Demo] Time limit reached" << std::endl;
+            break;
+        }
+        
+        // In test case 6, stop when rotation is complete
+        if (test_case == 6 && robot_manager.GetRobotState() == "IDLE" && current_time - start_time > 3.0) {
+            std::cout << "[Demo] Rotation completed" << std::endl;
             break;
         }
     }

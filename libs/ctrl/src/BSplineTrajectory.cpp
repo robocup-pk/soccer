@@ -34,6 +34,16 @@ bool BSplineTrajectory::SetPath(const std::vector<Eigen::Vector3d>& path_fWorld,
         // Store original waypoints
         waypoints_ = path_fWorld;
         
+        // Check if this is a pure rotation trajectory (all positions are the same)
+        bool is_pure_rotation = true;
+        const double position_tolerance = 0.001;  // 1mm tolerance
+        for (size_t i = 1; i < path_fWorld.size(); ++i) {
+            if ((path_fWorld[i].head<2>() - path_fWorld[0].head<2>()).norm() > position_tolerance) {
+                is_pure_rotation = false;
+                break;
+            }
+        }
+        
         // Generate B-spline control points
         GenerateBSplineControlPoints();
         
@@ -43,14 +53,30 @@ bool BSplineTrajectory::SetPath(const std::vector<Eigen::Vector3d>& path_fWorld,
         // Calculate total arc length for velocity planning
         CalculateArcLength();
         
+        // For pure rotation, ensure arc length is based on angular distance
+        if (is_pure_rotation && total_arc_length_ < 0.1) {
+            // Calculate total angular distance
+            double total_angle_change = std::abs(path_fWorld.back()[2] - path_fWorld.front()[2]);
+            total_arc_length_ = total_angle_change * 0.09;  // Convert to equivalent linear distance
+            std::cout << "  Pure rotation detected. Angular distance: " << total_angle_change 
+                      << " rad, equivalent arc length: " << total_arc_length_ << "m" << std::endl;
+        }
+        
         trajectory_start_time_ = (t_start_s > 0) ? t_start_s : util::GetCurrentTime();
         is_trajectory_active_ = true;
         is_trajectory_finished_ = false;
         current_segment_progress_ = 0.0;
         
+        // Debug: Check start and end positions
+        Eigen::Vector3d start_pos = EvaluateBSpline(0.0);
+        Eigen::Vector3d end_pos = EvaluateBSpline(1.0);
+        
         std::cout << "[BSplineTrajectory::SetPath] B-spline trajectory generated successfully. "
                   << "Control points: " << control_points_.size() 
                   << ", Arc length: " << total_arc_length_ << "m" << std::endl;
+        std::cout << "  Start: (" << start_pos[0] << ", " << start_pos[1] << ", " << start_pos[2] << " rad)" << std::endl;
+        std::cout << "  End: (" << end_pos[0] << ", " << end_pos[1] << ", " << end_pos[2] << " rad = " 
+                  << end_pos[2] * 180.0 / M_PI << " deg)" << std::endl;
         
         return true;
         
@@ -159,8 +185,8 @@ Eigen::Vector3d BSplineTrajectory::EvaluateBSpline(double u) {
         result += basis * control_points_[i];
     }
     
-    // Normalize angle
-    result[2] = NormalizeAngle(result[2]);
+    // Don't normalize angle here - we want to support continuous rotations beyond ±π
+    // result[2] = NormalizeAngle(result[2]);
     
     return result;
 }
@@ -192,7 +218,8 @@ Eigen::Vector3d BSplineTrajectory::EvaluateBSplineDerivative(double u, int deriv
 
 void BSplineTrajectory::CalculateArcLength() {
     // Calculate arc length using numerical integration
-    const int num_samples = 100;
+    // Use more samples for accurate arc length calculation, especially for rotation-heavy trajectories
+    const int num_samples = 500;
     total_arc_length_ = 0.0;
     arc_length_samples_.clear();
     arc_length_samples_.push_back(0.0);
@@ -203,8 +230,14 @@ void BSplineTrajectory::CalculateArcLength() {
         double u = static_cast<double>(i) / num_samples;
         Eigen::Vector3d current_point = EvaluateBSpline(u);
         
-        // Only consider linear distance, not angular
-        double segment_length = (current_point.head<2>() - prev_point.head<2>()).norm();
+        // Consider both linear and angular distance
+        double linear_distance = (current_point.head<2>() - prev_point.head<2>()).norm();
+        double angular_distance = std::abs(NormalizeAngle(current_point[2] - prev_point[2]));
+        
+        // Weight angular distance to make it comparable to linear distance
+        // Using robot radius of ~0.09m, so full rotation = 2*pi*0.09 ≈ 0.565m
+        double angular_weight = 0.09;  // Convert radians to equivalent linear distance
+        double segment_length = linear_distance + angular_weight * angular_distance;
         total_arc_length_ += segment_length;
         arc_length_samples_.push_back(total_arc_length_);
         
@@ -245,7 +278,8 @@ Eigen::Vector3d BSplineTrajectory::Update(const Eigen::Vector3d& current_pose, d
     if (desired_arc_length >= total_arc_length_) {
         is_trajectory_finished_ = true;
         is_trajectory_active_ = false;
-        std::cout << "[BSplineTrajectory::Update] Trajectory execution completed" << std::endl;
+        std::cout << "[BSplineTrajectory::Update] Trajectory execution completed at t=" 
+                  << elapsed_time << "s, arc=" << desired_arc_length << "/" << total_arc_length_ << "m" << std::endl;
         return Eigen::Vector3d::Zero();
     }
     
@@ -258,14 +292,36 @@ Eigen::Vector3d BSplineTrajectory::Update(const Eigen::Vector3d& current_pose, d
     
     // Scale velocity by desired speed
     double current_speed = ComputeDesiredSpeed(elapsed_time);
-    Eigen::Vector3d feedforward_velocity = spline_velocity.normalized() * current_speed;
+    
+    // Handle both translation and rotation
+    double linear_vel_norm = spline_velocity.head<2>().norm();
+    double angular_vel = spline_velocity[2];
+    
+    Eigen::Vector3d feedforward_velocity;
+    if (linear_vel_norm > 1e-6) {
+        // Normal case: scale linear velocity
+        double scale = current_speed / linear_vel_norm;
+        feedforward_velocity[0] = spline_velocity[0] * scale;
+        feedforward_velocity[1] = spline_velocity[1] * scale;
+        feedforward_velocity[2] = spline_velocity[2] * scale;
+    } else {
+        // Pure rotation case
+        feedforward_velocity[0] = 0.0;
+        feedforward_velocity[1] = 0.0;
+        // For pure rotation, use the angular velocity directly scaled by speed ratio
+        // Don't convert linear speed to angular - just use proportional scaling
+        double speed_ratio = current_speed / v_max_;  // Ratio of current to max speed
+        feedforward_velocity[2] = angular_vel * speed_ratio;
+    }
     
     // Apply feedback control for trajectory tracking
     Eigen::Vector3d position_error = desired_position - current_pose;
     position_error[2] = NormalizeAngle(position_error[2]);
     
     // PD controller with feedforward
-    Eigen::Vector3d velocity_command = feedforward_velocity + kp_ * position_error;
+    // For pure rotation, increase angular gain
+    Eigen::Vector3d gains(kp_, kp_, kp_ * 2.0);  // Double gain for angular control
+    Eigen::Vector3d velocity_command = feedforward_velocity + gains.cwiseProduct(position_error);
     
     // Apply velocity limits
     velocity_command[0] = std::clamp(velocity_command[0], -v_max_, v_max_);
@@ -291,7 +347,8 @@ double BSplineTrajectory::ComputeDesiredArcLength(double elapsed_time) {
             // Deceleration phase
             double t_decel = elapsed_time - peak_time;
             double peak_velocity = a_max_ * peak_time;
-            return accel_distance + peak_velocity * t_decel - 0.5 * a_max_ * t_decel * t_decel;
+            double peak_distance = 0.5 * a_max_ * peak_time * peak_time;  // Distance at peak
+            return peak_distance + peak_velocity * t_decel - 0.5 * a_max_ * t_decel * t_decel;
         } else {
             return total_arc_length_;
         }
