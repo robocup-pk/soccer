@@ -103,6 +103,9 @@ void rob::RobotManager::ControlLogic() {
     case RobotState::HERMITE_SPLINE_DRIVING:
       std::tie(finished_motion, velocity_fBody_) = hermite_spline_manager.Update(pose_fWorld);
       break;
+    case RobotState::BSPLINE_DRIVING:
+      std::tie(finished_motion, velocity_fBody_) = bspline_manager.Update(pose_fWorld);
+      break;
   }
 
   if (finished_motion) robot_state = RobotState::IDLE;
@@ -266,6 +269,35 @@ void rob::RobotManager::SetHermiteSplinePath(std::vector<Eigen::Vector3d> path_f
   }
 }
 
+void rob::RobotManager::SetBSplinePath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
+  bool is_path_valid;
+  {
+    // Print the path
+    std::cout << "[rob::RobotManager::SetBSplinePath] B-spline trajectory for smooth waypoint following: ";
+    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
+      std::cout << path_fWorld[i].transpose() << " -> ";
+    }
+    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
+
+    // Initialize trajectory manager with current robot state
+    pose_fWorld = state_estimator.GetPose();
+    bspline_manager.InitializeFromRobotManager(this);
+    
+    // Create trajectories using B-spline Manager
+    is_path_valid = bspline_manager.CreateTrajectoriesFromPath(path_fWorld, t_start_s);
+    std::cout << "[rob::RobotManager::SetBSplinePath] Finish creating B-spline trajectories" << std::endl;
+  }
+
+  if (is_path_valid) {
+    std::unique_lock<std::mutex> lock(robot_state_mutex);
+    robot_state = RobotState::BSPLINE_DRIVING;
+    trajectory_manager_type_ = TrajectoryManagerType::BSpline;
+  } else {
+    std::cout << "[rob::RobotManager::SetBSplinePath] Given path is invalid. Failed to create "
+                 "B-spline trajectories\nPath: ";
+  }
+}
+
 void rob::RobotManager::SetTrajectoryManagerType(TrajectoryManagerType type) {
   trajectory_manager_type_ = type;
   std::string type_name;
@@ -281,6 +313,9 @@ void rob::RobotManager::SetTrajectoryManagerType(TrajectoryManagerType type) {
       break;
     case TrajectoryManagerType::HermiteSpline:
       type_name = "HERMITE_SPLINE";
+      break;
+    case TrajectoryManagerType::BSpline:
+      type_name = "B_SPLINE";
       break;
   }
   std::cout << "[rob::RobotManager::SetTrajectoryManagerType] Set to " << type_name << std::endl;

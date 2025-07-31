@@ -116,8 +116,9 @@ void CubicHermiteSplineTrajectory::GenerateHermiteSplineSegments() {
         
         // Compute segment duration based on arc length approximation
         double distance = (segment.p1 - segment.p0).norm();
-        double avg_velocity = v_max_ * 0.7; // Use 70% of max velocity as average
-        segment.duration = std::max(0.1, distance / avg_velocity);
+        // Use more conservative velocity for stability
+        double avg_velocity = std::min(v_max_ * 0.5, distance * 2.0); // Slower for short segments
+        segment.duration = std::max(0.5, distance / avg_velocity); // Minimum 0.5s per segment
         
         // Pre-compute Hermite coefficients for efficiency
         ComputeHermiteCoefficients(segment);
@@ -147,13 +148,18 @@ Eigen::Vector3d CubicHermiteSplineTrajectory::ComputeTangent(
     // Weighted average based on distances
     Eigen::Vector3d tangent = (v1/d1 + v2/d2).normalized();
     
-    // Scale tangent by velocity
-    double speed = std::min(v_max_, (d1 + d2) / 2.0);
+    // Scale tangent by velocity - but limit to prevent explosions
+    double avg_distance = (d1 + d2) / 2.0;
+    double speed = std::min(v_max_ * 0.3, avg_distance / 2.0); // More conservative speed
     
     // Special handling for angular component
     tangent[2] = NormalizeAngle(p_next[2] - p_prev[2]) / 2.0;
     
-    return tangent * speed * 0.5; // Scale factor for smoother curves
+    // Apply additional damping for very sharp turns
+    double turn_angle = std::acos(std::clamp(v1.normalized().dot(v2.normalized()), -1.0, 1.0));
+    double damping_factor = 1.0 - 0.7 * (turn_angle / M_PI); // More damping for sharper turns
+    
+    return tangent * speed * 0.3 * damping_factor; // More conservative scaling
 }
 
 void CubicHermiteSplineTrajectory::ComputeHermiteCoefficients(HermiteSegment& segment) {
@@ -206,8 +212,8 @@ Eigen::Vector3d CubicHermiteSplineTrajectory::Update(const Eigen::Vector3d& curr
     Eigen::Vector3d position_error = position - current_pose;
     position_error[2] = NormalizeAngle(position_error[2]); // Normalize angular error
     
-    // PD controller for trajectory tracking
-    Eigen::Vector3d velocity_command = velocity + kp_ * position_error;
+    // PD controller for trajectory tracking with reduced gain
+    Eigen::Vector3d velocity_command = velocity + kp_ * 0.5 * position_error; // Reduced feedback gain
     
     // Apply velocity limits
     velocity_command[0] = std::clamp(velocity_command[0], -v_max_, v_max_);

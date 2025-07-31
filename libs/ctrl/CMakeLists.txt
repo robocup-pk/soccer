@@ -12,6 +12,8 @@ set(SOURCES
     src/PurePursuitTrajectoryManager.cpp
     src/CubicHermiteSplineTrajectory.cpp
     src/HermiteSplineTrajectoryManager.cpp
+    src/BSplineTrajectory.cpp
+    src/BSplineTrajectoryManager.cpp
 )
 
 file(GLOB_RECURSE HEADERS "include/*.h")

@@ -3,7 +3,7 @@
 #include <vector>
 #include <memory>
 #include <Eigen/Dense>
-#include "CubicHermiteSplineTrajectory.h"
+#include "BSplineTrajectory.h"
 
 namespace rob {
     class RobotManager;
@@ -11,10 +11,10 @@ namespace rob {
 
 namespace ctrl {
 
-class HermiteSplineTrajectoryManager {
+class BSplineTrajectoryManager {
 public:
-    HermiteSplineTrajectoryManager();
-    ~HermiteSplineTrajectoryManager() = default;
+    BSplineTrajectoryManager();
+    ~BSplineTrajectoryManager() = default;
     
     // Create trajectories from RRT* waypoints
     bool CreateTrajectoriesFromPath(const std::vector<Eigen::Vector3d>& path_fWorld, 
@@ -26,8 +26,11 @@ public:
     // Reset trajectory
     void Reset();
     
-    // Set controller parameters
-    void SetParameters(double lookahead_distance, double speed_scaling);
+    // Enable/disable additional smoothing
+    void SetSmoothingEnabled(bool enabled);
+    
+    // Set B-spline degree (1-5, default 3)
+    void SetSplineDegree(int degree);
     
     // Initialize from RobotManager
     void InitializeFromRobotManager(rob::RobotManager* robot_manager);
@@ -37,6 +40,9 @@ public:
     
     // Set feedback control gains
     void SetFeedbackGains(double kp, double kd);
+    
+    // Set minimum distance between waypoints (for filtering)
+    void SetMinWaypointDistance(double distance);
     
     // Query functions
     Eigen::Vector3d GetVelocityAtT(double current_time_s);
@@ -48,12 +54,21 @@ public:
     void Print() { /* Implementation if needed */ }
     
 private:
+    // Preprocess waypoints for smoother trajectories
+    std::vector<Eigen::Vector3d> PreprocessWaypoints(const std::vector<Eigen::Vector3d>& waypoints);
+    
+    // Apply additional smoothing filter to velocities
+    void ApplySmoothingFilter(Eigen::Vector3d& velocity);
+    
     // Apply safety limits to velocity command
     void ApplySafetyLimits(Eigen::Vector3d& velocity);
     
+    // Normalize angle to [-π, π]
+    double NormalizeAngle(double angle);
+    
 private:
-    // Hermite spline trajectory planner
-    std::unique_ptr<CubicHermiteSplineTrajectory> hermite_trajectory_;
+    // B-spline trajectory planner
+    std::unique_ptr<BSplineTrajectory> bspline_trajectory_;
     
     // Current robot pose
     Eigen::Vector3d p_fworld_;
@@ -61,19 +76,17 @@ private:
     // Path waypoints
     std::vector<Eigen::Vector3d> current_waypoints_;
     
-    // Controller parameters
-    double lookahead_distance_;
-    double min_lookahead_distance_;
-    double max_lookahead_distance_;
-    double speed_scaling_factor_;
-    
-    // Velocity limits - conservative to prevent exceeding system limits
-    double max_linear_velocity_ = 0.8;    // m/s
-    double max_angular_velocity_ = 3.0;   // rad/s
-    
     // Trajectory state
     bool trajectory_active_;
     bool trajectory_finished_;
+    
+    // Smoothing parameters
+    bool smoothing_enabled_;
+    double min_waypoint_distance_;
+    
+    // Velocity filter state
+    Eigen::Vector3d previous_velocity_;
+    bool previous_velocity_initialized_ = false;
 };
 
 } // namespace ctrl
