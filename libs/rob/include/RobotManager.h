@@ -14,7 +14,12 @@
 #include "RobotPositions.h"
 =======
 #include "M_TrajectoryController.h"
+<<<<<<< HEAD
 >>>>>>> 47173921 (New Trajactory Planner Manager with BangBang Trajactory Planner)
+=======
+#include "PurePursuitTrajectoryManager.h"
+#include "HermiteSplineTrajectoryManager.h"
+>>>>>>> 9a94022d (Add Sline Trajactory for RRTX WayPoints)
 
 // Forward declarations
 namespace state {
@@ -31,12 +36,16 @@ enum class RobotState {
   AUTONOMOUS_DRIVING,
   GOING_HOME,
   CALIBRATING,
-  M_AUTONOMOUS_DRIVING  // New state for M_TrajectoryManager
+  M_AUTONOMOUS_DRIVING,  // New state for M_TrajectoryManager
+  PURE_PURSUIT_DRIVING,  // New state for Pure Pursuit following
+  HERMITE_SPLINE_DRIVING // New state for Hermite Spline trajectory following
 };
 
 enum class TrajectoryManagerType {
-  ORIGINAL,    // Use original TrajectoryManager
-  BangBang      // Use M_TrajectoryManager (BangBang-based)
+  ORIGINAL,      // Use original TrajectoryManager
+  BangBang,      // Use M_TrajectoryManager (BangBang-based)
+  PurePursuit,   // Use Pure Pursuit for multi-waypoint following
+  HermiteSpline  // Use Cubic Hermite Spline for RRT* waypoints
 };
 
 enum class RobotAction {
@@ -65,6 +74,8 @@ class RobotManager {
   void InitializeHome(Eigen::Vector3d pose_home);
   void SetPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
   void SetMPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Paper-based path
+  void SetPurePursuitPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Pure Pursuit path
+  void SetHermiteSplinePath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Hermite Spline path
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
   
@@ -100,6 +111,8 @@ class RobotManager {
   ctrl::MotionController motion_controller;
   ctrl::TrajectoryManager trajectory_manager;
   ctrl::M_TrajectoryManager m_trajectory_manager;  // Paper-based trajectory manager
+  ctrl::PurePursuitTrajectoryManager pure_pursuit_manager;  // Pure Pursuit trajectory manager
+  ctrl::HermiteSplineTrajectoryManager hermite_spline_manager;  // Hermite Spline trajectory manager
   
   TrajectoryManagerType trajectory_manager_type_;
 
