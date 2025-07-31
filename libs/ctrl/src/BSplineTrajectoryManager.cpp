@@ -3,6 +3,7 @@
 #include "Utils.h"
 #include <iostream>
 #include <cassert>
+#include <cmath>
 
 namespace ctrl {
 
@@ -57,14 +58,24 @@ std::vector<Eigen::Vector3d> BSplineTrajectoryManager::PreprocessWaypoints(
     
     // Filter out waypoints that are too close to previous ones
     for (size_t i = 1; i < waypoints.size(); ++i) {
-        double distance = (waypoints[i].head<2>() - processed.back().head<2>()).norm();
+        double linear_distance = (waypoints[i].head<2>() - processed.back().head<2>()).norm();
+        double angular_diff = waypoints[i][2] - processed.back()[2];
+        // Normalize angle difference to [-pi, pi]
+        while (angular_diff > M_PI) angular_diff -= 2 * M_PI;
+        while (angular_diff < -M_PI) angular_diff += 2 * M_PI;
+        double angular_distance = std::abs(angular_diff);
         
-        if (distance >= min_waypoint_distance_ || i == waypoints.size() - 1) {
-            // Keep waypoint if it's far enough or if it's the last one
+        // Consider both linear and angular distance
+        // Convert angular distance to equivalent linear distance using robot radius
+        double equivalent_distance = linear_distance + 0.09 * angular_distance;
+        
+        if (equivalent_distance >= min_waypoint_distance_ || i == waypoints.size() - 1) {
+            // Keep waypoint if it's far enough (in position or orientation) or if it's the last one
             processed.push_back(waypoints[i]);
         } else {
             std::cout << "[BSplineTrajectoryManager] Filtering out waypoint " << i 
-                      << " (too close: " << distance << "m)" << std::endl;
+                      << " (too close: linear=" << linear_distance << "m, angular=" 
+                      << angular_distance << "rad)" << std::endl;
         }
     }
     
@@ -83,7 +94,11 @@ std::vector<Eigen::Vector3d> BSplineTrajectoryManager::PreprocessWaypoints(
                 double t = static_cast<double>(j) / (num_intermediate + 1);
                 Eigen::Vector3d intermediate = processed[i] + t * segment;
                 // Properly interpolate angle
-                intermediate[2] = processed[i][2] + t * NormalizeAngle(processed[i+1][2] - processed[i][2]);
+                // Properly interpolate angle with normalization
+                double angle_diff = processed[i+1][2] - processed[i][2];
+                while (angle_diff > M_PI) angle_diff -= 2 * M_PI;
+                while (angle_diff < -M_PI) angle_diff += 2 * M_PI;
+                intermediate[2] = processed[i][2] + t * angle_diff;
                 final_waypoints.push_back(intermediate);
             }
         }
