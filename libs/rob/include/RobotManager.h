@@ -19,7 +19,11 @@
 =======
 #include "PurePursuitTrajectoryManager.h"
 #include "HermiteSplineTrajectoryManager.h"
+<<<<<<< HEAD
 >>>>>>> 9a94022d (Add Sline Trajactory for RRTX WayPoints)
+=======
+#include "BSplineTrajectoryManager.h"
+>>>>>>> 924fc1b6 (BSpline Trajactory for Path Planning)
 
 // Forward declarations
 namespace state {
@@ -38,14 +42,16 @@ enum class RobotState {
   CALIBRATING,
   M_AUTONOMOUS_DRIVING,  // New state for M_TrajectoryManager
   PURE_PURSUIT_DRIVING,  // New state for Pure Pursuit following
-  HERMITE_SPLINE_DRIVING // New state for Hermite Spline trajectory following
+  HERMITE_SPLINE_DRIVING, // New state for Hermite Spline trajectory following
+  BSPLINE_DRIVING        // New state for B-spline trajectory following
 };
 
 enum class TrajectoryManagerType {
   ORIGINAL,      // Use original TrajectoryManager
   BangBang,      // Use M_TrajectoryManager (BangBang-based)
   PurePursuit,   // Use Pure Pursuit for multi-waypoint following
-  HermiteSpline  // Use Cubic Hermite Spline for RRT* waypoints
+  HermiteSpline, // Use Cubic Hermite Spline for RRT* waypoints
+  BSpline        // Use B-spline for smoother trajectories
 };
 
 enum class RobotAction {
@@ -76,6 +82,7 @@ class RobotManager {
   void SetMPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Paper-based path
   void SetPurePursuitPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Pure Pursuit path
   void SetHermiteSplinePath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Hermite Spline path
+  void SetBSplinePath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // B-spline path
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
   
@@ -113,6 +120,7 @@ class RobotManager {
   ctrl::M_TrajectoryManager m_trajectory_manager;  // Paper-based trajectory manager
   ctrl::PurePursuitTrajectoryManager pure_pursuit_manager;  // Pure Pursuit trajectory manager
   ctrl::HermiteSplineTrajectoryManager hermite_spline_manager;  // Hermite Spline trajectory manager
+  ctrl::BSplineTrajectoryManager bspline_manager;  // B-spline trajectory manager
   
   TrajectoryManagerType trajectory_manager_type_;
 

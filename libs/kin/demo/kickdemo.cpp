@@ -19,7 +19,8 @@ enum class DemoMode {
     ORIGINAL,      // Use original trajectory system
     BangBang,      // Use BangBang-based M_TrajectoryManager
     PurePursuit,   // Use Pure Pursuit for multi-waypoint following
-    HermiteSpline  // Use Hermite Spline for RRT* waypoints
+    HermiteSpline, // Use Hermite Spline for RRT* waypoints
+    BSpline        // Use B-spline for smoother trajectories
 };
 
 using namespace std;
@@ -34,6 +35,8 @@ int main(int argc, char* argv[]) {
             demo_mode = DemoMode::PurePursuit;
         } else if (mode_arg == "hermite" || mode_arg == "hs") {
             demo_mode = DemoMode::HermiteSpline;
+        } else if (mode_arg == "bspline" || mode_arg == "bs") {
+            demo_mode = DemoMode::BSpline;
         }
     }
     
@@ -42,6 +45,7 @@ int main(int argc, char* argv[]) {
     if (demo_mode == DemoMode::BangBang) mode_name = "BANGBANG";
     else if (demo_mode == DemoMode::PurePursuit) mode_name = "PURE_PURSUIT";
     else if (demo_mode == DemoMode::HermiteSpline) mode_name = "HERMITE_SPLINE";
+    else if (demo_mode == DemoMode::BSpline) mode_name = "B_SPLINE";
     std::cout << "[KickDemo] Demo Mode: " << mode_name << std::endl;
     
     if (cfg::SystemConfig::num_robots != 1) {
@@ -59,8 +63,8 @@ int main(int argc, char* argv[]) {
     rob::RobotManager robot_manager;
     
     // Set positions
-    Eigen::Vector3d robot_start_pose(0.0, 0.0, -M_PI/2);     // Robot starts at origin
-    Eigen::Vector3d ball_position(1.5, -0.5, 0.0);
+    Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0);     // Robot starts at origin
+    Eigen::Vector3d ball_position(-1.5, 0.5, 0.0);
     
     Eigen::Vector3d direction = (ball_position - robot_start_pose);
     double angle = std::atan2(direction.y(), direction.x());
@@ -94,9 +98,10 @@ int main(int argc, char* argv[]) {
         cout << "Waypoint " << i << ": (" << path[i].x << ", " << path[i].y << ", " << path[i].angle << ")" << std::endl;
     }
     // Convert RRTX waypoints based on demo mode
-    if (demo_mode == DemoMode::PurePursuit || demo_mode == DemoMode::HermiteSpline) {
-        // For Pure Pursuit and Hermite Spline: Use ALL RRTX waypoints for smooth multi-waypoint following
-        std::string planner_name = (demo_mode == DemoMode::PurePursuit) ? "Pure Pursuit" : "Hermite Spline";
+    if (demo_mode == DemoMode::PurePursuit || demo_mode == DemoMode::HermiteSpline || demo_mode == DemoMode::BSpline) {
+        // For Pure Pursuit, Hermite Spline, and B-spline: Use ALL RRTX waypoints for smooth multi-waypoint following
+        std::string planner_name = (demo_mode == DemoMode::PurePursuit) ? "Pure Pursuit" : 
+                                  (demo_mode == DemoMode::HermiteSpline) ? "Hermite Spline" : "B-spline";
         std::cout << "[KickDemo] Using ALL " << path.size() << " RRTX waypoints for " << planner_name << std::endl;
         for(int i = 0; i < path.size(); ++i){
             // Calculate angle to face next waypoint (or ball for last waypoint) 
@@ -135,6 +140,10 @@ int main(int argc, char* argv[]) {
         std::cout << "[KickDemo] Using Hermite Spline for RRT* waypoints" << std::endl;
         robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::HermiteSpline);
         robot_manager.SetHermiteSplinePath(targetPath);
+    } else if (demo_mode == DemoMode::BSpline) {
+        std::cout << "[KickDemo] Using B-spline for smooth RRT* waypoint following" << std::endl;
+        robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BSpline);
+        robot_manager.SetBSplinePath(targetPath);
     } else {
         std::cout << "[KickDemo] Using original TrajectoryManager" << std::endl;
         robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::ORIGINAL);

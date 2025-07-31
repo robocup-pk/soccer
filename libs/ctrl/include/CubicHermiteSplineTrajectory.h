@@ -96,14 +96,14 @@ private:
     bool is_trajectory_finished_;
     size_t current_segment_index_;
     
-    // Velocity and acceleration limits
-    double v_max_ = 2.0;        // m/s
-    double a_max_ = 3.0;        // m/s²
-    double omega_max_ = 5.0;    // rad/s
-    double alpha_max_ = 10.0;   // rad/s²
+    // Velocity and acceleration limits - aligned with system limits
+    double v_max_ = 0.8;        // m/s - conservative to stay within 1 m/s limit
+    double a_max_ = 2.0;        // m/s² - reduced for smoother motion
+    double omega_max_ = 3.0;    // rad/s - conservative to stay within 5 rad/s limit
+    double alpha_max_ = 5.0;    // rad/s² - reduced for smoother rotation
     
     // Feedback control gains
-    double kp_ = 2.0;  // Proportional gain
+    double kp_ = 1.0;  // Proportional gain - reduced for stability
     double kd_ = 0.5;  // Derivative gain (not used in current implementation)
 };
 

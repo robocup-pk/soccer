@@ -22,25 +22,97 @@ int main(int argc, char* argv[]) {
     // Set initial robot pose
     Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0); // Robot starts at origin facing up
     robot_manager.InitializePose(robot_start_pose);
-    int N = 20; // Number of waypoints
-    double theta_final = M_PI / 2.0;
     vector<Eigen::Vector3d> waypoints;
-    //waypoints.push_back(Eigen::Vector3d(0.0, 0.0, -M_PI_2/2.0)); // Generate waypoints in a circle
-    waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0)); // Start at origin
-    for (int i = 1; i <= N; ++i) {
-        waypoints.push_back(Eigen::Vector3d(N/i, 0.0, 0.0)); // Generate waypoints in a circle
-    }
-    // for(int i = 1; i <= N; ++i) {
-    //     waypoints.push_back(Eigen::Vector3d(-N/i, 0.0, 0.0)); // Add waypoints with increasing angles
-    // }
-
-    //waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0));
     
-    // waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0));
-    // waypoints.push_back(Eigen::Vector3d(-1.0, 0.0, 0));
+    // Choose a test case based on command line argument
+    int test_case = 1;
+    if (argc > 1) {
+        test_case = std::atoi(argv[1]);
+    }
+    
+    switch (test_case) {
+        case 1: {
+            // Test 1: Simple forward movement with reasonable spacing
+            std::cout << "Test 1: Simple forward movement" << std::endl;
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.2, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.4, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.6, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.8, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
+            break;
+        }
+        case 2: {
+            // Test 2: Circular path
+            std::cout << "Test 2: Circular path" << std::endl;
+            int N = 8;
+            double radius = 0.5;
+            for (int i = 0; i <= N; ++i) {
+                double angle = 2.0 * M_PI * i / N;
+                waypoints.push_back(Eigen::Vector3d(
+                    radius * std::cos(angle),
+                    radius * std::sin(angle),
+                    angle
+                ));
+            }
+            break;
+        }
+        case 3: {
+            // Test 3: Figure-8 pattern
+            std::cout << "Test 3: Figure-8 pattern" << std::endl;
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.3, 0.2, M_PI/4));
+            waypoints.push_back(Eigen::Vector3d(0.5, 0.5, M_PI/2));
+            waypoints.push_back(Eigen::Vector3d(0.3, 0.8, 3*M_PI/4));
+            waypoints.push_back(Eigen::Vector3d(0.0, 1.0, M_PI));
+            waypoints.push_back(Eigen::Vector3d(-0.3, 0.8, -3*M_PI/4));
+            waypoints.push_back(Eigen::Vector3d(-0.5, 0.5, -M_PI/2));
+            waypoints.push_back(Eigen::Vector3d(-0.3, 0.2, -M_PI/4));
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+            break;
+        }
+        default: {
+            // Default: The problematic sequence for testing
+            std::cout << "Test 4: Problematic sequence (for debugging)" << std::endl;
+            int N = 20;
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+            for (int i = 1; i <= N; ++i) {
+                waypoints.push_back(Eigen::Vector3d(N/i, 0.0, 0.0));
+            }
+            break;
+        }
+    }
+    
+    // Print waypoints
+    std::cout << "Waypoints:" << std::endl;
+    for (size_t i = 0; i < waypoints.size(); ++i) {
+        std::cout << "  " << i << ": (" << waypoints[i][0] << ", " 
+                  << waypoints[i][1] << ", " << waypoints[i][2] << ")" << std::endl;
+    }
 
-    robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::HermiteSpline);
-    robot_manager.SetHermiteSplinePath(waypoints, util::GetCurrentTime());
+    // Choose trajectory type based on second argument
+    int traj_type = 1;
+    if (argc > 2) {
+        traj_type = std::atoi(argv[2]);
+    }
+    
+    switch (traj_type) {
+        case 1:
+            std::cout << "Using B-spline trajectory for smoother motion" << std::endl;
+            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BSpline);
+            robot_manager.SetBSplinePath(waypoints, util::GetCurrentTime());
+            break;
+        case 2:
+            std::cout << "Using Hermite spline trajectory" << std::endl;
+            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::HermiteSpline);
+            robot_manager.SetHermiteSplinePath(waypoints, util::GetCurrentTime());
+            break;
+        default:
+            std::cout << "Using original trajectory manager" << std::endl;
+            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::ORIGINAL);
+            robot_manager.SetPath(waypoints, util::GetCurrentTime());
+            break;
+    }
     // Add goals to the queue
     
     while (true) {
