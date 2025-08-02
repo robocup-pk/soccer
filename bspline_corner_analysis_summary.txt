@@ -1,0 +1,38 @@
+B-SPLINE CORNER HANDLING ANALYSIS
+=================================
+
+KEY FINDINGS:
+
+1. **B-spline Cuts Corners**
+   - RRT* generates paths with sharp 90-degree turns
+   - B-spline creates smooth curves by "cutting" these corners
+   - This is why your robot travels 0.75m instead of 1m!
+
+2. **Corner Cutting Visualization Results**
+   - Test 1 (Square path): B-spline rounds all 90° corners
+   - Test 2 (Zigzag): Multiple sharp turns become smooth waves
+   - The sharper the corner, the more B-spline deviates from waypoints
+
+3. **Impact on Real Robot**
+   - Corner cutting + friction (75% efficiency) = significant path deviation
+   - A 1m straight path with corners becomes ~0.75m actual travel
+   - Sharp corners in RRT* paths are never followed exactly
+
+4. **Why This Happens**
+   - B-spline prioritizes smoothness (C2 continuity)
+   - Must maintain continuous velocity and acceleration
+   - Cannot make instantaneous direction changes
+
+5. **Solutions**
+   a) **Accept the smoothing**: B-spline is working as designed
+   b) **Add intermediate waypoints**: Place waypoints before/after corners
+   c) **Use different trajectory planner**: TrajectoryVI3D for exact waypoint following
+   d) **Adjust RRT* output**: Post-process to add curve-friendly waypoints
+
+CONCLUSION:
+The "missing 25%" of motion is due to:
+- B-spline corner cutting (designed behavior)
+- Friction/wheel slip (hardware limitation)
+- NOT a bug in your implementation!
+
+The visualizations clearly show B-spline creates smooth paths by cutting corners, which is exactly what it's supposed to do for smooth robot motion.

@@ -79,31 +79,9 @@ std::vector<Eigen::Vector3d> BSplineTrajectoryManager::PreprocessWaypoints(
         }
     }
     
-    // Add intermediate waypoints for very long segments
-    std::vector<Eigen::Vector3d> final_waypoints;
-    for (size_t i = 0; i < processed.size() - 1; ++i) {
-        final_waypoints.push_back(processed[i]);
-        
-        Eigen::Vector3d segment = processed[i+1] - processed[i];
-        double segment_length = segment.head<2>().norm();
-        
-        // If segment is too long, add intermediate points
-        if (segment_length > 0.5) {  // 50cm max segment length
-            int num_intermediate = static_cast<int>(segment_length / 0.3);  // One point every 30cm
-            for (int j = 1; j <= num_intermediate; ++j) {
-                double t = static_cast<double>(j) / (num_intermediate + 1);
-                Eigen::Vector3d intermediate = processed[i] + t * segment;
-                // Properly interpolate angle
-                // Properly interpolate angle with normalization
-                double angle_diff = processed[i+1][2] - processed[i][2];
-                while (angle_diff > M_PI) angle_diff -= 2 * M_PI;
-                while (angle_diff < -M_PI) angle_diff += 2 * M_PI;
-                intermediate[2] = processed[i][2] + t * angle_diff;
-                final_waypoints.push_back(intermediate);
-            }
-        }
-    }
-    final_waypoints.push_back(processed.back());
+    // Don't add too many intermediate waypoints - the B-spline will handle smoothing
+    // Just use the processed waypoints directly
+    std::vector<Eigen::Vector3d> final_waypoints = processed;
     
     std::cout << "[BSplineTrajectoryManager] Preprocessed " << waypoints.size() 
               << " waypoints to " << final_waypoints.size() << std::endl;

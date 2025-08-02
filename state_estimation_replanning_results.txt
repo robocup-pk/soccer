@@ -1,0 +1,32 @@
+STATE ESTIMATION REPLANNING RESULTS
+===================================
+
+Based on the demo_bspline_replanning_with_state_estimation output:
+
+KEY OBSERVATION:
+The demo shows both robots experiencing similar oscillatory behavior patterns. The velocity commands fluctuate rapidly for both the camera-based and state estimation-based replanning approaches.
+
+ANALYSIS:
+1. Both robots showed similar velocity patterns with rapid changes
+2. The state estimator is receiving delayed camera data, so it can't fully compensate for the 50ms delay
+3. The fundamental control system issues persist regardless of using raw camera or filtered state data
+
+WHY STATE ESTIMATION DOESN'T SOLVE THE PROBLEM:
+1. The Kalman filter in the current implementation still relies on delayed camera measurements
+2. Without proper predictive modeling, the state estimator can't compensate for the delay
+3. The high feedback gain (Kp=1.5) still causes oscillations even with filtered data
+
+CONCLUSION:
+Using state estimation data for replanning does NOT solve the core issues because:
+- The state estimator itself is using delayed sensor data
+- The control gains are still too high for a system with delays
+- Replanning based on any delayed data (raw or filtered) introduces discontinuities
+
+RECOMMENDATION:
+Instead of replanning, the solution should be:
+1. Reduce feedback gain (Kp) to 0.5 or lower
+2. Use pure feedforward control like TrajectoryVI3D (Kp=0.0)
+3. Add friction compensation (divide commands by 0.75)
+4. Implement predictive control that accounts for the 50ms delay
+
+The hardware issues (friction and sensor delay) need to be addressed at the control level, not the trajectory planning level.

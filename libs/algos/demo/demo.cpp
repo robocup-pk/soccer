@@ -7,6 +7,7 @@
 #include "Utils.h"
 #include "RRTX.h"
 #include "Kick.h"
+//#include "BsplineManager.h"
 using namespace std;
 int main(int argc, char* argv[]) {
     std::cout << "[Demo] Running RobotManager demo" << std::endl;
@@ -18,7 +19,8 @@ int main(int argc, char* argv[]) {
     gl_simulation.InitGameObjects(soccer_objects);
     // Initialize RobotManager
     rob::RobotManager robot_manager;
-    
+    ctrl::BSplineTrajectoryManager bspline_manager;
+    bspline_manager.SetFeedbackGains(0.5, 0.1); // Set feedback gains for smoother control
     // Set initial robot pose
     Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0); // Robot starts at origin facing up
     robot_manager.InitializePose(robot_start_pose);
@@ -34,12 +36,11 @@ int main(int argc, char* argv[]) {
         case 1: {
             // Test 1: Simple forward movement with reasonable spacing
             std::cout << "Test 1: Simple forward movement" << std::endl;
-            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
-            // waypoints.push_back(Eigen::Vector3d(0.4, 0.0, 0.0));
-            // waypoints.push_back(Eigen::Vector3d(0.6, 0.0, 0.0));
-            // waypoints.push_back(Eigen::Vector3d(0.8, 0.0, 0.0));
-            // waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0, 0, 0));
+            waypoints.push_back(Eigen::Vector3d(-1, 0, 0));
+            waypoints.push_back(Eigen::Vector3d(-1, 1, 0));
+            waypoints.push_back(Eigen::Vector3d(0, 1, 0));
+            waypoints.push_back(Eigen::Vector3d(0, 0, 0));
             break;
         }
         case 2: {
@@ -74,10 +75,10 @@ int main(int argc, char* argv[]) {
         default: {
             // Default: The problematic sequence for testing
             std::cout << "Test 4: Problematic sequence (for debugging)" << std::endl;
-            int N = 20;
+            int N = 10;
             waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
             for (int i = 1; i <= N; ++i) {
-                waypoints.push_back(Eigen::Vector3d(N/i, 0.0, 0.0));
+                waypoints.push_back(Eigen::Vector3d(i/N, 0.0, 0.0));
             }
             break;
         }
@@ -101,6 +102,7 @@ int main(int argc, char* argv[]) {
             std::cout << "Using B-spline trajectory for smoother motion" << std::endl;
             robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BSpline);
             robot_manager.SetBSplinePath(waypoints, util::GetCurrentTime());
+            
             break;
         case 2:
             std::cout << "Using Hermite spline trajectory" << std::endl;

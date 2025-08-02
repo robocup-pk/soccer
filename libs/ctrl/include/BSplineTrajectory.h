@@ -5,6 +5,7 @@
 #include <tuple>
 #include <Eigen/Dense>
 #include "RobotDescription.h"
+#include "Utils.h"
 
 namespace rob {
     class RobotManager;
@@ -58,28 +59,45 @@ private:
     void GenerateKnotVector();
     
     // B-spline basis function (Cox-de Boor recursion)
-    double BSplineBasis(int i, int p, double u);
+    double BSplineBasis(int i, int p, double u) const;
     
     // Evaluate B-spline at parameter u
-    Eigen::Vector3d EvaluateBSpline(double u);
+    Eigen::Vector3d EvaluateBSpline(double u) const;
     
     // Evaluate B-spline derivative at parameter u
-    Eigen::Vector3d EvaluateBSplineDerivative(double u, int derivative_order);
+    Eigen::Vector3d EvaluateBSplineDerivative(double u, int derivative_order) const;
     
     // Calculate arc length of the B-spline
     void CalculateArcLength();
     
     // Convert arc length to parameter u
-    double ArcLengthToParameter(double arc_length);
+    double ArcLengthToParameter(double arc_length) const;
     
     // Compute desired arc length at given time (trapezoidal velocity profile)
-    double ComputeDesiredArcLength(double elapsed_time);
+    double ComputeDesiredArcLength(double elapsed_time) const;
     
     // Compute desired speed at given time
-    double ComputeDesiredSpeed(double elapsed_time);
+    double ComputeDesiredSpeed(double elapsed_time) const;
     
     // Normalize angle to [-π, π]
-    double NormalizeAngle(double angle);
+    double NormalizeAngle(double angle) const;
+    
+    // Smart repetition methods for corner handling
+    double CalculateAngleBetween(const Eigen::Vector3d& p1, 
+                               const Eigen::Vector3d& p2, 
+                               const Eigen::Vector3d& p3) const;
+    
+    std::vector<Eigen::Vector3d> SmartRepetition(const std::vector<Eigen::Vector3d>& points, 
+                                                 int min_repeats = 1, 
+                                                 int max_repeats = 4) const;
+    
+    std::vector<Eigen::Vector3d> LinearEntryExitClosedLoop(const std::vector<Eigen::Vector3d>& points, 
+                                                           int repeats = 3, 
+                                                           double tolerance = 0.05) const;
+    
+    // Alternative corner handling approach
+    std::vector<Eigen::Vector3d> InsertCornerControlPoints(const std::vector<Eigen::Vector3d>& waypoints,
+                                                          double corner_offset = 0.1) const;
     
 private:
     // Robot description
@@ -105,15 +123,41 @@ private:
     bool is_trajectory_active_;
     bool is_trajectory_finished_;
     
-    // Velocity and acceleration limits
-    double v_max_ = 0.6;        // m/s - reduced for smoother motion
-    double a_max_ = 0.3;        // m/s² - reduced for smoother acceleration
-    double omega_max_ = 2.0;    // rad/s - conservative angular velocity
-    double alpha_max_ = 3.0;    // rad/s² - smooth angular acceleration
+    // Velocity and acceleration limits (respecting system constraints)
+    double v_max_ = 0.8;        // m/s - below system limit of 1.0 m/s
+    double a_max_ = 0.5;        // m/s² - moderate acceleration
+    double omega_max_ = 2.5;    // rad/s - below system limit of 5.0 rad/s
+    double alpha_max_ = 3.0;    // rad/s² - moderate angular acceleration
     
     // Feedback control gains
     double kp_ = 1.5;  // Proportional gain
     double kd_ = 0.3;  // Derivative gain (not used in current implementation)
+    
+public:
+    // Additional methods for replanning support
+    Eigen::Vector3d GetCurrentDesiredPosition() const {
+        if (!is_trajectory_active_) return Eigen::Vector3d::Zero();
+        double elapsed = util::GetCurrentTime() - trajectory_start_time_;
+        double arc_length = ComputeDesiredArcLength(elapsed);
+        double u = ArcLengthToParameter(arc_length);
+        return EvaluateBSpline(u);
+    }
+    
+    std::vector<Eigen::Vector3d> GetRemainingWaypoints() const {
+        if (!is_trajectory_active_) return {};
+        
+        // Return waypoints that haven't been reached yet
+        double elapsed = util::GetCurrentTime() - trajectory_start_time_;
+        double arc_length = ComputeDesiredArcLength(elapsed);
+        double progress = arc_length / total_arc_length_;
+        
+        std::vector<Eigen::Vector3d> remaining;
+        int start_idx = static_cast<int>(progress * waypoints_.size());
+        for (size_t i = start_idx; i < waypoints_.size(); ++i) {
+            remaining.push_back(waypoints_[i]);
+        }
+        return remaining;
+    }
 };
 
 } // namespace ctrl
