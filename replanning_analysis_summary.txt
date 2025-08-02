@@ -1,0 +1,34 @@
+REPLANNING ANALYSIS SUMMARY
+==========================
+
+Based on the demo_bspline_replanning_comparison output:
+
+OBSERVED BEHAVIOR:
+1. Both robots started at different Y positions:
+   - No replanning: (0, 0, 0)
+   - With replanning: (0, 0.4, 0)
+
+2. The velocity commands showed oscillations in both cases:
+   - No replanning: High frequency velocity changes (e.g., 0.463394, -0.562898 m/s)
+   - With replanning: Also showed oscillations with replanning triggers
+
+3. The demo was comparing trajectory following with 75% friction efficiency applied to both robots
+
+KEY FINDINGS:
+1. Replanning triggers when position error exceeds 10cm
+2. Both robots experience similar oscillatory behavior
+3. The 50ms sensor delay affects both implementations
+
+PRELIMINARY CONCLUSION:
+From the partial output, replanning does NOT appear to solve the fundamental control system issues:
+- Both robots show oscillatory behavior
+- The delayed sensor data causes replanning to act on outdated information
+- Replanning may actually introduce additional discontinuities
+
+RECOMMENDATION:
+The real issue appears to be:
+1. High feedback gain (Kp=1.5) combined with sensor delay causes oscillations
+2. Friction/wheel slip reduces actual movement to 75% of commanded
+3. These are hardware/control gain issues, not trajectory planning issues
+
+Replanning based on delayed sensor data may make the problem worse rather than better.

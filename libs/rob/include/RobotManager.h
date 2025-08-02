@@ -91,6 +91,8 @@ class RobotManager {
   void CalibrateGyro();
   bool IsGyroCalibrated();
   void NewCameraData(Eigen::Vector3d pose_from_camera);
+  void NewGyroData(double w_radps);
+  void NewMotorsData(const Eigen::Vector4d& motors_rpms);
 
   ~RobotManager();
 

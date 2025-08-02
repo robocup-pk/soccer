@@ -86,6 +86,162 @@ bool BSplineTrajectory::SetPath(const std::vector<Eigen::Vector3d>& path_fWorld,
     }
 }
 
+double BSplineTrajectory::CalculateAngleBetween(const Eigen::Vector3d& p1, 
+                                               const Eigen::Vector3d& p2, 
+                                               const Eigen::Vector3d& p3) const {
+    // Calculate angle between vectors (p1-p2) and (p3-p2)
+    Eigen::Vector2d v1 = p1.head<2>() - p2.head<2>();
+    Eigen::Vector2d v2 = p3.head<2>() - p2.head<2>();
+    
+    double norm_v1 = v1.norm();
+    double norm_v2 = v2.norm();
+    
+    if (norm_v1 < 1e-6 || norm_v2 < 1e-6) {
+        return 0.0;  // Treat as sharpest possible corner
+    }
+    
+    double cos_angle = v1.dot(v2) / (norm_v1 * norm_v2);
+    cos_angle = std::clamp(cos_angle, -1.0, 1.0);
+    
+    return std::acos(cos_angle);
+}
+
+std::vector<Eigen::Vector3d> BSplineTrajectory::SmartRepetition(
+    const std::vector<Eigen::Vector3d>& points, 
+    int min_repeats, 
+    int max_repeats) const {
+    
+    std::vector<Eigen::Vector3d> new_points;
+    
+    // Start with the first point
+    new_points.push_back(points[0]);
+    
+    // Process intermediate points
+    for (size_t i = 1; i < points.size() - 1; ++i) {
+        const Eigen::Vector3d& p_prev = points[i - 1];
+        const Eigen::Vector3d& p_curr = points[i];
+        const Eigen::Vector3d& p_next = points[i + 1];
+        
+        // Calculate angle at this corner
+        double angle = CalculateAngleBetween(p_prev, p_curr, p_next);
+        
+        // Linear mapping: sharp corner (0 rad) = max_repeats, straight (pi rad) = min_repeats
+        double weight = 1.0 - angle / M_PI;
+        weight = std::clamp(weight, 0.0, 1.0);
+        
+        int repeats = static_cast<int>(std::round(min_repeats + weight * (max_repeats - min_repeats)));
+        
+        // Add repeated points
+        for (int j = 0; j < repeats; ++j) {
+            new_points.push_back(p_curr);
+        }
+    }
+    
+    // Add the last point
+    new_points.push_back(points.back());
+    
+    return new_points;
+}
+
+std::vector<Eigen::Vector3d> BSplineTrajectory::LinearEntryExitClosedLoop(
+    const std::vector<Eigen::Vector3d>& points, 
+    int repeats, 
+    double tolerance) const {
+    
+    if (points.empty()) return points;
+    
+    const Eigen::Vector3d& start = points.front();
+    const Eigen::Vector3d& end = points.back();
+    
+    // Check if this is a closed loop
+    if ((start.head<2>() - end.head<2>()).norm() < tolerance) {
+        std::vector<Eigen::Vector3d> new_points;
+        
+        // Add repeated start points for linear entry
+        for (int i = 0; i < repeats; ++i) {
+            new_points.push_back(start);
+        }
+        
+        // Add all points except the last one (to avoid duplication)
+        for (size_t i = 0; i < points.size() - 1; ++i) {
+            new_points.push_back(points[i]);
+        }
+        
+        // Add repeated end points for linear exit
+        for (int i = 0; i < repeats; ++i) {
+            new_points.push_back(end);
+        }
+        
+        return new_points;
+    }
+    
+    return points;
+}
+
+std::vector<Eigen::Vector3d> BSplineTrajectory::InsertCornerControlPoints(
+    const std::vector<Eigen::Vector3d>& waypoints,
+    double corner_offset) const {
+    
+    if (waypoints.size() < 3) {
+        return waypoints;
+    }
+    
+    std::vector<Eigen::Vector3d> control_points;
+    
+    // Add the first waypoint
+    control_points.push_back(waypoints[0]);
+    
+    // Process interior waypoints
+    for (size_t i = 1; i < waypoints.size() - 1; ++i) {
+        const Eigen::Vector3d& prev = waypoints[i - 1];
+        const Eigen::Vector3d& curr = waypoints[i];
+        const Eigen::Vector3d& next = waypoints[i + 1];
+        
+        // Calculate direction vectors
+        Eigen::Vector2d v1 = (curr.head<2>() - prev.head<2>());
+        Eigen::Vector2d v2 = (next.head<2>() - curr.head<2>());
+        
+        double len1 = v1.norm();
+        double len2 = v2.norm();
+        
+        if (len1 > 2 * corner_offset && len2 > 2 * corner_offset) {
+            // Normalize directions
+            v1 /= len1;
+            v2 /= len2;
+            
+            // Calculate angle between segments
+            double angle = CalculateAngleBetween(prev, curr, next);
+            
+            // If sharp corner (angle < 120 degrees), add control points before and after
+            if (angle < 2.0 * M_PI / 3.0) {
+                // Add control point before corner
+                Eigen::Vector3d before = curr;
+                before.head<2>() = curr.head<2>() - v1 * corner_offset;
+                control_points.push_back(before);
+                
+                // Add the corner point itself
+                control_points.push_back(curr);
+                
+                // Add control point after corner
+                Eigen::Vector3d after = curr;
+                after.head<2>() = curr.head<2>() + v2 * corner_offset;
+                control_points.push_back(after);
+            } else {
+                // For smooth curves, just add the waypoint
+                control_points.push_back(curr);
+            }
+        } else {
+            // Not enough space for corner handling
+            control_points.push_back(curr);
+        }
+    }
+    
+    // Add the last waypoint
+    control_points.push_back(waypoints.back());
+    
+    return control_points;
+}
+
 void BSplineTrajectory::GenerateBSplineControlPoints() {
     control_points_.clear();
     
@@ -93,31 +249,122 @@ void BSplineTrajectory::GenerateBSplineControlPoints() {
         // For only 2 waypoints, add intermediate control points
         Eigen::Vector3d p0 = waypoints_[0];
         Eigen::Vector3d p1 = waypoints_[1];
-        Eigen::Vector3d dir = (p1 - p0).normalized();
         
-        control_points_.push_back(p0);
-        control_points_.push_back(p0 + 0.25 * (p1 - p0));
-        control_points_.push_back(p0 + 0.5 * (p1 - p0));
-        control_points_.push_back(p0 + 0.75 * (p1 - p0));
-        control_points_.push_back(p1);
+        // Check if this is primarily a rotation (small position change, large angle change)
+        double pos_change = (p1.head<2>() - p0.head<2>()).norm();
+        double angle_change = std::abs(NormalizeAngle(p1[2] - p0[2]));
+        
+        if (pos_change < 0.1 && angle_change > M_PI/2) {
+            // For large rotations, we need to overshoot the control points
+            // to compensate for B-spline's smoothing effect
+            
+            // Calculate the overshoot factor based on the angle change
+            // For 180 degrees, we need about 1.33x overshoot to achieve full rotation
+            double overshoot_factor = 1.0;
+            if (angle_change >= M_PI) {
+                overshoot_factor = 1.33;  // 33% overshoot for 180 degrees
+            } else if (angle_change >= 3*M_PI/4) {
+                overshoot_factor = 1.25;  // 25% overshoot for 135 degrees
+            } else if (angle_change >= M_PI/2) {
+                overshoot_factor = 1.15;  // 15% overshoot for 90 degrees
+            }
+            
+            // Create control points with proper angle interpolation
+            control_points_.push_back(p0);
+            
+            // Add intermediate control points with overshoot
+            for (double t = 0.25; t <= 0.75; t += 0.25) {
+                Eigen::Vector3d cp;
+                cp.head<2>() = p0.head<2>() + t * (p1.head<2>() - p0.head<2>());
+                
+                // Interpolate angle with overshoot
+                double angle_diff = p1[2] - p0[2];
+                // Normalize to [-pi, pi] for proper interpolation
+                while (angle_diff > M_PI) angle_diff -= 2 * M_PI;
+                while (angle_diff < -M_PI) angle_diff += 2 * M_PI;
+                
+                // Apply overshoot to intermediate control points
+                cp[2] = p0[2] + t * angle_diff * overshoot_factor;
+                
+                control_points_.push_back(cp);
+            }
+            
+            // Final control point - use exact target angle
+            control_points_.push_back(p1);
+        } else {
+            // For normal trajectories, use original method
+            control_points_.push_back(p0);
+            control_points_.push_back(p0 + 0.25 * (p1 - p0));
+            control_points_.push_back(p0 + 0.5 * (p1 - p0));
+            control_points_.push_back(p0 + 0.75 * (p1 - p0));
+            control_points_.push_back(p1);
+        }
     } else {
-        // For multiple waypoints, use centripetal parameterization
-        // This creates smoother curves through the waypoints
+        // For multiple waypoints, add control points to prevent overshooting at corners
+        // This approach adds "pull-in" points before sharp corners
         
         // Add first point multiple times for clamped B-spline
         for (int i = 0; i <= spline_degree_; ++i) {
             control_points_.push_back(waypoints_[0]);
         }
         
-        // Add intermediate waypoints
-        for (size_t i = 1; i < waypoints_.size() - 1; ++i) {
-            control_points_.push_back(waypoints_[i]);
+        // Process waypoints with corner constraint points
+        for (size_t i = 0; i < waypoints_.size(); ++i) {
+            if (i > 0 && i < waypoints_.size() - 1) {
+                const Eigen::Vector3d& prev = waypoints_[i - 1];
+                const Eigen::Vector3d& curr = waypoints_[i];
+                const Eigen::Vector3d& next = waypoints_[i + 1];
+                
+                // Calculate angle at corner
+                double angle = CalculateAngleBetween(prev, curr, next);
+                
+                // For sharp corners, add multiple constraint points to maintain shape
+                if (angle < M_PI * 0.75) {  // Sharp corner (< 135 degrees)
+                    // Direction vectors
+                    Eigen::Vector2d dir_in = (curr.head<2>() - prev.head<2>()).normalized();
+                    Eigen::Vector2d dir_out = (next.head<2>() - curr.head<2>()).normalized();
+                    
+                    // Add points to create tighter corner control
+                    // Point 10cm before corner
+                    Eigen::Vector3d before = curr;
+                    before.head<2>() = curr.head<2>() - dir_in * 0.10;
+                    control_points_.push_back(before);
+                    
+                    // Point 3cm before corner (closer)
+                    Eigen::Vector3d close_before = curr;
+                    close_before.head<2>() = curr.head<2>() - dir_in * 0.03;
+                    control_points_.push_back(close_before);
+                    
+                    // Add the corner point twice for more weight
+                    control_points_.push_back(curr);
+                    control_points_.push_back(curr);
+                    
+                    // Point 3cm after corner
+                    Eigen::Vector3d close_after = curr;
+                    close_after.head<2>() = curr.head<2>() + dir_out * 0.03;
+                    control_points_.push_back(close_after);
+                    
+                    // Point 10cm after corner
+                    Eigen::Vector3d after = curr;
+                    after.head<2>() = curr.head<2>() + dir_out * 0.10;
+                    control_points_.push_back(after);
+                } else {
+                    // For smoother corners, just add the waypoint
+                    control_points_.push_back(waypoints_[i]);
+                }
+            } else if (i == 0 || i == waypoints_.size() - 1) {
+                // Skip first and last (already added for clamping)
+                continue;
+            }
         }
         
         // Add last point multiple times for clamped B-spline
         for (int i = 0; i <= spline_degree_; ++i) {
             control_points_.push_back(waypoints_.back());
         }
+        
+        std::cout << "  B-spline control points with corner constraints: " << waypoints_.size() 
+                  << " waypoints -> " << control_points_.size() << " control points" << std::endl;
     }
 }
 
@@ -147,9 +394,19 @@ void BSplineTrajectory::GenerateKnotVector() {
     }
 }
 
-double BSplineTrajectory::BSplineBasis(int i, int p, double u) {
+double BSplineTrajectory::BSplineBasis(int i, int p, double u) const {
     // Cox-de Boor recursion formula for B-spline basis functions
+    
+    // Bounds check
+    if (i < 0 || i + p + 1 >= static_cast<int>(knot_vector_.size())) {
+        return 0.0;
+    }
+    
     if (p == 0) {
+        // Special handling for the last knot span
+        if (i == static_cast<int>(knot_vector_.size()) - 2 && u >= knot_vector_[i] && u <= knot_vector_[i + 1]) {
+            return 1.0;
+        }
         return (u >= knot_vector_[i] && u < knot_vector_[i + 1]) ? 1.0 : 0.0;
     }
     
@@ -169,7 +426,7 @@ double BSplineTrajectory::BSplineBasis(int i, int p, double u) {
     return left_term + right_term;
 }
 
-Eigen::Vector3d BSplineTrajectory::EvaluateBSpline(double u) {
+Eigen::Vector3d BSplineTrajectory::EvaluateBSpline(double u) const {
     // Clamp u to valid range
     u = std::clamp(u, 0.0, 1.0);
     
@@ -178,20 +435,43 @@ Eigen::Vector3d BSplineTrajectory::EvaluateBSpline(double u) {
         u = 1.0 - 1e-10;
     }
     
-    Eigen::Vector3d result = Eigen::Vector3d::Zero();
-    
-    for (size_t i = 0; i < control_points_.size(); ++i) {
-        double basis = BSplineBasis(i, spline_degree_, u);
-        result += basis * control_points_[i];
+    // Sanity check
+    if (control_points_.empty() || knot_vector_.empty()) {
+        std::cerr << "[BSplineTrajectory::EvaluateBSpline] Error: No control points or knot vector" << std::endl;
+        return Eigen::Vector3d::Zero();
     }
     
-    // Don't normalize angle here - we want to support continuous rotations beyond ±π
-    // result[2] = NormalizeAngle(result[2]);
+    Eigen::Vector3d result = Eigen::Vector3d::Zero();
+    double basis_sum = 0.0;
+    
+    // Only evaluate basis functions for valid indices
+    int n = control_points_.size() - 1;
+    for (int i = 0; i <= n; ++i) {
+        double basis = BSplineBasis(i, spline_degree_, u);
+        if (!std::isnan(basis) && !std::isinf(basis)) {
+            result += basis * control_points_[i];
+            basis_sum += basis;
+        }
+    }
+    
+    // Normalize if basis functions don't sum to 1 (can happen due to numerical issues)
+    if (basis_sum > 1e-10 && std::abs(basis_sum - 1.0) > 1e-6) {
+        result /= basis_sum;
+    }
+    
+    // Check for NaN and return last valid position if found
+    if (result.hasNaN()) {
+        std::cerr << "[BSplineTrajectory::EvaluateBSpline] Warning: NaN detected at u=" << u << std::endl;
+        if (!control_points_.empty()) {
+            return control_points_.back();
+        }
+        return Eigen::Vector3d::Zero();
+    }
     
     return result;
 }
 
-Eigen::Vector3d BSplineTrajectory::EvaluateBSplineDerivative(double u, int derivative_order) {
+Eigen::Vector3d BSplineTrajectory::EvaluateBSplineDerivative(double u, int derivative_order) const {
     // Numerical differentiation for B-spline derivatives
     const double h = 1e-6;  // Small step for numerical differentiation
     
@@ -245,7 +525,7 @@ void BSplineTrajectory::CalculateArcLength() {
     }
 }
 
-double BSplineTrajectory::ArcLengthToParameter(double arc_length) {
+double BSplineTrajectory::ArcLengthToParameter(double arc_length) const {
     // Convert arc length to parameter u using linear interpolation
     arc_length = std::clamp(arc_length, 0.0, total_arc_length_);
     
@@ -331,7 +611,7 @@ Eigen::Vector3d BSplineTrajectory::Update(const Eigen::Vector3d& current_pose, d
     return velocity_command;
 }
 
-double BSplineTrajectory::ComputeDesiredArcLength(double elapsed_time) {
+double BSplineTrajectory::ComputeDesiredArcLength(double elapsed_time) const {
     // Trapezoidal velocity profile for smooth acceleration and deceleration
     double accel_time = v_max_ / a_max_;
     double accel_distance = 0.5 * a_max_ * accel_time * accel_time;
@@ -375,7 +655,7 @@ double BSplineTrajectory::ComputeDesiredArcLength(double elapsed_time) {
     }
 }
 
-double BSplineTrajectory::ComputeDesiredSpeed(double elapsed_time) {
+double BSplineTrajectory::ComputeDesiredSpeed(double elapsed_time) const {
     // Compute speed from trapezoidal velocity profile
     double accel_time = v_max_ / a_max_;
     double accel_distance = 0.5 * a_max_ * accel_time * accel_time;
@@ -461,7 +741,7 @@ void BSplineTrajectory::InitializeFromRobotManager(rob::RobotManager* robot_mana
     std::cout << "  Current velocity: " << current_velocity.transpose() << std::endl;
 }
 
-double BSplineTrajectory::NormalizeAngle(double angle) {
+double BSplineTrajectory::NormalizeAngle(double angle) const {
     while (angle > M_PI) angle -= 2.0 * M_PI;
     while (angle < -M_PI) angle += 2.0 * M_PI;
     return angle;

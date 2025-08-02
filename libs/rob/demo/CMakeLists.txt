@@ -12,3 +12,9 @@ target_link_libraries(demo_ball_physics_and_kicking PRIVATE state_lib vis_lib cf
 
 add_executable(demo_hermite_spline_trajectory DemoHermiteSplineTrajectory.cpp)
 target_link_libraries(demo_hermite_spline_trajectory PRIVATE state_lib vis_lib cfg_lib rob_lib)
+
+add_executable(virtual_robot_environment VirtualRobotEnvironment.cpp)
+target_link_libraries(virtual_robot_environment PRIVATE state_lib vis_lib cfg_lib rob_lib est_lib hw_lib kin_lib)
+
+add_executable(replay_robot_data ReplayRobotData.cpp)
+target_link_libraries(replay_robot_data PRIVATE state_lib vis_lib cfg_lib rob_lib est_lib)

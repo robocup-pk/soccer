@@ -205,15 +205,9 @@ int main(int argc, char* argv[]) {
             last_print_time = current_time;
         }
         
-        // Stop after 30 seconds or when trajectory is complete
+        // Stop after 30 seconds
         if (current_time - start_time > 30.0) {
             std::cout << "[Demo] Time limit reached" << std::endl;
-            break;
-        }
-        
-        // In test case 6, stop when rotation is complete
-        if (test_case == 6 && robot_manager.GetRobotState() == "IDLE" && current_time - start_time > 3.0) {
-            std::cout << "[Demo] Rotation completed" << std::endl;
             break;
         }
     }

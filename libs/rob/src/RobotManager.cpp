@@ -446,6 +446,14 @@ void rob::RobotManager::NewCameraData(Eigen::Vector3d pose_from_camera) {
   hardware_manager.NewCameraData(pose_from_camera);
 }
 
+void rob::RobotManager::NewGyroData(double w_radps) {
+  state_estimator.NewGyroData(w_radps);
+}
+
+void rob::RobotManager::NewMotorsData(const Eigen::Vector4d& motors_rpms) {
+  state_estimator.NewMotorsData(motors_rpms);
+}
+
 void rob::RobotManager::CalibrateGyro() { hardware_manager.CalibrateGyro(); }
 
 bool rob::RobotManager::IsGyroCalibrated() {
