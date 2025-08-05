@@ -1,19 +1,8 @@
 set(SOURCES
-    src/AccelerationEnvelope.cpp
-    src/BangBangTrajectory.cpp
-    src/BangBangTrajectory3D.cpp
     src/MotionController.cpp
-    src/Trajectory3D.cpp
-    src/TrajectoryManager.cpp
-    src/TrajectoryMergeLogic.cpp
-    src/M_TrajectoryPlanner.cpp
-    src/M_TrajectoryController.cpp
-    src/PurePursuitController.cpp
-    src/PurePursuitTrajectoryManager.cpp
-    src/CubicHermiteSplineTrajectory.cpp
-    src/HermiteSplineTrajectoryManager.cpp
     src/BSplineTrajectory.cpp
     src/BSplineTrajectoryManager.cpp
+    src/UniformBSplineTrajectoryPlanner.cpp
 )
 
 file(GLOB_RECURSE HEADERS "include/*.h")
@@ -24,9 +13,3 @@ find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 add_library(ctrl_lib ${SOURCES} ${HEADERS})
 target_link_libraries(ctrl_lib PUBLIC cfg_lib utils_lib kin_lib Python3::Python)
 target_include_directories(ctrl_lib PUBLIC include ${Python3_INCLUDE_DIRS})
-
-add_subdirectory(test)
-
-# Test program for coordinate transformations
-add_executable(test_coordinate_transform src/test_coordinate_transform.cpp)
-target_link_libraries(test_coordinate_transform ctrl_lib kin_lib utils_lib cfg_lib Eigen3::Eigen)
