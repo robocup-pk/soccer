@@ -5,7 +5,6 @@
 #include "MotionController.h"
 #include "RobotManager.h"
 #include "Utils.h"
-#include "Trajectory3D.h"
 #include "Waypoint.h"
 
 rob::RobotManager::RobotManager() {
@@ -18,7 +17,7 @@ rob::RobotManager::RobotManager() {
   finished_motion = true;
   num_sensor_readings_failed = 0;
   rob_manager_running.store(true);
-  trajectory_manager_type_ = TrajectoryManagerType::BangBang;  // Default to original
+  trajectory_manager_type_ = TrajectoryManagerType::UniformBSpline;  // Default to uniform B-spline
 
 #ifdef BUILD_ON_PI
   state_estimator.initialized_pose = false;
@@ -72,39 +71,16 @@ void rob::RobotManager::ControlLogic() {
     case RobotState::IDLE:
       velocity_fBody_ = velocity_fBody;
       break;
-    case RobotState::DRIVING_TO_POINT:
-      std::tie(finished_motion, velocity_fBody_) =
-          motion_controller.DriveToPoint(pose_fWorld, pose_destination);
-      TryAssignNextGoal();
-      break;
-    case RobotState::INTERPOLATING_TO_POINT:
-      std::tie(finished_motion, velocity_fBody_) =
-          motion_controller.InterpolateToPoint(pose_fWorld, pose_destination);
-      TryAssignNextGoal();
-      break;
     case RobotState::MANUAL_DRIVING:
       velocity_fBody_ = velocity_fBody;
       // finished_motion = true;
       break;
-    case RobotState::GOING_HOME:
-      std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
-      // std::tie(finished_motion, velocity_fBody_) =
-      //     motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
-      break;
-    case RobotState::AUTONOMOUS_DRIVING:
-      std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
-      break;
-    case RobotState::M_AUTONOMOUS_DRIVING:
-      std::tie(finished_motion, velocity_fBody_) = m_trajectory_manager.Update(pose_fWorld);
-      break;
-    case RobotState::PURE_PURSUIT_DRIVING:
-      std::tie(finished_motion, velocity_fBody_) = pure_pursuit_manager.Update(pose_fWorld);
-      break;
-    case RobotState::HERMITE_SPLINE_DRIVING:
-      std::tie(finished_motion, velocity_fBody_) = hermite_spline_manager.Update(pose_fWorld);
-      break;
     case RobotState::BSPLINE_DRIVING:
       std::tie(finished_motion, velocity_fBody_) = bspline_manager.Update(pose_fWorld);
+      break;
+    case RobotState::UNIFORM_BSPLINE_DRIVING:
+      velocity_fBody_ = uniform_bspline_planner.Update(pose_fWorld, util::GetCurrentTime());
+      finished_motion = uniform_bspline_planner.IsFinished();
       break;
   }
 
@@ -156,118 +132,6 @@ void rob::RobotManager::SenseLogic() {
   }
 }
 
-void rob::RobotManager::SetPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
-  bool is_path_valid;
-  {
-    // Print the path
-    std::cout << "[rob::RobotManager::SetPath] ";
-    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
-      std::cout << path_fWorld[i].transpose() << " -> ";
-    }
-    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
-
-    // Create trajectories if valid
-    is_path_valid = trajectory_manager.CreateTrajectoriesFromPath(path_fWorld, t_start_s);
-    std::cout << "[rob::RobotManager::SetPath] Finish creating trajectories. t_finish_s: "
-              << trajectory_manager.active_traj_t_finish_s << "\n\n";
-  }
-
-  if (is_path_valid) {
-    std::unique_lock<std::mutex> lock(robot_state_mutex);
-    robot_state = RobotState::AUTONOMOUS_DRIVING;
-  } else {
-    std::cout << "[rob::RobotManager::SetPath] Give path is invalid. Failed to create "
-                 "trajectories\nPath: ";
-  }
-}
-
-void rob::RobotManager::SetMPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
-  bool is_path_valid;
-  {
-    // Print the path
-    std::cout << "[rob::RobotManager::SetMPath] BangBang-based trajectory: ";
-    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
-      std::cout << path_fWorld[i].transpose() << " -> ";
-    }
-    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
-
-    // Update trajectory manager with current robot pose before creating trajectories
-    // Get the latest pose from state estimator (in case it hasn't been updated via SenseLogic yet)
-    pose_fWorld = state_estimator.GetPose();
-    m_trajectory_manager.UpdateRobotState(pose_fWorld, Eigen::Vector3d::Zero());
-    
-    // Create trajectories using M_TrajectoryManager
-    is_path_valid = m_trajectory_manager.CreateTrajectoriesFromPath(path_fWorld, t_start_s);
-    std::cout << "[rob::RobotManager::SetMPath] Finish creating M_trajectories" << std::endl;
-  }
-
-  if (is_path_valid) {
-    std::unique_lock<std::mutex> lock(robot_state_mutex);
-    robot_state = RobotState::M_AUTONOMOUS_DRIVING;
-    trajectory_manager_type_ = TrajectoryManagerType::BangBang;
-  } else {
-    std::cout << "[rob::RobotManager::SetMPath] Given path is invalid. Failed to create "
-                 "M_trajectories\nPath: ";
-  }
-}
-
-void rob::RobotManager::SetPurePursuitPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
-  bool is_path_valid;
-  {
-    // Print the path
-    std::cout << "[rob::RobotManager::SetPurePursuitPath] Pure Pursuit trajectory: ";
-    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
-      std::cout << path_fWorld[i].transpose() << " -> ";
-    }
-    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
-
-    // Update trajectory manager with current robot pose before creating trajectories
-    pose_fWorld = state_estimator.GetPose();
-    pure_pursuit_manager.UpdateRobotState(pose_fWorld, Eigen::Vector3d::Zero());
-    
-    // Create trajectories using Pure Pursuit Manager
-    is_path_valid = pure_pursuit_manager.CreateTrajectoriesFromPath(path_fWorld, t_start_s);
-    std::cout << "[rob::RobotManager::SetPurePursuitPath] Finish creating Pure Pursuit trajectories" << std::endl;
-  }
-
-  if (is_path_valid) {
-    std::unique_lock<std::mutex> lock(robot_state_mutex);
-    robot_state = RobotState::PURE_PURSUIT_DRIVING;
-    trajectory_manager_type_ = TrajectoryManagerType::PurePursuit;
-  } else {
-    std::cout << "[rob::RobotManager::SetPurePursuitPath] Given path is invalid. Failed to create "
-                 "Pure Pursuit trajectories\nPath: ";
-  }
-}
-
-void rob::RobotManager::SetHermiteSplinePath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
-  bool is_path_valid;
-  {
-    // Print the path
-    std::cout << "[rob::RobotManager::SetHermiteSplinePath] Hermite Spline trajectory for RRT* waypoints: ";
-    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
-      std::cout << path_fWorld[i].transpose() << " -> ";
-    }
-    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
-
-    // Initialize trajectory manager with current robot state
-    pose_fWorld = state_estimator.GetPose();
-    hermite_spline_manager.InitializeFromRobotManager(this);
-    
-    // Create trajectories using Hermite Spline Manager
-    is_path_valid = hermite_spline_manager.CreateTrajectoriesFromPath(path_fWorld, t_start_s);
-    std::cout << "[rob::RobotManager::SetHermiteSplinePath] Finish creating Hermite Spline trajectories" << std::endl;
-  }
-
-  if (is_path_valid) {
-    std::unique_lock<std::mutex> lock(robot_state_mutex);
-    robot_state = RobotState::HERMITE_SPLINE_DRIVING;
-    trajectory_manager_type_ = TrajectoryManagerType::HermiteSpline;
-  } else {
-    std::cout << "[rob::RobotManager::SetHermiteSplinePath] Given path is invalid. Failed to create "
-                 "Hermite Spline trajectories\nPath: ";
-  }
-}
 
 void rob::RobotManager::SetBSplinePath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
   bool is_path_valid;
@@ -298,24 +162,44 @@ void rob::RobotManager::SetBSplinePath(std::vector<Eigen::Vector3d> path_fWorld,
   }
 }
 
+void rob::RobotManager::SetUniformBSplinePath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
+  bool is_path_valid;
+  {
+    // Print the path
+    std::cout << "[rob::RobotManager::SetUniformBSplinePath] Uniform B-spline trajectory for smooth waypoint following: ";
+    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
+      std::cout << path_fWorld[i].transpose() << " -> ";
+    }
+    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
+
+    // Initialize trajectory manager with current robot state
+    pose_fWorld = state_estimator.GetPose();
+    uniform_bspline_planner.InitializeFromRobotManager(this);
+    
+    // Create trajectories using Uniform B-spline Planner
+    is_path_valid = uniform_bspline_planner.SetPath(path_fWorld, t_start_s);
+    std::cout << "[rob::RobotManager::SetUniformBSplinePath] Finish creating Uniform B-spline trajectories" << std::endl;
+  }
+
+  if (is_path_valid) {
+    std::unique_lock<std::mutex> lock(robot_state_mutex);
+    robot_state = RobotState::UNIFORM_BSPLINE_DRIVING;
+    trajectory_manager_type_ = TrajectoryManagerType::UniformBSpline;
+  } else {
+    std::cout << "[rob::RobotManager::SetUniformBSplinePath] Given path is invalid. Failed to create "
+                 "Uniform B-spline trajectories\nPath: ";
+  }
+}
+
 void rob::RobotManager::SetTrajectoryManagerType(TrajectoryManagerType type) {
   trajectory_manager_type_ = type;
   std::string type_name;
   switch (type) {
-    case TrajectoryManagerType::ORIGINAL:
-      type_name = "ORIGINAL";
-      break;
-    case TrajectoryManagerType::BangBang:
-      type_name = "BANGBANG";
-      break;
-    case TrajectoryManagerType::PurePursuit:
-      type_name = "PURE_PURSUIT";
-      break;
-    case TrajectoryManagerType::HermiteSpline:
-      type_name = "HERMITE_SPLINE";
-      break;
     case TrajectoryManagerType::BSpline:
       type_name = "B_SPLINE";
+      break;
+    case TrajectoryManagerType::UniformBSpline:
+      type_name = "UNIFORM_B_SPLINE";
       break;
   }
   std::cout << "[rob::RobotManager::SetTrajectoryManagerType] Set to " << type_name << std::endl;
@@ -376,41 +260,33 @@ void rob::RobotManager::InitializeHome(Eigen::Vector3d pose_home) {
   initialized_pose_home = true;
 }
 
-void rob::RobotManager::GoHome() {
-  if (!initialized_pose_home) {
-    std::cout << "[rob::RobotManager::GoHome] Can't go home. It is uninitialized" << std::endl;
-    return;
-  }
-  std::unique_lock<std::mutex> lock(robot_state_mutex);
-  std::vector<Eigen::Vector3d> path;
-  path.push_back(pose_fWorld);
-  path.push_back(pose_home_fWorld);
-  bool is_path_valid = trajectory_manager.CreateTrajectoriesFromPath(path);
-  if (!is_path_valid) {
-    std::cout << "[rob::RobotManager::GoHome] Can't go home. Path invalid\n";
-  }
-  robot_state = RobotState::GOING_HOME;
-}
+// void rob::RobotManager::GoHome() {
+//   if (!initialized_pose_home) {
+//     std::cout << "[rob::RobotManager::GoHome] Can't go home. It is uninitialized" << std::endl;
+//     return;
+//   }
+//   std::unique_lock<std::mutex> lock(robot_state_mutex);
+//   std::vector<Eigen::Vector3d> path;
+//   path.push_back(pose_fWorld);
+//   path.push_back(pose_home_fWorld);
+//   //bool is_path_valid = trajectory_manager.CreateTrajectoriesFromPath(path);
+//   if (!is_path_valid) {
+//     std::cout << "[rob::RobotManager::GoHome] Can't go home. Path invalid\n";
+//   }
+//   robot_state = RobotState::GOING_HOME;
+// }
 
 std::string rob::RobotManager::GetRobotState() {
   std::unique_lock<std::mutex> lock(robot_state_mutex);
   switch (robot_state) {
     case RobotState::IDLE:
       return "IDLE";
-    case RobotState::DRIVING_TO_POINT:
-      return "DRIVING_TO_POINT";
+    case RobotState::BSPLINE_DRIVING:
+      return "BSPLINE_DRIVING";
+    case RobotState::UNIFORM_BSPLINE_DRIVING:
+      return "UNIFORM_BSPLINE_DRIVING";
     case RobotState::MANUAL_DRIVING:
       return "MANUAL_DRIVING";
-    case RobotState::AUTONOMOUS_DRIVING:
-      return "AUTONOMOUS_DRIVING";
-    case RobotState::M_AUTONOMOUS_DRIVING:
-      return "M_AUTONOMOUS_DRIVING";
-    case RobotState::PURE_PURSUIT_DRIVING:
-      return "PURE_PURSUIT_DRIVING";
-    case RobotState::GOING_HOME:
-      return "GOING_HOME";
-    case RobotState::INTERPOLATING_TO_POINT:
-      return "INTERPOLATING_TO_POINT";
     case RobotState::CALIBRATING:
       return "CALIBRATING";
   }
@@ -444,14 +320,6 @@ rob::RobotManager::~RobotManager() {
 
 void rob::RobotManager::NewCameraData(Eigen::Vector3d pose_from_camera) {
   hardware_manager.NewCameraData(pose_from_camera);
-}
-
-void rob::RobotManager::NewGyroData(double w_radps) {
-  state_estimator.NewGyroData(w_radps);
-}
-
-void rob::RobotManager::NewMotorsData(const Eigen::Vector4d& motors_rpms) {
-  state_estimator.NewMotorsData(motors_rpms);
 }
 
 void rob::RobotManager::CalibrateGyro() { hardware_manager.CalibrateGyro(); }

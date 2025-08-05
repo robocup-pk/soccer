@@ -82,22 +82,19 @@ private:
     // Normalize angle to [-π, π]
     double NormalizeAngle(double angle) const;
     
-    // Smart repetition methods for corner handling
-    double CalculateAngleBetween(const Eigen::Vector3d& p1, 
-                               const Eigen::Vector3d& p2, 
-                               const Eigen::Vector3d& p3) const;
-    
-    std::vector<Eigen::Vector3d> SmartRepetition(const std::vector<Eigen::Vector3d>& points, 
-                                                 int min_repeats = 1, 
-                                                 int max_repeats = 4) const;
-    
-    std::vector<Eigen::Vector3d> LinearEntryExitClosedLoop(const std::vector<Eigen::Vector3d>& points, 
-                                                           int repeats = 3, 
-                                                           double tolerance = 0.05) const;
-    
-    // Alternative corner handling approach
-    std::vector<Eigen::Vector3d> InsertCornerControlPoints(const std::vector<Eigen::Vector3d>& waypoints,
-                                                          double corner_offset = 0.1) const;
+    // New robust B-spline generation methods based on RoboCup proven approaches
+    void GenerateSimpleSpline();
+    void GenerateCornerAwareSpline();
+    void AddCornerRefinement(const Eigen::Vector3d& prev,
+                           const Eigen::Vector3d& curr,
+                           const Eigen::Vector3d& next,
+                           std::vector<Eigen::Vector3d>& refined_waypoints);
+    void GenerateClampedBSplineControlPoints(const std::vector<Eigen::Vector3d>& refined_waypoints);
+    void ApplyBoundaryConstraints();
+    double CalculateCornerAngle(const Eigen::Vector3d& prev,
+                               const Eigen::Vector3d& curr,
+                               const Eigen::Vector3d& next) const;
+    void VerifyTrajectoryBounds();
     
 private:
     // Robot description

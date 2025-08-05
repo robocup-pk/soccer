@@ -102,17 +102,16 @@ int main(int argc, char* argv[]) {
             std::cout << "Using B-spline trajectory for smoother motion" << std::endl;
             robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BSpline);
             robot_manager.SetBSplinePath(waypoints, util::GetCurrentTime());
-            
             break;
         case 2:
-            std::cout << "Using Hermite spline trajectory" << std::endl;
-            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::HermiteSpline);
-            robot_manager.SetHermiteSplinePath(waypoints, util::GetCurrentTime());
+            std::cout << "Using Uniform B-spline trajectory (EWOK-based) for robust motion" << std::endl;
+            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::UniformBSpline);
+            robot_manager.SetUniformBSplinePath(waypoints, util::GetCurrentTime());
             break;
         default:
-            std::cout << "Using original trajectory manager" << std::endl;
-            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::ORIGINAL);
-            robot_manager.SetPath(waypoints, util::GetCurrentTime());
+            std::cout << "Using B-spline trajectory (default)" << std::endl;
+            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BSpline);
+            robot_manager.SetBSplinePath(waypoints, util::GetCurrentTime());
             break;
     }
     // Add goals to the queue

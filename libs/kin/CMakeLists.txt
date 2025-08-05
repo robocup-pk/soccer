@@ -30,4 +30,4 @@ target_link_libraries(kin_lib PUBLIC Eigen3::Eigen state_lib vis_lib)
 add_subdirectory(test)
 
 # Add demo subdirectory
-add_subdirectory(demo)
+#add_subdirectory(demo)

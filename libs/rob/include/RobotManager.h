@@ -5,15 +5,13 @@
 #include <mutex>
 #include <atomic>
 #include <vector>
+#include <random>
 
 #include "StateEstimator.h"
 #include "HardwareManager.h"
 #include "MotionController.h"
-#include "TrajectoryManager.h"
-#include "M_TrajectoryController.h"
-#include "PurePursuitTrajectoryManager.h"
-#include "HermiteSplineTrajectoryManager.h"
 #include "BSplineTrajectoryManager.h"
+#include "UniformBSplineTrajectoryPlanner.h"
 
 // Forward declarations
 namespace state {
@@ -30,18 +28,13 @@ enum class RobotState {
   AUTONOMOUS_DRIVING,
   GOING_HOME,
   CALIBRATING,
-  M_AUTONOMOUS_DRIVING,  // New state for M_TrajectoryManager
-  PURE_PURSUIT_DRIVING,  // New state for Pure Pursuit following
-  HERMITE_SPLINE_DRIVING, // New state for Hermite Spline trajectory following
-  BSPLINE_DRIVING        // New state for B-spline trajectory following
+  BSPLINE_DRIVING,       // B-spline trajectory following
+  UNIFORM_BSPLINE_DRIVING // Uniform B-spline trajectory following
 };
 
 enum class TrajectoryManagerType {
-  ORIGINAL,      // Use original TrajectoryManager
-  BangBang,      // Use M_TrajectoryManager (BangBang-based)
-  PurePursuit,   // Use Pure Pursuit for multi-waypoint following
-  HermiteSpline, // Use Cubic Hermite Spline for RRT* waypoints
-  BSpline        // Use B-spline for smoother trajectories
+  BSpline,       // Use B-spline for trajectories
+  UniformBSpline // Use uniform B-spline (EWOK-based) for robust trajectories
 };
 
 enum class RobotAction {
@@ -68,11 +61,8 @@ class RobotManager {
   void AddGoal(const Eigen::Vector3d& goal);
   void GoHome();
   void InitializeHome(Eigen::Vector3d pose_home);
-  void SetPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
-  void SetMPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Paper-based path
-  void SetPurePursuitPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Pure Pursuit path
-  void SetHermiteSplinePath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Hermite Spline path
   void SetBSplinePath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // B-spline path
+  void SetUniformBSplinePath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Uniform B-spline path
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
   
@@ -85,7 +75,14 @@ class RobotManager {
   Eigen::Vector3d GetPoseInWorldFrame() const;
   void InitializePose(Eigen::Vector3d& pose_fWorld);
   Eigen::Vector3d GetVelocityInWorldFrame() const;
+  Eigen::Vector3d GetStateEstimationPose() const;
   void TryAssignNextGoal();
+  
+  // Set state estimation noise parameters (for simulation)
+  void SetStateEstimationNoise(double position_noise, double angle_noise);
+  
+  // Get replanning statistics
+  int GetReplanCount() const;
 
   std::string GetRobotState();
   void CalibrateGyro();
@@ -96,7 +93,7 @@ class RobotManager {
 
   ~RobotManager();
 
- private:
+ protected:  // Changed from private to protected for demo inheritance
   RobotState previous_robot_state;
   RobotState robot_state;
 
@@ -108,11 +105,8 @@ class RobotManager {
   est::StateEstimator state_estimator;
   hw::HardwareManager hardware_manager;
   ctrl::MotionController motion_controller;
-  ctrl::TrajectoryManager trajectory_manager;
-  ctrl::M_TrajectoryManager m_trajectory_manager;  // Paper-based trajectory manager
-  ctrl::PurePursuitTrajectoryManager pure_pursuit_manager;  // Pure Pursuit trajectory manager
-  ctrl::HermiteSplineTrajectoryManager hermite_spline_manager;  // Hermite Spline trajectory manager
   ctrl::BSplineTrajectoryManager bspline_manager;  // B-spline trajectory manager
+  ctrl::UniformBSplineTrajectoryPlanner uniform_bspline_planner;  // Uniform B-spline trajectory planner
   
   TrajectoryManagerType trajectory_manager_type_;
 
@@ -145,6 +139,11 @@ class RobotManager {
 
   // Flag to disable gyro functionality when not connected (for demo/simulation mode)
   bool disable_gyro_checks;
+  
+  // State estimation simulation parameters
+  double state_estimation_position_noise_ = 0.02;  // 2cm standard deviation
+  double state_estimation_angle_noise_ = 0.05;     // 0.05 rad standard deviation
+  mutable std::mt19937 rng_{std::random_device{}()};  // Random number generator
 };
 }  // namespace rob
 
