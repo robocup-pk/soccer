@@ -33,6 +33,12 @@ class Waypoint {
     return state::Waypoint(x + wp.x, y + wp.y, angle);
   }
 
+  inline bool operator==(const Waypoint& wp) const {
+    const double tolerance = 1e-6;  // Small tolerance for floating point comparison
+    return (std::abs(x - wp.x) < tolerance && std::abs(y - wp.y) < tolerance &&
+            std::abs(angle - wp.angle) < tolerance);
+  }
+
   inline state::Waypoint operator*(double n) { return state::Waypoint(x * n, y * n, angle); }
 
   double Norm() { return std::sqrt(x * x + y * y); }
