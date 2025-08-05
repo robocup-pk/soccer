@@ -43,11 +43,15 @@ target_link_libraries(demo_opponent_dribbling
 add_executable(basic_demo demo.cpp)
 # Link required libraries
 
+<<<<<<< HEAD
 >>>>>>> 97084d4f (Added Smooth uniform BSpline Trajectory Planner)
 
 <<<<<<< HEAD
 >>>>>>> 55c9ca2b (Kick, Dribble, Testing, Demos)
 =======
+=======
+add_executable(simulate_log_file_demo simulate_log_file_demo.cpp)
+>>>>>>> 01c08237 (Simulate BSpline on real data)
 target_link_libraries(basic_demo 
     algos_lib 
     state_lib 
@@ -58,6 +62,7 @@ target_link_libraries(basic_demo
     utils_lib
     Eigen3::Eigen
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 <<<<<<< HEAD
 >>>>>>> 2cdab88a (Temp Changes)
@@ -65,6 +70,10 @@ target_link_libraries(basic_demo
 
 add_executable(demo_stable_waypoints demo_stable_waypoints.cpp)
 target_link_libraries(demo_stable_waypoints 
+=======
+)
+target_link_libraries(simulate_log_file_demo 
+>>>>>>> 01c08237 (Simulate BSpline on real data)
     algos_lib 
     state_lib 
     vis_lib 
@@ -73,6 +82,7 @@ target_link_libraries(demo_stable_waypoints
     cfg_lib 
     utils_lib
     Eigen3::Eigen
+<<<<<<< HEAD
 )
 
 add_executable(demo_trajectory_comparison demo_trajectory_comparison.cpp)
@@ -231,3 +241,6 @@ target_link_libraries(demo_bspline_corner_improved
 =======
 )
 >>>>>>> 97084d4f (Added Smooth uniform BSpline Trajectory Planner)
+=======
+)
+>>>>>>> 01c08237 (Simulate BSpline on real data)

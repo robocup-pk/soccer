@@ -25,7 +25,8 @@ int main(int argc, char* argv[]) {
     Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0); // Robot starts at origin facing up
     robot_manager.InitializePose(robot_start_pose);
     vector<Eigen::Vector3d> waypoints;
-    
+    robot_manager.GetUniformBSplinePlanner().SetLimits(0.8, 0.5, 0.8, 0.5); // v_max, a_max, omega_max, alpha_max
+    robot_manager.GetUniformBSplinePlanner().SetFeedbackGains(0.02, 0.0); // kp, kd
     // Choose a test case based on command line argument
     int test_case = 1;
     if (argc > 1) {
@@ -106,6 +107,13 @@ int main(int argc, char* argv[]) {
         case 2:
             std::cout << "Using Uniform B-spline trajectory (EWOK-based) for robust motion" << std::endl;
             robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::UniformBSpline);
+            
+            // Configure planner for circular and figure-8 paths
+            if (test_case == 2 || test_case == 3) {
+                // Use more conservative limits for paths with high rotation
+                
+            }
+            
             robot_manager.SetUniformBSplinePath(waypoints, util::GetCurrentTime());
             break;
         default:
