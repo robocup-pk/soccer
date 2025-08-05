@@ -141,15 +141,15 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
 
   renderer.Init(shader);
 
-  // Load Textures
+  // Load Textures - use correct path relative to build directory
   std::string robot_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/robot.png";
+      util::GetExecutableDir() + "/../libs/vis/resources/textures/robot.png";
   std::string robot_texture_path_2 =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
+      util::GetExecutableDir() + "/../libs/vis/resources/textures/ball.png";
   std::string ball_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
+      util::GetExecutableDir() + "/../libs/vis/resources/textures/ball.png";
   std::string arrow_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/arrow.png";
+      util::GetExecutableDir() + "/../libs/vis/resources/textures/arrow.png";
 
   ResourceManager::LoadTexture(robot_texture_path.c_str(), false, "face");
   ResourceManager::LoadTexture(ball_texture_path.c_str(), false, "ball");
@@ -203,17 +203,17 @@ void vis::GLSimulation::InitGameObjectsTwoTeams(std::vector<state::SoccerObject>
 
   renderer.Init(shader);
 
-  // Load Textures
+  // Load Textures - use correct path relative to build directory
   std::string robot1_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/robot1.png";
+      util::GetExecutableDir() + "/../libs/vis/resources/textures/robot1.png";
   std::string robot2_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/robot2.png";
+      util::GetExecutableDir() + "/../libs/vis/resources/textures/robot2.png";
   std::string robot_texture_path_2 =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
+      util::GetExecutableDir() + "/../libs/vis/resources/textures/ball.png";
   std::string ball_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
+      util::GetExecutableDir() + "/../libs/vis/resources/textures/ball.png";
   std::string arrow_texture_path =
-      util::GetExecutableDir() + "/libs/vis/resources/textures/arrow.png";
+      util::GetExecutableDir() + "/../libs/vis/resources/textures/arrow.png";
 
   ResourceManager::LoadTexture(robot1_texture_path.c_str(), false, "face1");
   ResourceManager::LoadTexture(robot2_texture_path.c_str(), false, "face2");

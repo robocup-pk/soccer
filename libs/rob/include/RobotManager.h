@@ -69,6 +69,9 @@ class RobotManager {
   // Trajectory manager selection
   void SetTrajectoryManagerType(TrajectoryManagerType type);
   TrajectoryManagerType GetTrajectoryManagerType() const { return trajectory_manager_type_; }
+  
+  // Get access to planners for configuration
+  ctrl::UniformBSplineTrajectoryPlanner& GetUniformBSplinePlanner() { return uniform_bspline_planner; }
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
 

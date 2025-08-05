@@ -53,14 +53,6 @@ add_subdirectory(libs)
 # Applications
 add_subdirectory(apps)
 
-# Test executables
-add_executable(test_original_waypoints test_original_waypoints.cpp)
-target_link_libraries(test_original_waypoints
-    ctrl_lib
-    utils_lib
-    cfg_lib
-)
-
 # SSL Software - Remote Control
 # docker pull robocupssl/ssl-remote-control
 # docker run -p 8084:8084 robocupssl/ssl-remote-control

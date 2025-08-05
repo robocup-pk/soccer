@@ -108,65 +108,83 @@ void UniformBSplineTrajectoryPlanner::GenerateControlPointsFromWaypoints() {
         control_points_.push_back(p1);
         
     } else {
-        // Multiple waypoints: handle corners properly
+        // Multiple waypoints: handle corners and orientation properly
+        
+        // First, normalize orientation changes to minimize rotation
+        std::vector<Eigen::Vector3d> normalized_waypoints = waypoints_;
+        for (size_t i = 1; i < normalized_waypoints.size(); ++i) {
+            double dtheta = normalized_waypoints[i][2] - normalized_waypoints[i-1][2];
+            // Normalize to [-PI, PI]
+            dtheta = NormalizeAngle(dtheta);
+            normalized_waypoints[i][2] = normalized_waypoints[i-1][2] + dtheta;
+        }
         
         // Start with repeated first point for endpoint interpolation
-        control_points_.push_back(waypoints_[0]);
-        control_points_.push_back(waypoints_[0]);
+        control_points_.push_back(normalized_waypoints[0]);
+        control_points_.push_back(normalized_waypoints[0]);
         
         // Process intermediate waypoints
-        for (size_t i = 1; i < waypoints_.size() - 1; ++i) {
-            const Eigen::Vector3d& prev = waypoints_[i-1];
-            const Eigen::Vector3d& curr = waypoints_[i];
-            const Eigen::Vector3d& next = waypoints_[i+1];
+        for (size_t i = 1; i < normalized_waypoints.size() - 1; ++i) {
+            const Eigen::Vector3d& prev = normalized_waypoints[i-1];
+            const Eigen::Vector3d& curr = normalized_waypoints[i];
+            const Eigen::Vector3d& next = normalized_waypoints[i+1];
             
-            // Calculate corner angle
-            Eigen::Vector2d v1 = (curr.head<2>() - prev.head<2>()).normalized();
-            Eigen::Vector2d v2 = (next.head<2>() - curr.head<2>()).normalized();
-            double angle = std::acos(std::clamp(v1.dot(v2), -1.0, 1.0));
+            // Calculate corner angle based on position change
+            Eigen::Vector2d v1 = curr.head<2>() - prev.head<2>();
+            Eigen::Vector2d v2 = next.head<2>() - curr.head<2>();
             
-            if (angle < M_PI * 0.75) { // Sharp corner (< 135 degrees)
-                // For sharp corners, we need to ensure the spline stays within bounds
-                // Key insight from EWOK: place control points to create a smooth arc inside the corner
+            // Check if we have significant position movement
+            if (v1.norm() > 1e-6 && v2.norm() > 1e-6) {
+                v1.normalize();
+                v2.normalize();
+                double angle = std::acos(std::clamp(v1.dot(v2), -1.0, 1.0));
                 
-                // Calculate bisector direction (points inward for convex corners)
-                Eigen::Vector2d bisector = -(v1 + v2).normalized();
-                
-                // For 90-degree corners on a square path
-                if (std::abs(angle - M_PI/2) < 0.1) {
-                    // Place control points on an arc inside the corner
-                    // This ensures the convex hull property keeps the trajectory inside
-                    double corner_offset = 0.05; // 5cm inside corner
+                if (angle < M_PI * 0.75) { // Sharp corner (< 135 degrees)
+                    // For sharp corners, we need to ensure the spline stays within bounds
+                    // Key insight from EWOK: place control points to create a smooth arc inside the corner
                     
-                    // Before corner
-                    Eigen::Vector3d before_corner = curr;
-                    before_corner.head<2>() = curr.head<2>() - v1 * corner_offset;
-                    control_points_.push_back(before_corner);
+                    // Calculate bisector direction (points inward for convex corners)
+                    Eigen::Vector2d bisector = -(v1 + v2).normalized();
                     
-                    // Corner point (pulled inward)
-                    Eigen::Vector3d corner_point = curr;
-                    corner_point.head<2>() = curr.head<2>() + bisector * corner_offset * 0.7;
-                    control_points_.push_back(corner_point);
-                    
-                    // After corner
-                    Eigen::Vector3d after_corner = curr;
-                    after_corner.head<2>() = curr.head<2>() + v2 * corner_offset;
-                    after_corner[2] = curr[2] + 0.5 * NormalizeAngle(next[2] - curr[2]);
-                    control_points_.push_back(after_corner);
-                    
+                    // For 90-degree corners on a square path
+                    if (std::abs(angle - M_PI/2) < 0.1) {
+                        // Place control points on an arc inside the corner
+                        // This ensures the convex hull property keeps the trajectory inside
+                        double corner_offset = 0.05; // 5cm inside corner
+                        
+                        // Before corner
+                        Eigen::Vector3d before_corner = curr;
+                        before_corner.head<2>() = curr.head<2>() - v1 * corner_offset;
+                        control_points_.push_back(before_corner);
+                        
+                        // Corner point (pulled inward)
+                        Eigen::Vector3d corner_point = curr;
+                        corner_point.head<2>() = curr.head<2>() + bisector * corner_offset * 0.7;
+                        control_points_.push_back(corner_point);
+                        
+                        // After corner
+                        Eigen::Vector3d after_corner = curr;
+                        after_corner.head<2>() = curr.head<2>() + v2 * corner_offset;
+                        after_corner[2] = curr[2] + 0.5 * NormalizeAngle(next[2] - curr[2]);
+                        control_points_.push_back(after_corner);
+                        
+                    } else {
+                        // Other sharp corners
+                        control_points_.push_back(curr);
+                    }
                 } else {
-                    // Other sharp corners
+                    // Smooth corner or straight line
                     control_points_.push_back(curr);
                 }
             } else {
-                // Smooth corner or straight line
+                // No significant position movement, just add the waypoint
                 control_points_.push_back(curr);
             }
         }
         
         // End with repeated last point for endpoint interpolation
-        control_points_.push_back(waypoints_.back());
-        control_points_.push_back(waypoints_.back());
+        control_points_.push_back(normalized_waypoints.back());
+        control_points_.push_back(normalized_waypoints.back());
     }
     
     // Ensure we have enough control points for cubic B-spline
@@ -300,7 +318,8 @@ void UniformBSplineTrajectoryPlanner::CalculateArcLength() {
         double angular_dist = std::abs(NormalizeAngle(current_point[2] - prev_point[2]));
         
         // Weight angular distance (robot radius ~0.09m)
-        double segment_length = linear_dist + 0.09 * angular_dist;
+        // Reduce weight for angular distance to avoid overestimating arc length
+        double segment_length = linear_dist + 0.05 * angular_dist;
         
         total_arc_length_ += segment_length;
         arc_length_samples_.push_back(total_arc_length_);
