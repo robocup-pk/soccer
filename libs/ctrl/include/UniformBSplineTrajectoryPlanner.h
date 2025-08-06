@@ -179,16 +179,16 @@ private:
     double kd_ = 0.3;   // Derivative gain (legacy)
     
     // Longitudinal control gains (along path)
-    double kp_longitudinal_ = 0.5;
-    double ki_longitudinal_ = 0.2;
-    double kd_longitudinal_ = 0.1;
+    double kp_longitudinal_ = 0.01;
+    double ki_longitudinal_ = 0.02;
+    double kd_longitudinal_ = 0.01;
     
     // Lateral control gain (cross-track error)
-    double kp_lateral_ = 1.0;
+    double kp_lateral_ = 0.01;
     
     // Angular control gain
-    double kp_angular_ = 0.8;
-    
+    double kp_angular_ = 0.08;
+
     // Boundary constraints for square field
     double field_min_x_ = 0.0;
     double field_max_x_ = 1.0;

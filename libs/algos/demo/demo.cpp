@@ -96,6 +96,7 @@ int main(int argc, char* argv[]) {
     std::cout << "  1: B-spline (traditional)" << std::endl;
     std::cout << "  2: Uniform B-spline (EWOK-based)" << std::endl;
     std::cout << "  3: Bezier trajectory (RoboJackets-style)" << std::endl;
+    std::cout << "  4: DB-RRT (Dynamically feasible B-spline based RRT)" << std::endl;
 
     // Choose trajectory type based on second argument
     int traj_type = 1;
@@ -129,6 +130,22 @@ int main(int argc, char* argv[]) {
             
             robot_manager.SetBezierTrajectoryPath(waypoints, util::GetCurrentTime());
             break;
+        case 4:
+            std::cout << "Using DB-RRT trajectory planner for dynamic path planning" << std::endl;
+            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::DBRRT);
+            
+            // Configure DB-RRT planner
+            robot_manager.GetDBRRTPlanner().SetDynamicLimits(1.0, 0.8, 3.0, 4.0);
+            robot_manager.GetDBRRTPlanner().SetBSplineParameters(3, 0.1);
+            robot_manager.GetDBRRTPlanner().SetControlGains(2.0, 0.5, 1.5, 0.5);
+            
+            // For DB-RRT, we plan to each waypoint sequentially
+            if (waypoints.size() > 1) {
+                // Plan to first waypoint that's different from start
+                Eigen::Vector3d goal = waypoints[2];
+                robot_manager.SetDBRRTGoal(goal);
+            }
+            break;
         default:
             std::cout << "Using B-spline trajectory (default)" << std::endl;
             robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BSpline);
@@ -136,6 +153,10 @@ int main(int argc, char* argv[]) {
             break;
     }
     // Add goals to the queue
+    
+    // For DB-RRT, track current waypoint
+    int current_waypoint_idx = 1;
+    bool db_rrt_finished = true;
     
     while (true) {
         // Run simulation step
@@ -156,6 +177,35 @@ int main(int argc, char* argv[]) {
         
         // Update soccer objects with current robot pose
         soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();
+        
+        // For DB-RRT, check if we need to replan to next waypoint
+        if (traj_type == 4 && waypoints.size() > 1 && !db_rrt_finished) {
+            Eigen::Vector3d current_pose = robot_manager.GetPoseInWorldFrame();
+            Eigen::Vector3d current_goal = waypoints[current_waypoint_idx];
+            double dist_to_goal = (current_pose.head<2>() - current_goal.head<2>()).norm();
+            
+            // If close to current goal, plan to next waypoint
+            if (dist_to_goal < 0.05 && robot_manager.GetRobotState() == "IDLE") {
+                current_waypoint_idx++;
+                
+                // Check if we've reached all waypoints
+                if (current_waypoint_idx >= waypoints.size()) {
+                    // For cyclic paths (like square), go back to waypoint 1
+                    if (waypoints.front().isApprox(waypoints.back(), 0.1)) {
+                        current_waypoint_idx = 1;
+                    } else {
+                        db_rrt_finished = true;
+                        std::cout << "[Demo] DB-RRT: Reached final waypoint!" << std::endl;
+                        continue;
+                    }
+                }
+                
+                std::cout << "[Demo] Reached waypoint " << (current_waypoint_idx-1) 
+                          << ", planning to waypoint " << current_waypoint_idx 
+                          << ": " << waypoints[current_waypoint_idx].transpose() << std::endl;
+                robot_manager.SetDBRRTGoal(waypoints[current_waypoint_idx]);
+            }
+        }
     }
 
     return 0;

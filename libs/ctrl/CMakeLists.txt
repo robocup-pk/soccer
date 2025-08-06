@@ -4,6 +4,7 @@ set(SOURCES
     src/BSplineTrajectoryManager.cpp
     src/UniformBSplineTrajectoryPlanner.cpp
     src/BezierTrajectoryPlanner.cpp
+    src/DBRRTTrajectoryPlanner.cpp
 )
 
 file(GLOB_RECURSE HEADERS "include/*.h")
