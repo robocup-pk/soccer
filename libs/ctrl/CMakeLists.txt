@@ -3,6 +3,7 @@ set(SOURCES
     src/BSplineTrajectory.cpp
     src/BSplineTrajectoryManager.cpp
     src/UniformBSplineTrajectoryPlanner.cpp
+    src/BezierTrajectoryPlanner.cpp
 )
 
 file(GLOB_RECURSE HEADERS "include/*.h")
