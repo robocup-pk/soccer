@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
         case 2: {
             // Test 2: Circular path
             std::cout << "Test 2: Circular path" << std::endl;
-            int N = 8;
+            int N = 36;
             double radius = 0.5;
             for (int i = 0; i <= N; ++i) {
                 double angle = 2.0 * M_PI * i / N;

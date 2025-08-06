@@ -55,6 +55,13 @@ bool BSplineTrajectory::SetPath(const std::vector<Eigen::Vector3d>& path_fWorld,
                   << "Control points: " << control_points_.size() 
                   << ", Arc length: " << total_arc_length_ << "m" << std::endl;
         
+        // Test B-spline evaluation at various points
+        std::cout << "[BSplineTrajectory] Testing B-spline evaluation:" << std::endl;
+        for (double test_u = 0.0; test_u <= 1.0; test_u += 0.25) {
+            Eigen::Vector3d test_point = EvaluateBSpline(test_u);
+            std::cout << "  u=" << test_u << " -> (" << test_point[0] << ", " << test_point[1] << ", " << test_point[2] << ")" << std::endl;
+        }
+        
         return true;
         
     } catch (const std::exception& e) {
@@ -232,6 +239,13 @@ void BSplineTrajectory::GenerateClampedBSplineControlPoints(
     // Add last point with multiplicity = degree + 1
     for (int i = 0; i <= spline_degree_; ++i) {
         control_points_.push_back(refined_waypoints.back());
+    }
+    
+    // Debug: Print control points
+    std::cout << "[BSplineTrajectory] Control points:" << std::endl;
+    for (size_t i = 0; i < control_points_.size(); ++i) {
+        std::cout << "  CP[" << i << "]: (" << control_points_[i][0] << ", " 
+                  << control_points_[i][1] << ", " << control_points_[i][2] << ")" << std::endl;
     }
     
     // Apply boundary constraints to ensure all control points are inside
@@ -465,6 +479,18 @@ Eigen::Vector3d BSplineTrajectory::Update(const Eigen::Vector3d& current_pose, d
     // Get desired pose and velocity
     Eigen::Vector3d desired_pose = EvaluateBSpline(u);
     Eigen::Vector3d spline_velocity = EvaluateBSplineDerivative(u, 1);
+    
+    // Debug output - print first few updates
+    static int update_count = 0;
+    if (update_count < 5) {
+        std::cout << "[BSpline Update " << update_count << "] elapsed=" << elapsed_time
+                  << ", desired_arc=" << desired_arc_length << "/" << total_arc_length_
+                  << ", u=" << u 
+                  << ", desired_pose=(" << desired_pose[0] << ", " << desired_pose[1] << ", " << desired_pose[2] << ")"
+                  << ", spline_vel=(" << spline_velocity[0] << ", " << spline_velocity[1] << ", " << spline_velocity[2] << ")"
+                  << std::endl;
+        update_count++;
+    }
     
     // Compute tracking error
     Eigen::Vector3d pose_error = desired_pose - current_pose;
