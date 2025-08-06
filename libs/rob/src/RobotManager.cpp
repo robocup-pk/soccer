@@ -86,6 +86,10 @@ void rob::RobotManager::ControlLogic() {
       velocity_fBody_ = bezier_trajectory_planner.Update(pose_fWorld, util::GetCurrentTime());
       finished_motion = bezier_trajectory_planner.IsFinished();
       break;
+    case RobotState::DBRRT_DRIVING:
+      velocity_fBody_ = dbrrt_planner.Update(pose_fWorld, util::GetCurrentTime());
+      finished_motion = !dbrrt_planner.IsTrajectoryValid();
+      break;
   }
 
   if (finished_motion) robot_state = RobotState::IDLE;
@@ -221,6 +225,29 @@ void rob::RobotManager::SetBezierTrajectoryPath(std::vector<Eigen::Vector3d> pat
                  "Bezier trajectories\nPath: ";
   }
 }
+void rob::RobotManager::GoHome(){
+  
+}
+void rob::RobotManager::SetDBRRTGoal(const Eigen::Vector3d& goal) {
+  std::cout << "[rob::RobotManager::SetDBRRTGoal] DB-RRT planning to goal: " << goal.transpose() << std::endl;
+  
+  // Initialize planner
+  pose_fWorld = state_estimator.GetPose();
+  dbrrt_planner.InitializeFromRobotManager(this);
+  
+  // Plan trajectory from current pose to goal
+  bool planning_success = dbrrt_planner.PlanTrajectory(pose_fWorld, goal, 1.0);
+  
+  if (planning_success) {
+    std::unique_lock<std::mutex> lock(robot_state_mutex);
+    robot_state = RobotState::DBRRT_DRIVING;
+    trajectory_manager_type_ = TrajectoryManagerType::DBRRT;
+    std::cout << "[rob::RobotManager::SetDBRRTGoal] Planning successful! Trajectory duration: " 
+              << dbrrt_planner.GetTrajectoryDuration() << "s" << std::endl;
+  } else {
+    std::cout << "[rob::RobotManager::SetDBRRTGoal] Planning failed!" << std::endl;
+  }
+}
 
 void rob::RobotManager::SetTrajectoryManagerType(TrajectoryManagerType type) {
   trajectory_manager_type_ = type;
@@ -234,6 +261,9 @@ void rob::RobotManager::SetTrajectoryManagerType(TrajectoryManagerType type) {
       break;
     case TrajectoryManagerType::BezierTrajectory:
       type_name = "BEZIER_TRAJECTORY";
+      break;
+    case TrajectoryManagerType::DBRRT:
+      type_name = "DB_RRT";
       break;
   }
   std::cout << "[rob::RobotManager::SetTrajectoryManagerType] Set to " << type_name << std::endl;
@@ -321,6 +351,8 @@ std::string rob::RobotManager::GetRobotState() {
       return "UNIFORM_BSPLINE_DRIVING";
     case RobotState::BEZIER_TRAJECTORY_DRIVING:
       return "BEZIER_TRAJECTORY_DRIVING";
+    case RobotState::DBRRT_DRIVING:
+      return "DBRRT_DRIVING";
     case RobotState::MANUAL_DRIVING:
       return "MANUAL_DRIVING";
     case RobotState::CALIBRATING:
