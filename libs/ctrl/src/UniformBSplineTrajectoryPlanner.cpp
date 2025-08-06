@@ -76,6 +76,13 @@ bool UniformBSplineTrajectoryPlanner::SetPath(const std::vector<Eigen::Vector3d>
         is_trajectory_active_ = true;
         is_trajectory_finished_ = false;
         
+        // Reset control state
+        has_previous_update_ = false;
+        previous_pose_error_ = Eigen::Vector3d::Zero();
+        previous_update_time_ = 0.0;
+        t_error_integral_ = 0.0;
+        t_error_prev_ = 0.0;
+        
         std::cout << "[UniformBSplineTrajectoryPlanner::SetPath] Trajectory generated successfully. "
                   << "Control points: " << control_points_.size() 
                   << ", Arc length: " << total_arc_length_ << "m"
@@ -469,34 +476,93 @@ Eigen::Vector3d UniformBSplineTrajectoryPlanner::Update(const Eigen::Vector3d& c
     if (elapsed_time >= trajectory_duration_) {
         is_trajectory_finished_ = true;
         is_trajectory_active_ = false;
+        // Reset integral term
+        t_error_integral_ = 0.0;
         return Eigen::Vector3d::Zero();
     }
     
-    // Compute desired position along trajectory
+    // Time step
+    double dt = has_previous_update_ ? (current_time - previous_update_time_) : 0.01;
+    dt = std::max(dt, 0.001);  // Minimum 1ms to avoid division issues
+    
+    // 1. Compute desired parameter based on time and speed
     double desired_arc_length = ComputeDesiredArcLength(elapsed_time);
-    double u = ArcLengthToParameter(desired_arc_length);
+    double t_desired = ArcLengthToParameter(desired_arc_length);
     
-    // Get desired pose and velocity
-    Eigen::Vector3d desired_pose = EvaluateBSpline(u);
-    Eigen::Vector3d spline_velocity = EvaluateBSplineDerivative(u, 1);
+    // 2. Find actual parameter (closest point on spline)
+    double t_actual = FindClosestParameter(current_pose.head<2>());
     
-    // Compute tracking error
-    Eigen::Vector3d pose_error = desired_pose - current_pose;
-    pose_error[2] = NormalizeAngle(pose_error[2]);
+    // 3. Longitudinal control (along path) with PID
+    double t_error = t_desired - t_actual;
+    t_error_integral_ += t_error * dt;
+    double t_error_dot = (t_error - t_error_prev_) / dt;
     
-    // Feedforward + feedback control
-    double current_speed = ComputeDesiredSpeed(elapsed_time);
-    Eigen::Vector3d velocity_command;
+    // Anti-windup for integral term
+    t_error_integral_ = std::clamp(t_error_integral_, -0.5, 0.5);
     
-    if (spline_velocity.head<2>().norm() > 1e-6) {
-        // Scale velocity to desired speed
-        double scale = current_speed / spline_velocity.head<2>().norm();
-        velocity_command = scale * spline_velocity + kp_ * pose_error;
-    } else {
-        // Pure rotation
-        velocity_command = Eigen::Vector3d::Zero();
-        velocity_command[2] = kp_ * pose_error[2];
+    double t_dot_command = kp_longitudinal_ * t_error + 
+                          ki_longitudinal_ * t_error_integral_ + 
+                          kd_longitudinal_ * t_error_dot;
+    
+    // 4. Get path direction and base velocity
+    Eigen::Vector3d spline_tangent = EvaluateBSplineDerivative(t_actual, 1);
+    Eigen::Vector2d tangent = spline_tangent.head<2>();
+    
+    // Handle zero tangent case
+    if (tangent.norm() < 1e-6) {
+        // Use direction to next point if tangent is zero
+        if (t_actual < 0.99) {
+            Eigen::Vector3d next_point = EvaluateBSpline(t_actual + 0.01);
+            Eigen::Vector3d curr_point = EvaluateBSpline(t_actual);
+            tangent = (next_point - curr_point).head<2>();
+        }
     }
+    
+    if (tangent.norm() > 1e-6) {
+        tangent.normalize();
+    } else {
+        tangent = Eigen::Vector2d(1, 0);  // Default forward direction
+    }
+    
+    // Current speed along the path
+    double current_speed = ComputeDesiredSpeed(elapsed_time);
+    Eigen::Vector2d velocity_long = (current_speed + t_dot_command * current_speed) * tangent;
+    
+    // 5. Lateral control (cross-track error)
+    Eigen::Vector2d current_pos = current_pose.head<2>();
+    Eigen::Vector3d closest_point_3d = EvaluateBSpline(t_actual);
+    Eigen::Vector2d closest_point = closest_point_3d.head<2>();
+    Eigen::Vector2d cross_track = current_pos - closest_point;
+    
+    // Normal vector (perpendicular to tangent)
+    Eigen::Vector2d normal(-tangent[1], tangent[0]);
+    double lateral_error = cross_track.dot(normal);
+    Eigen::Vector2d velocity_lat = -kp_lateral_ * lateral_error * normal;
+    
+    // 6. Combine linear velocities
+    Eigen::Vector3d velocity_command;
+    velocity_command.head<2>() = velocity_long + velocity_lat;
+    
+    // 7. Angular control to match path heading
+    double desired_heading = std::atan2(tangent[1], tangent[0]);
+    
+    // Add a look-ahead for smoother turning
+    if (t_actual < 0.95) {
+        double look_ahead_param = std::min(t_actual + 0.05, 1.0);
+        Eigen::Vector3d look_ahead_tangent = EvaluateBSplineDerivative(look_ahead_param, 1);
+        if (look_ahead_tangent.head<2>().norm() > 1e-6) {
+            double look_ahead_heading = std::atan2(look_ahead_tangent[1], look_ahead_tangent[0]);
+            desired_heading = 0.7 * desired_heading + 0.3 * look_ahead_heading;
+        }
+    }
+    
+    double heading_error = NormalizeAngle(desired_heading - current_pose[2]);
+    velocity_command[2] = kp_angular_ * heading_error;
+    
+    // Update previous values for next iteration
+    t_error_prev_ = t_error;
+    previous_update_time_ = current_time;
+    has_previous_update_ = true;
     
     // Apply velocity limits
     velocity_command[0] = std::clamp(velocity_command[0], -v_max_, v_max_);
@@ -543,6 +609,12 @@ void UniformBSplineTrajectoryPlanner::SetLimits(double v_max, double a_max, doub
 void UniformBSplineTrajectoryPlanner::SetFeedbackGains(double kp, double kd) {
     kp_ = kp;
     kd_ = kd;
+    
+    // Reset derivative control state when gains change
+    has_previous_update_ = false;
+    previous_pose_error_ = Eigen::Vector3d::Zero();
+    
+    std::cout << "[UniformBSplineTrajectoryPlanner] Feedback gains set to: kp=" << kp_ << ", kd=" << kd_ << std::endl;
 }
 
 void UniformBSplineTrajectoryPlanner::SetSplineDegree(int degree) {
@@ -688,6 +760,65 @@ std::vector<Eigen::Vector3d> UniformBSplineTrajectoryPlanner::GetRemainingPath(c
     }
     
     return remaining_path;
+}
+
+double UniformBSplineTrajectoryPlanner::FindClosestParameter(const Eigen::Vector2d& position) const {
+    // Binary search to find closest point on spline
+    const int num_samples = 100;
+    double best_u = 0.0;
+    double min_dist_sq = std::numeric_limits<double>::max();
+    
+    // First, do a coarse search
+    for (int i = 0; i <= num_samples; ++i) {
+        double u = static_cast<double>(i) / num_samples;
+        Eigen::Vector3d point = EvaluateBSpline(u);
+        double dist_sq = (point.head<2>() - position).squaredNorm();
+        
+        if (dist_sq < min_dist_sq) {
+            min_dist_sq = dist_sq;
+            best_u = u;
+        }
+    }
+    
+    // Then refine with gradient descent
+    double step_size = 0.01;
+    for (int iter = 0; iter < 10; ++iter) {
+        // Compute gradient
+        double u_plus = std::min(best_u + 0.001, 1.0);
+        double u_minus = std::max(best_u - 0.001, 0.0);
+        
+        Eigen::Vector3d point_plus = EvaluateBSpline(u_plus);
+        Eigen::Vector3d point_minus = EvaluateBSpline(u_minus);
+        Eigen::Vector3d point_curr = EvaluateBSpline(best_u);
+        
+        double dist_plus = (point_plus.head<2>() - position).squaredNorm();
+        double dist_minus = (point_minus.head<2>() - position).squaredNorm();
+        double dist_curr = (point_curr.head<2>() - position).squaredNorm();
+        
+        // Gradient approximation
+        double gradient = (dist_plus - dist_minus) / (2.0 * 0.001);
+        
+        // Update parameter
+        double new_u = best_u - step_size * gradient;
+        new_u = std::clamp(new_u, 0.0, 1.0);
+        
+        // Check if improved
+        Eigen::Vector3d new_point = EvaluateBSpline(new_u);
+        double new_dist = (new_point.head<2>() - position).squaredNorm();
+        
+        if (new_dist < dist_curr) {
+            best_u = new_u;
+        } else {
+            step_size *= 0.5;  // Reduce step size if no improvement
+        }
+        
+        // Convergence check
+        if (std::abs(new_u - best_u) < 1e-6) {
+            break;
+        }
+    }
+    
+    return best_u;
 }
 
 } // namespace ctrl

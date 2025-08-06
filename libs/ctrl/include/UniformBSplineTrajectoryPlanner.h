@@ -43,8 +43,25 @@ public:
     // Set velocity and acceleration limits
     void SetLimits(double v_max, double a_max, double omega_max, double alpha_max);
     
-    // Set feedback control gains
+    // Set feedback control gains (legacy method)
     void SetFeedbackGains(double kp, double kd);
+    
+    // Set longitudinal control gains
+    void SetLongitudinalGains(double kp, double ki, double kd) {
+        kp_longitudinal_ = kp;
+        ki_longitudinal_ = ki;
+        kd_longitudinal_ = kd;
+    }
+    
+    // Set lateral control gain
+    void SetLateralGain(double kp) {
+        kp_lateral_ = kp;
+    }
+    
+    // Set angular control gain
+    void SetAngularGain(double kp) {
+        kp_angular_ = kp;
+    }
     
     // Set B-spline degree (typically 3 for cubic, max 5)
     void SetSplineDegree(int degree);
@@ -119,6 +136,9 @@ private:
     // Calculate time for parameter u
     double ParameterToTime(double u) const;
     
+    // Find closest parameter on spline to a given position
+    double FindClosestParameter(const Eigen::Vector2d& position) const;
+    
 private:
     // Robot description
     kin::RobotDescription robot_description_;
@@ -155,8 +175,19 @@ private:
     double alpha_max_ = 3.0;    // rad/s²
     
     // Feedback control gains
-    double kp_ = 0.05;  // Proportional gain
-    double kd_ = 0.3;  // Derivative gain
+    double kp_ = 0.05;  // Proportional gain (legacy)
+    double kd_ = 0.3;   // Derivative gain (legacy)
+    
+    // Longitudinal control gains (along path)
+    double kp_longitudinal_ = 0.5;
+    double ki_longitudinal_ = 0.2;
+    double kd_longitudinal_ = 0.1;
+    
+    // Lateral control gain (cross-track error)
+    double kp_lateral_ = 1.0;
+    
+    // Angular control gain
+    double kp_angular_ = 0.8;
     
     // Boundary constraints for square field
     double field_min_x_ = 0.0;
@@ -173,6 +204,16 @@ private:
     int replan_count_ = 0;
     double last_replan_time_ = 0.0;
     double min_replan_interval_ = 0.5;  // Don't replan more than once per 0.5 seconds
+    
+    // For derivative control
+    Eigen::Vector3d previous_pose_error_ = Eigen::Vector3d::Zero();
+    double previous_update_time_ = 0.0;
+    bool has_previous_update_ = false;
+    
+    // For longitudinal PID control
+    double t_error_integral_ = 0.0;
+    double t_error_prev_ = 0.0;
+    double desired_parameter_rate_ = 0.0;  // desired rate of parameter change
     
 public:
     // Additional methods for debugging and visualization
