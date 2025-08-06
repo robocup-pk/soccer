@@ -91,6 +91,11 @@ int main(int argc, char* argv[]) {
         std::cout << "  " << i << ": (" << waypoints[i][0] << ", " 
                   << waypoints[i][1] << ", " << waypoints[i][2] << ")" << std::endl;
     }
+    
+    std::cout << "\nTrajectory type options:" << std::endl;
+    std::cout << "  1: B-spline (traditional)" << std::endl;
+    std::cout << "  2: Uniform B-spline (EWOK-based)" << std::endl;
+    std::cout << "  3: Bezier trajectory (RoboJackets-style)" << std::endl;
 
     // Choose trajectory type based on second argument
     int traj_type = 1;
@@ -107,14 +112,22 @@ int main(int argc, char* argv[]) {
         case 2:
             std::cout << "Using Uniform B-spline trajectory (EWOK-based) for robust motion" << std::endl;
             robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::UniformBSpline);
+            robot_manager.SetUniformBSplinePath(waypoints, util::GetCurrentTime());
+            break;
+        case 3:
+            std::cout << "Using Bezier trajectory (RoboJackets-style) for accurate waypoint following" << std::endl;
+            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BezierTrajectory);
             
-            // Configure planner for circular and figure-8 paths
-            if (test_case == 2 || test_case == 3) {
-                // Use more conservative limits for paths with high rotation
-                
+            // Configure planner
+            robot_manager.GetBezierTrajectoryPlanner().SetLimits(0.8, 0.5, 2.5, 3.0);
+            robot_manager.GetBezierTrajectoryPlanner().SetFeedbackGains(0.05, 0.3);
+            
+            // For square paths, use smaller corner cut distance
+            if (test_case == 1) {
+                robot_manager.GetBezierTrajectoryPlanner().SetCornerCutDistance(0.05);
             }
             
-            robot_manager.SetUniformBSplinePath(waypoints, util::GetCurrentTime());
+            robot_manager.SetBezierTrajectoryPath(waypoints, util::GetCurrentTime());
             break;
         default:
             std::cout << "Using B-spline trajectory (default)" << std::endl;

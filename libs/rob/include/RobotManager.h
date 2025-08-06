@@ -12,6 +12,7 @@
 #include "MotionController.h"
 #include "BSplineTrajectoryManager.h"
 #include "UniformBSplineTrajectoryPlanner.h"
+#include "BezierTrajectoryPlanner.h"
 
 // Forward declarations
 namespace state {
@@ -29,12 +30,14 @@ enum class RobotState {
   GOING_HOME,
   CALIBRATING,
   BSPLINE_DRIVING,       // B-spline trajectory following
-  UNIFORM_BSPLINE_DRIVING // Uniform B-spline trajectory following
+  UNIFORM_BSPLINE_DRIVING, // Uniform B-spline trajectory following
+  BEZIER_TRAJECTORY_DRIVING // Bezier trajectory following (RoboJackets-style)
 };
 
 enum class TrajectoryManagerType {
   BSpline,       // Use B-spline for trajectories
-  UniformBSpline // Use uniform B-spline (EWOK-based) for robust trajectories
+  UniformBSpline, // Use uniform B-spline (EWOK-based) for robust trajectories
+  BezierTrajectory // Use Bezier trajectory (RoboJackets-style)
 };
 
 enum class RobotAction {
@@ -63,6 +66,7 @@ class RobotManager {
   void InitializeHome(Eigen::Vector3d pose_home);
   void SetBSplinePath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // B-spline path
   void SetUniformBSplinePath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Uniform B-spline path
+  void SetBezierTrajectoryPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Bezier trajectory path
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
   
@@ -72,6 +76,7 @@ class RobotManager {
   
   // Get access to planners for configuration
   ctrl::UniformBSplineTrajectoryPlanner& GetUniformBSplinePlanner() { return uniform_bspline_planner; }
+  ctrl::BezierTrajectoryPlanner& GetBezierTrajectoryPlanner() { return bezier_trajectory_planner; }
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
 
@@ -110,6 +115,7 @@ class RobotManager {
   ctrl::MotionController motion_controller;
   ctrl::BSplineTrajectoryManager bspline_manager;  // B-spline trajectory manager
   ctrl::UniformBSplineTrajectoryPlanner uniform_bspline_planner;  // Uniform B-spline trajectory planner
+  ctrl::BezierTrajectoryPlanner bezier_trajectory_planner;  // Bezier trajectory planner
   
   TrajectoryManagerType trajectory_manager_type_;
 

@@ -82,6 +82,10 @@ void rob::RobotManager::ControlLogic() {
       velocity_fBody_ = uniform_bspline_planner.Update(pose_fWorld, util::GetCurrentTime());
       finished_motion = uniform_bspline_planner.IsFinished();
       break;
+    case RobotState::BEZIER_TRAJECTORY_DRIVING:
+      velocity_fBody_ = bezier_trajectory_planner.Update(pose_fWorld, util::GetCurrentTime());
+      finished_motion = bezier_trajectory_planner.IsFinished();
+      break;
   }
 
   if (finished_motion) robot_state = RobotState::IDLE;
@@ -191,6 +195,33 @@ void rob::RobotManager::SetUniformBSplinePath(std::vector<Eigen::Vector3d> path_
   }
 }
 
+void rob::RobotManager::SetBezierTrajectoryPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
+  bool is_path_valid;
+  {
+    // Print the path
+    std::cout << "[rob::RobotManager::SetBezierTrajectoryPath] Bezier trajectory for accurate waypoint following: ";
+    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
+      std::cout << path_fWorld[i].transpose() << " -> ";
+    }
+    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
+    // Initialize trajectory manager with current robot state
+    pose_fWorld = state_estimator.GetPose();
+    bezier_trajectory_planner.InitializeFromRobotManager(this);
+    
+    // Create trajectories using Bezier Trajectory Planner
+    is_path_valid = bezier_trajectory_planner.SetPath(path_fWorld, t_start_s);
+    std::cout << "[rob::RobotManager::SetBezierTrajectoryPath] Finish creating Bezier trajectories" << std::endl;
+  }
+  if (is_path_valid) {
+    std::unique_lock<std::mutex> lock(robot_state_mutex);
+    robot_state = RobotState::BEZIER_TRAJECTORY_DRIVING;
+    trajectory_manager_type_ = TrajectoryManagerType::BezierTrajectory;
+  } else {
+    std::cout << "[rob::RobotManager::SetBezierTrajectoryPath] Given path is invalid. Failed to create "
+                 "Bezier trajectories\nPath: ";
+  }
+}
+
 void rob::RobotManager::SetTrajectoryManagerType(TrajectoryManagerType type) {
   trajectory_manager_type_ = type;
   std::string type_name;
@@ -200,6 +231,9 @@ void rob::RobotManager::SetTrajectoryManagerType(TrajectoryManagerType type) {
       break;
     case TrajectoryManagerType::UniformBSpline:
       type_name = "UNIFORM_B_SPLINE";
+      break;
+    case TrajectoryManagerType::BezierTrajectory:
+      type_name = "BEZIER_TRAJECTORY";
       break;
   }
   std::cout << "[rob::RobotManager::SetTrajectoryManagerType] Set to " << type_name << std::endl;
@@ -285,6 +319,8 @@ std::string rob::RobotManager::GetRobotState() {
       return "BSPLINE_DRIVING";
     case RobotState::UNIFORM_BSPLINE_DRIVING:
       return "UNIFORM_BSPLINE_DRIVING";
+    case RobotState::BEZIER_TRAJECTORY_DRIVING:
+      return "BEZIER_TRAJECTORY_DRIVING";
     case RobotState::MANUAL_DRIVING:
       return "MANUAL_DRIVING";
     case RobotState::CALIBRATING:
