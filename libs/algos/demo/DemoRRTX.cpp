@@ -17,19 +17,19 @@ void ProcessInput(GLFWwindow* window, std::vector<state::SoccerObject>& soccer_o
   }
 
   const double BALL_SPEED = 1.0;  // m/s
-  soccer_objects[1].velocity = Eigen::Vector3d::Zero();
+  soccer_objects[soccer_objects.size() - 1].velocity = Eigen::Vector3d::Zero();
 
   if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-    soccer_objects[1].velocity[1] = BALL_SPEED;
+    soccer_objects[soccer_objects.size() - 1].velocity[1] = BALL_SPEED;
   }
   if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-    soccer_objects[1].velocity[1] = -BALL_SPEED;
+    soccer_objects[soccer_objects.size() - 1].velocity[1] = -BALL_SPEED;
   }
   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-    soccer_objects[1].velocity[0] = -BALL_SPEED;
+    soccer_objects[soccer_objects.size() - 1].velocity[0] = -BALL_SPEED;
   }
   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-    soccer_objects[1].velocity[0] = BALL_SPEED;
+    soccer_objects[soccer_objects.size() - 1].velocity[0] = BALL_SPEED;
   }
 }
 
@@ -59,14 +59,18 @@ int main() {
   state::Waypoint start(-1.5, 0.0, 0.0);
   state::Waypoint initial_goal(1.0, 0.0, 0.0);
 
-  soccer_objects[0].position = Eigen::Vector3d(start.x, start.y, 0.0);                // Robot
-  soccer_objects[1].position = Eigen::Vector3d(initial_goal.x, initial_goal.y, 0.0);  // Ball
+  soccer_objects[0].position = Eigen::Vector3d(start.x, start.y, 0.0);  // Robot
+  soccer_objects[1].position = Eigen::Vector3d(0.0, 0.0, 0.0);          // Robot 1
+  soccer_objects[2].position = Eigen::Vector3d(0.0, 1.0, 0.0);          // Robot 2
+  soccer_objects[3].position = Eigen::Vector3d(0.0, -1.0, 0.0);         // Robot 3
+  soccer_objects[soccer_objects.size() - 1].position =
+      Eigen::Vector3d(initial_goal.x, initial_goal.y, 0.0);  // Ball
 
   // Create RRT-X planner
   algos::RRTX rrtx_planner(start, initial_goal, 0.01);
 
   // Tracking variables
-  Eigen::Vector3d last_ball_pos = soccer_objects[1].position;
+  Eigen::Vector3d last_ball_pos = soccer_objects[soccer_objects.size() - 1].position;
   const double BALL_MOVEMENT_THRESHOLD = 0.05;  // 5cm threshold
 
   auto last_time = std::chrono::high_resolution_clock::now();
@@ -86,26 +90,32 @@ int main() {
     // Get current positions
     state::Waypoint current_robot_pos(soccer_objects[0].position[0], soccer_objects[0].position[1],
                                       0.0f);
-    state::Waypoint current_ball_pos(soccer_objects[1].position[0], soccer_objects[1].position[1],
-                                     0.0f);
+    state::Waypoint current_ball_pos(soccer_objects[soccer_objects.size() - 1].position[0],
+                                     soccer_objects[soccer_objects.size() - 1].position[1], 0.0f);
 
     // Update robot position in planner
     rrtx_planner.UpdateRobotPosition(current_robot_pos);
 
     // Check if ball moved significantly
-    double ball_movement = (soccer_objects[1].position - last_ball_pos).norm();
+    double ball_movement =
+        (soccer_objects[soccer_objects.size() - 1].position - last_ball_pos).norm();
     if (ball_movement > BALL_MOVEMENT_THRESHOLD) {
       std::cout << "\n--- Ball moved to (" << current_ball_pos.x << ", " << current_ball_pos.y
                 << ") ---" << std::endl;
 
       // Update goal in planner
       rrtx_planner.UpdateGoal(current_ball_pos);
-      last_ball_pos = soccer_objects[1].position;
+      last_ball_pos = soccer_objects[soccer_objects.size() - 1].position;
     }
 
     // Run planning steps
-    for (int i = 0; i < 5; ++i) {
-      rrtx_planner.PlanStep();
+    std::vector<state::SoccerObject> obstacles;
+    std::copy_if(
+        soccer_objects.begin(), soccer_objects.end(), std::back_inserter(obstacles),
+        [](const state::SoccerObject& obj) { return obj.name != "robot0" && obj.name != "ball"; });
+
+    while (!rrtx_planner.SolutionExists()) {
+      rrtx_planner.PlanStep(obstacles);
     }
 
     // Print path when solution exists
