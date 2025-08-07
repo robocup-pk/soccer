@@ -11,28 +11,6 @@
 #include "Waypoint.h"
 #include "RRTX.h"
 
-void ProcessInput(GLFWwindow* window, std::vector<state::SoccerObject>& soccer_objects) {
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-    glfwSetWindowShouldClose(window, GLFW_TRUE);
-  }
-
-  const double BALL_SPEED = 1.0;  // m/s
-  soccer_objects[soccer_objects.size() - 1].velocity = Eigen::Vector3d::Zero();
-
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-    soccer_objects[soccer_objects.size() - 1].velocity[1] = BALL_SPEED;
-  }
-  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-    soccer_objects[soccer_objects.size() - 1].velocity[1] = -BALL_SPEED;
-  }
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-    soccer_objects[soccer_objects.size() - 1].velocity[0] = -BALL_SPEED;
-  }
-  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-    soccer_objects[soccer_objects.size() - 1].velocity[0] = BALL_SPEED;
-  }
-}
-
 void PrintPath(const state::Path& path) {
   if (path.empty()) {
     std::cout << "No path available" << std::endl;
@@ -54,6 +32,9 @@ int main() {
 
   vis::GLSimulation gl_simulation;
   gl_simulation.InitGameObjects(soccer_objects);
+
+  GLFWwindow* gl_window = gl_simulation.GetRawGLFW();
+  glfwSetMouseButtonCallback(gl_window, vis::MouseButtonCallback);
 
   // Initial positions
   state::Waypoint start(-1.5, 0.0, 0.0);
@@ -83,9 +64,8 @@ int main() {
     float dt = std::chrono::duration<float>(duration).count();
     last_time = current_time;
 
-    // Handle ball movement input
-    GLFWwindow* window = gl_simulation.GetRawGLFW();
-    ProcessInput(window, soccer_objects);
+    // Handle Input
+    vis::ProcessInputMultipleObjects(gl_window, soccer_objects);
 
     // Get current positions
     state::Waypoint current_robot_pos(soccer_objects[0].position[0], soccer_objects[0].position[1],
@@ -121,7 +101,7 @@ int main() {
     // Print path when solution exists
     if (rrtx_planner.SolutionExists()) {
       state::Path path = rrtx_planner.ReconstructPath();
-      if (!path.empty() && ball_movement > BALL_MOVEMENT_THRESHOLD) {
+      if (!path.empty()) {
         PrintPath(path);
       }
     }
