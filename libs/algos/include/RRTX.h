@@ -5,9 +5,12 @@
 #include <Eigen/Dense>
 #include <queue>
 #include <unordered_set>
+#include <set>
 #include <random>
 #include <algorithm>
+
 #include "Waypoint.h"
+#include "SoccerObject.h"
 
 namespace algos {
 
@@ -32,17 +35,17 @@ class RRTX {
  public:
   RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal, double epsilon = 0.1);
   // Core functions
-  int Extend(state::Waypoint v_new, double r);               // Algorithm 2
-  void CullNeighbors(int v_idx, double r);                   // Algorithm 3
-  void RewireNeighbors(int v_idx);                           // Algorithm 4
-  void ReduceInconsistency();                                // Algorithm 5
-  void FindParent(Vertex &v_new, const std::vector<int>& U);  // Algorithm 6
+  int Extend(state::Waypoint v_new, double r);                // Algorithm 2
+  void CullNeighbors(int v_idx, double r);                    // Algorithm 3
+  void RewireNeighbors(int v_idx);                            // Algorithm 4
+  void ReduceInconsistency();                                 // Algorithm 5
+  void FindParent(Vertex& v_new, const std::vector<int>& U);  // Algorithm 6
 
   // Obstacle handling
-  void UpdateObstacles();       // Algorithm 7
-  void PropogateDescendants();  // Algorithm 8
-  void AddNewObstacle();
-  void RemoveObstacle();
+  void UpdateObstacles(std::vector<state::SoccerObject>& robots);  // Algorithm 7
+  void PropogateDescendants();                                     // Algorithm 8
+  void AddNewObstacle(state::SoccerObject& obstacle);
+  void RemoveObstacle(state::SoccerObject& obstacle);
 
   // Utility functions
   void VerifyQueue(int v_idx);   // Algorithm 12
@@ -72,12 +75,29 @@ class RRTX {
   bool KeyLess(const std::pair<double, double>& key1, const std::pair<double, double>& key2);
   std::pair<double, double> getKey(int v_idx);
 
-  void PlanStep();
+  void PlanStep(std::vector<state::SoccerObject>& soccer_objects);  // Main planning step
   bool SolutionExists();
   double GetSolutionCost();
   bool IsInVertices(state::Waypoint v_new);
 
   void UpdateGoal(const state::Waypoint& new_goal);
+
+  std::set<std::pair<int, int>> GetEdgesIntersectingObstacle(state::SoccerObject& obstacle);
+  bool IsTrajectoryBlockedByObstacle(const state::Waypoint& from, const state::Waypoint& to,
+                                     state::SoccerObject& obstacle);
+  std::set<int> GetVerticesWithEdgesInObstacle(std::set<std::pair<int, int>>& edges);
+
+  // Helper Functions
+  std::vector<state::SoccerObject> FindVanishedObstacles(
+      std::vector<state::SoccerObject>& new_obstacles);
+  std::vector<state::SoccerObject> FindAppearedObstacles(
+      std::vector<state::SoccerObject>& new_obstacles);
+
+  void RemoveEdgeConnection(int v_idx, int u_idx);
+  bool IsRobotOnEdge(int v_idx, int u_idx);
+  void ClearRobotPath();
+
+  bool ObstaclesEqual(state::SoccerObject& obs1, state::SoccerObject& obs2);
 
   // Core data structures
   std::vector<Vertex> Vertices;   // vertex set
@@ -87,7 +107,6 @@ class RRTX {
   std::priority_queue<std::pair<std::pair<double, double>, int>,
                       std::vector<std::pair<std::pair<double, double>, int>>, std::greater<>>
       Q;
-
 
   // Goal and start vertices
   int v_goal_idx;
@@ -103,9 +122,14 @@ class RRTX {
   // Environment
   std::vector<state::Waypoint> obstacles;
 
+  std::vector<state::SoccerObject> previous_obstacles;
+  std::vector<state::SoccerObject> current_obstacles;
+
+  int current_robot_id;
+
   // Helper functions
   bool IsInObstacle(const state::Waypoint& wp);
-  bool IsObstaclesChanged();
+  bool HasObstaclesChanged(const std::vector<state::SoccerObject>& current_obstacles);
   bool IsRobotPoseChanged();
 
   std::vector<int> getNeighbors(int v_idx);     // N(v) = N⁺(v) ∪ N⁻(v)
