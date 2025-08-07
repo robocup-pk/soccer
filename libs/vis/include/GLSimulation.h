@@ -19,6 +19,8 @@ namespace vis {
 void ProcessInput(GLFWwindow* gl_window, std::vector<state::SoccerObject>& soccer_objects);
 void ProcessInput(GLFWwindow* gl_window, std::vector<rob::RobotManager>& robot_managers);
 void ProcessInputTwoTeams(GLFWwindow* gl_window, std::vector<state::SoccerObject>& soccer_objects);
+void ProcessInputMultipleObjects(GLFWwindow* gl_window,
+                                 std::vector<state::SoccerObject>& soccer_objects);
 
 /* Process Input Helpers*/
 void FindAndUpdateSelectedPlayer(std::vector<state::SoccerObject>& soccer_objects);

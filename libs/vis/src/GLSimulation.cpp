@@ -685,3 +685,53 @@ void vis::ProcessInput(GLFWwindow* gl_window, std::vector<rob::RobotManager>& ro
   velocity_fBody_rob1.normalize();
   robot_managers[team_two_selected_player].SetBodyVelocity(velocity_fBody_rob1);
 }
+
+void vis::ProcessInputMultipleObjects(GLFWwindow* gl_window,
+                                      std::vector<state::SoccerObject>& soccer_objects) {
+  if (vis::g_mouse_clicked) {
+    vis::g_mouse_clicked = false;
+
+    double mouse_click_left_pos_x = vis::g_mouse_click_position[0];
+    double mouse_click_left_pos_y = vis::g_mouse_click_position[1];
+    double robot_width = (cfg::SystemConfig::robot_size_m)[0];
+
+    double robot_center_x;
+    double robot_center_y;
+    Eigen::Vector3d v = Eigen::Vector3d::Zero();
+
+    for (int i = 0; i < soccer_objects.size(); i++) {
+      robot_center_x = soccer_objects[i].position[0];
+      robot_center_y = soccer_objects[i].position[1];
+
+      if (vis::GLSimulation::RobotAreaPressed(robot_center_x, robot_center_y,
+                                              mouse_click_left_pos_x, mouse_click_left_pos_y)) {
+        soccer_objects[i].is_selected_player = true;
+        // now we need to deselect all other robots
+        for (int j = 0; j < soccer_objects.size(); j++) {
+          if (j != i) {
+            soccer_objects[j].is_selected_player = false;
+            soccer_objects[j].velocity = v;
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  Eigen::Vector3d velocity_fBody_rob = Eigen::Vector3d::Zero();
+
+  // move player
+  if (glfwGetKey(gl_window, GLFW_KEY_W) == GLFW_PRESS) velocity_fBody_rob.y() += 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_S) == GLFW_PRESS) velocity_fBody_rob.y() -= 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_A) == GLFW_PRESS) velocity_fBody_rob.x() -= 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_D) == GLFW_PRESS) velocity_fBody_rob.x() += 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_C) == GLFW_PRESS) velocity_fBody_rob.z() += 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_X) == GLFW_PRESS) velocity_fBody_rob.z() -= 1;
+
+  // Apply velocity to selected player
+  for (auto& obj : soccer_objects) {
+    if (obj.is_selected_player) {
+      obj.velocity = velocity_fBody_rob;
+    }
+  }
+}
