@@ -54,6 +54,9 @@ void vis::GLSimulation::Render(float dt) {
   // Render SoccerField::GetInstance() first (background)
   SoccerField::GetInstance().RenderField(this->window);
 
+  // Render Path if visible
+  path_renderer.Render();
+
   for (auto& [name, game_object] : game_objects) {
     game_object.Draw(renderer);
   }
@@ -92,6 +95,13 @@ void vis::GLSimulation::Render(float dt) {
                       glm::vec2(button_size_m[0] * PPM, button_size_m[1] * PPM), 0.0f,
                       glm::vec3(1.0f, 1.0f, 1.0f));
 }
+
+void vis::GLSimulation::SetVisualizationPath(state::Path& path,
+                                             glm::vec3 color = glm::vec3(1.0f, 0.0f, 0.0f)) {
+  path_renderer.SetPath(path, color);
+}
+
+void vis::GLSimulation::ClearVisualizationPath() { path_renderer.ClearPath(); }
 
 bool vis::GLSimulation::Update() {
   if (glfwWindowShouldClose(window)) return false;
@@ -171,6 +181,7 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
   ResourceManager::GetShader("field").Use().SetInteger("field", 0);
 
   SoccerField::GetInstance().SoccerFieldInit();
+  path_renderer.Init();
 
   // sprite Renderer
   Shader shader = ResourceManager::GetShader("sprite");

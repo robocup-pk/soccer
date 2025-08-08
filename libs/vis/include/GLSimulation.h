@@ -13,6 +13,7 @@
 #include "GLConfig.h"
 #include "SoccerField.h"
 #include "RobotManager.h"
+#include "PathRenderer.h"
 
 namespace vis {
 
@@ -57,6 +58,8 @@ class GLSimulation {
   void Render(float dt);
   bool Update();
   void UpdateGameObject(const state::SoccerObject& soccer_object);
+  void SetVisualizationPath(state::Path& path, glm::vec3 color);
+  void ClearVisualizationPath();
 
   // Outside Access
   std::map<std::string, GameObject>& GetGameObjects();
@@ -78,6 +81,7 @@ class GLSimulation {
 
   glm::vec2 size = glm::vec2(0.54f, 0.2f);
   glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f);
+  PathRenderer path_renderer;
 };
 
 }  // namespace vis

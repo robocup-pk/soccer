@@ -64,7 +64,10 @@ state::SoccerObject::SoccerObject(std::string name_, Eigen::Vector3d position_,
       team_id(team_id),
       velocity(velocity_),
       acceleration(acceleration_),
-      mass_kg(mass_kg_) {}
+      mass_kg(mass_kg_),
+      radius_m(cfg::SystemConfig::robot_size_m[0] / 2) {
+  if (name == "ball") radius_m = cfg::SystemConfig::ball_radius_m;
+}
 
 state::SoccerObject::SoccerObject(const rob::RobotManager& robot_manager) {
   position = robot_manager.GetPoseInWorldFrame();  // TODO: Center position

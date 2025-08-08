@@ -54,6 +54,11 @@ int main() {
   Eigen::Vector3d last_ball_pos = soccer_objects[soccer_objects.size() - 1].position;
   const double BALL_MOVEMENT_THRESHOLD = 0.05;  // 5cm threshold
 
+  Eigen::Vector3d last_robot_pos = soccer_objects[0].position;
+  const double ROBOT_MOVEMENT_THRESHOLD = 0.05;  // 5cm threshold
+
+  bool replan = true;
+
   auto last_time = std::chrono::high_resolution_clock::now();
 
   // Main simulation loop
@@ -73,39 +78,59 @@ int main() {
     state::Waypoint current_ball_pos(soccer_objects[soccer_objects.size() - 1].position[0],
                                      soccer_objects[soccer_objects.size() - 1].position[1], 0.0f);
 
-    // Update robot position in planner
-    rrtx_planner.UpdateRobotPosition(current_robot_pos);
-
     // Check if ball moved significantly
     double ball_movement =
         (soccer_objects[soccer_objects.size() - 1].position - last_ball_pos).norm();
     if (ball_movement > BALL_MOVEMENT_THRESHOLD) {
-      std::cout << "\n--- Ball moved to (" << current_ball_pos.x << ", " << current_ball_pos.y
-                << ") ---" << std::endl;
-
       // Update goal in planner
       rrtx_planner.UpdateGoal(current_ball_pos);
       last_ball_pos = soccer_objects[soccer_objects.size() - 1].position;
+      replan = true;
     }
 
+    if ((last_robot_pos - soccer_objects[0].position).norm() > ROBOT_MOVEMENT_THRESHOLD) {
+      rrtx_planner.UpdateRobotPosition(current_robot_pos);
+      last_robot_pos = soccer_objects[0].position;
+      replan = true;
+    }
     // Run planning steps
     std::vector<state::SoccerObject> obstacles;
     std::copy_if(
         soccer_objects.begin(), soccer_objects.end(), std::back_inserter(obstacles),
         [](const state::SoccerObject& obj) { return obj.name != "robot0" && obj.name != "ball"; });
 
-    while (!rrtx_planner.SolutionExists()) {
-      rrtx_planner.PlanStep(obstacles);
+    if (rrtx_planner.HasObstaclesChanged(obstacles)) {
+      rrtx_planner.UpdateObstacles(obstacles);
+      replan = true;
     }
 
-    // Print path when solution exists
-    if (rrtx_planner.SolutionExists()) {
-      state::Path path = rrtx_planner.ReconstructPath();
-      if (!path.empty()) {
-        PrintPath(path);
+    // std::cout << "Robot at vertex " << rrtx_planner.v_bot_idx
+    //           << ", g=" << rrtx_planner.Vertices[rrtx_planner.v_bot_idx].g << ", Goal at vertex
+    //           "
+    //           << rrtx_planner.v_goal_idx << std::endl;
+
+    if (replan) {
+      rrtx_planner.PlanStep(obstacles);
+
+      if (rrtx_planner.SolutionExists()) {
+        state::Path path = rrtx_planner.ReconstructPath();
+        if (!path.empty()) {
+          PrintPath(path);
+
+          // Visualize the path with red color
+          gl_simulation.SetVisualizationPath(path, glm::vec3(1.0f, 0.0f, 0.0f));
+
+          std::cout << "Vertices: " << rrtx_planner.Vertices.size()
+                    << ", Queue size: " << rrtx_planner.Q.size()
+                    << ", Orphans: " << rrtx_planner.V_c_T.size() << std::endl;
+
+          replan = false;
+        }
+      } else {
+        // Clear path if no solution exists
+        gl_simulation.ClearVisualizationPath();
       }
     }
-
     // Update physics
     kin::UpdateKinematics(soccer_objects, dt);
 
