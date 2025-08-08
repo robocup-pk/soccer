@@ -46,22 +46,6 @@ public:
     // Set feedback control gains (legacy method)
     void SetFeedbackGains(double kp, double kd);
     
-    // Set longitudinal control gains
-    void SetLongitudinalGains(double kp, double ki, double kd) {
-        kp_longitudinal_ = kp;
-        ki_longitudinal_ = ki;
-        kd_longitudinal_ = kd;
-    }
-    
-    // Set lateral control gain
-    void SetLateralGain(double kp) {
-        kp_lateral_ = kp;
-    }
-    
-    // Set angular control gain
-    void SetAngularGain(double kp) {
-        kp_angular_ = kp;
-    }
     
     // Set B-spline degree (typically 3 for cubic, max 5)
     void SetSplineDegree(int degree);
@@ -114,6 +98,9 @@ private:
     
     // Generate uniform knot vector
     void GenerateUniformKnotVector();
+    
+    // Generate centripetal knot vector (alternative)
+    void GenerateCentripetalKnotVector(); 
     
     // Calculate arc length for velocity planning
     void CalculateArcLength();
@@ -174,20 +161,9 @@ private:
     double omega_max_ = 2.5;    // rad/s
     double alpha_max_ = 3.0;    // rad/s²
     
-    // Feedback control gains
-    double kp_ = 0.05;  // Proportional gain (legacy)
-    double kd_ = 0.3;   // Derivative gain (legacy)
-    
-    // Longitudinal control gains (along path)
-    double kp_longitudinal_ = 0.01;
-    double ki_longitudinal_ = 0.02;
-    double kd_longitudinal_ = 0.01;
-    
-    // Lateral control gain (cross-track error)
-    double kp_lateral_ = 0.01;
-    
-    // Angular control gain
-    double kp_angular_ = 0.08;
+    // Feedback control gains (simplified EWOK-style)
+    double kp_ = 0.05;  // Proportional gain
+    double kd_ = 0.3;   // Derivative gain (currently unused but kept for future extensions)
 
     // Boundary constraints for square field
     double field_min_x_ = 0.0;
@@ -214,6 +190,16 @@ private:
     double t_error_integral_ = 0.0;
     double t_error_prev_ = 0.0;
     double desired_parameter_rate_ = 0.0;  // desired rate of parameter change
+    
+    // Low-pass filter for smooth control
+    Eigen::Vector3d previous_velocity_command_ = Eigen::Vector3d::Zero();
+    bool has_previous_command_ = false;
+    double velocity_filter_alpha_ = 0.3;  // Low-pass filter coefficient (0 = full filter, 1 = no filter)
+    
+    // PID control for precise tracking
+    Eigen::Vector2d cross_track_error_integral_ = Eigen::Vector2d::Zero();
+    Eigen::Vector2d along_track_error_integral_ = Eigen::Vector2d::Zero();
+    double max_integral_ = 0.5;  // Integral windup limit
     
 public:
     // Additional methods for debugging and visualization

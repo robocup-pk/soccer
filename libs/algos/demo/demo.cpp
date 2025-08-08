@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
     robot_manager.InitializePose(robot_start_pose);
     vector<Eigen::Vector3d> waypoints;
     robot_manager.GetUniformBSplinePlanner().SetLimits(0.8, 0.5, 0.8, 0.5); // v_max, a_max, omega_max, alpha_max
-    robot_manager.GetUniformBSplinePlanner().SetFeedbackGains(0.02, 0.0); // kp, kd
+    robot_manager.GetUniformBSplinePlanner().SetFeedbackGains(0.1, 0.05); // kp, kd (EWOK-style simplified gains)
     // Choose a test case based on command line argument
     int test_case = 1;
     if (argc > 1) {
@@ -35,8 +35,8 @@ int main(int argc, char* argv[]) {
     
     switch (test_case) {
         case 1: {
-            // Test 1: Simple forward movement with reasonable spacing
-            std::cout << "Test 1: Simple forward movement" << std::endl;
+            // Test 1: Simple square path
+            std::cout << "Test 1: Simple square path" << std::endl;
             waypoints.push_back(Eigen::Vector3d(0, 0, 0));
             waypoints.push_back(Eigen::Vector3d(-1, 0, 0));
             waypoints.push_back(Eigen::Vector3d(-1, 1, 0));
@@ -45,18 +45,29 @@ int main(int argc, char* argv[]) {
             break;
         }
         case 2: {
-            // Test 2: Circular path
+            // Test 2: Circular path centered at origin
             std::cout << "Test 2: Circular path" << std::endl;
-            int N = 36;
+            int N = 24;  // Fewer points for smoother circle
             double radius = 0.5;
+            
+            // Start from current robot position (0, 0) and move to circle smoothly
+            // Add transition waypoints from origin to circle
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));  // Start at origin
+            waypoints.push_back(Eigen::Vector3d(radius * 0.5, 0.0, 0.0));  // Halfway to circle
+            
+            // Generate circle waypoints starting from right side (radius, 0)
             for (int i = 0; i <= N; ++i) {
                 double angle = 2.0 * M_PI * i / N;
-                waypoints.push_back(Eigen::Vector3d(
-                    radius * std::cos(angle),
-                    radius * std::sin(angle),
-                    angle
-                ));
+                double x = radius * std::cos(angle);
+                double y = radius * std::sin(angle);
+                // Use atan2 for proper heading that follows the tangent
+                double heading = angle + M_PI/2;  // Tangent to circle
+                waypoints.push_back(Eigen::Vector3d(x, y, heading));
             }
+            
+            // Add transition back to origin if desired
+            waypoints.push_back(Eigen::Vector3d(radius * 0.5, 0.0, M_PI));  // Halfway back
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, M_PI));  // Back to origin
             break;
         }
         case 3: {
@@ -75,12 +86,9 @@ int main(int argc, char* argv[]) {
         }
         default: {
             // Default: The problematic sequence for testing
-            std::cout << "Test 4: Problematic sequence (for debugging)" << std::endl;
-            int N = 10;
+            std::cout << "Test 4: Simple straight line (for debugging)" << std::endl;
             waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
-            for (int i = 1; i <= N; ++i) {
-                waypoints.push_back(Eigen::Vector3d(i/N, 0.0, 0.0));
-            }
+            waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
             break;
         }
     }
