@@ -61,7 +61,7 @@ class RRTX {
 
   // Distance and trajectory functions
   double d_pi(const state::Waypoint& a, const state::Waypoint& b);  // trajectory distance
-  bool TrajectoryValid(const state::Waypoint& a, const state::Waypoint& b);
+  bool TrajectoryValid(state::Waypoint& a, state::Waypoint& b);
 
   // Tree reconstruction
   state::Path ReconstructPath();
@@ -83,15 +83,19 @@ class RRTX {
   void UpdateGoal(const state::Waypoint& new_goal);
 
   std::set<std::pair<int, int>> GetEdgesIntersectingObstacle(state::SoccerObject& obstacle);
-  bool IsTrajectoryBlockedByObstacle(const state::Waypoint& from, const state::Waypoint& to,
+  bool IsTrajectoryBlockedByObstacle(state::Waypoint& from, state::Waypoint& to,
                                      state::SoccerObject& obstacle);
   std::set<int> GetVerticesWithEdgesInObstacle(std::set<std::pair<int, int>>& edges);
 
   // Helper Functions
+  std::vector<std::pair<state::SoccerObject, state::SoccerObject>> FindMovedObstacles(
+      std::vector<state::SoccerObject>& new_obstacles);
   std::vector<state::SoccerObject> FindVanishedObstacles(
       std::vector<state::SoccerObject>& new_obstacles);
   std::vector<state::SoccerObject> FindAppearedObstacles(
       std::vector<state::SoccerObject>& new_obstacles);
+  double PerpendicularDistanceToLineSegment(state::Waypoint& point, state::Waypoint& line_start,
+                                            state::Waypoint& line_end);
 
   void RemoveEdgeConnection(int v_idx, int u_idx);
   bool IsRobotOnEdge(int v_idx, int u_idx);
@@ -126,6 +130,7 @@ class RRTX {
   std::vector<state::SoccerObject> current_obstacles;
 
   int current_robot_id;
+  state::Waypoint robot_pos;
 
   // Helper functions
   bool IsInObstacle(const state::Waypoint& wp);

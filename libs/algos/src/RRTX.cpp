@@ -49,14 +49,11 @@ algos::RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal,
 
   // Clear orphan set
   V_c_T.clear();
+  robot_pos = x_start;
 }
 
-void algos::RRTX::PlanStep(std::vector<state::SoccerObject>& soccer_objects) {
+void algos::RRTX::PlanStep(std::vector<state::SoccerObject>& obstacles) {
   double r = ShrinkingBallRadius();
-
-  if (HasObstaclesChanged(soccer_objects)) {
-    UpdateObstacles(soccer_objects);
-  }
 
   // Sample random node
   state::Waypoint v_rand = RandomNode();
@@ -193,6 +190,8 @@ void algos::RRTX::UpdateObstacles(std::vector<state::SoccerObject>& new_obstacle
   // Detect vanished and appeared obstacles
   std::vector<state::SoccerObject> vanished_obstacles = FindVanishedObstacles(new_obstacles);
   std::vector<state::SoccerObject> appeared_obstacles = FindAppearedObstacles(new_obstacles);
+  std::vector<std::pair<state::SoccerObject, state::SoccerObject>> moved_obstacles =
+      FindMovedObstacles(new_obstacles);
 
   // Lines 1-4: Handle vanished obstacles
   if (!vanished_obstacles.empty()) {             // Line 1: if ∃O : O ∈ O ∧ O has vanished
@@ -212,6 +211,22 @@ void algos::RRTX::UpdateObstacles(std::vector<state::SoccerObject>& new_obstacle
     ReduceInconsistency();   // Line 10: reduceInconsistency()
   }
 
+  if (!moved_obstacles.empty()) {
+    for (auto& [old_obs, new_obs] : moved_obstacles) {
+      // Remove old obstacle
+      RemoveObstacle(old_obs);
+      // Add obstacle at new position
+      AddNewObstacle(new_obs);
+    }
+    PropogateDescendants();
+    VerifyQueue(v_bot_idx);
+    ReduceInconsistency();
+  }
+
+  std::cout << "[RRTX::UpdateObstacles] Updated obstacles: "
+            << "Vanished: " << vanished_obstacles.size()
+            << ", Appeared: " << appeared_obstacles.size() << ", Moved: " << moved_obstacles.size()
+            << std::endl;
   // Update obstacle tracking
   current_obstacles = new_obstacles;
 }
@@ -355,38 +370,17 @@ std::set<std::pair<int, int>> algos::RRTX::GetEdgesIntersectingObstacle(
   return intersecting_edges;
 }
 
-bool algos::RRTX::IsTrajectoryBlockedByObstacle(const state::Waypoint& from,
-                                                const state::Waypoint& to,
+bool algos::RRTX::IsTrajectoryBlockedByObstacle(state::Waypoint& from, state::Waypoint& to,
                                                 state::SoccerObject& obstacle) {
   // Calculate path length
-  double dx = to.x - from.x;
-  double dy = to.y - from.y;
-  double path_length = sqrt(dx * dx + dy * dy);
+  double total_radius =
+      (2 * obstacle.radius_m) + 0.02;  // Robot Radius + Obstacle(i-e Robot) Radius + Safety Margin
 
-  // Calculate number of samples based on robot radius
-  int num_samples = static_cast<int>(ceil(path_length / obstacle.radius_m)) + 1;
+  // Create obstacle center as waypoint for your function
+  state::Waypoint obstacle_center(obstacle.position[0], obstacle.position[1], 0.0);
+  double distance = PerpendicularDistanceToLineSegment(obstacle_center, from, to);
 
-  // Ensure minimum sampling
-  num_samples = std::max(num_samples, 3);  // At least start, middle, end
-
-  for (int i = 0; i <= num_samples; ++i) {
-    double t = static_cast<double>(i) / num_samples;
-    state::Waypoint sample_point;
-    sample_point.x = from.x + t * dx;
-    sample_point.y = from.y + t * dy;
-    sample_point.angle = from.angle + t * (to.angle - from.angle);
-
-    // Create temp robot for collision check
-    state::SoccerObject temp_robot(
-        "temp_traj", Eigen::Vector3d(sample_point.x, sample_point.y, sample_point.angle),
-        Eigen::Vector2d(obstacle.radius_m * 2, obstacle.radius_m * 2), Eigen::Vector3d::Zero(),
-        Eigen::Vector3d::Zero(), 1.0);
-
-    if (kin::CheckCircularCollision(temp_robot, obstacle)) {
-      return true;
-    }
-  }
-  return false;
+  return distance <= total_radius;
 }
 
 void algos::RRTX::AddNewObstacle(state::SoccerObject& new_obstacle) {
@@ -404,14 +398,42 @@ void algos::RRTX::AddNewObstacle(state::SoccerObject& new_obstacle) {
 
     // Line 5: if p+T(v) = u then verrifyOrphan(v)
     if (Vertices[v_idx].parent_idx == u_idx) {
-      VerifyOrphan(v_idx);  // YOU ALREADY HAVE THIS
+      VerifyOrphan(v_idx);
     }
 
     // Line 6: if vbot ∈ π(v, u) then πbot = ∅
     if (IsRobotOnEdge(v_idx, u_idx)) {
-      ClearRobotPath();  // Need to implement this
+      ClearRobotPath();
     }
   }
+}
+
+double algos::RRTX::PerpendicularDistanceToLineSegment(state::Waypoint& point,
+                                                       state::Waypoint& line_start,
+                                                       state::Waypoint& line_end) {
+  // Vector from line_start to line_end
+  double dx = line_end.x - line_start.x;
+  double dy = line_end.y - line_start.y;
+
+  // If line segment is essentially a point
+  if (dx * dx + dy * dy < 1e-10) {
+    return sqrt((point.x - line_start.x) * (point.x - line_start.x) +
+                (point.y - line_start.y) * (point.y - line_start.y));
+  }
+
+  // Parameter t for closest point on line segment
+  double t = ((point.x - line_start.x) * dx + (point.y - line_start.y) * dy) / (dx * dx + dy * dy);
+
+  // Clamp t to [0,1] to stay within line segment
+  t = std::max(0.0, std::min(1.0, t));
+
+  // Closest point on line segment
+  double closest_x = line_start.x + t * dx;
+  double closest_y = line_start.y + t * dy;
+
+  // Distance from point to closest point on segment
+  return sqrt((point.x - closest_x) * (point.x - closest_x) +
+              (point.y - closest_y) * (point.y - closest_y));
 }
 
 void algos::RRTX::RemoveEdgeConnection(int v_idx, int u_idx) {
@@ -458,27 +480,23 @@ void algos::RRTX::RemoveEdgeConnection(int v_idx, int u_idx) {
 }
 
 bool algos::RRTX::IsRobotOnEdge(int v_idx, int u_idx) {
-  // Check if robot position lies on the edge between v and u
-  const auto& robot_pos = Vertices[v_bot_idx].wp;
-  const auto& v_pos = Vertices[v_idx].wp;
-  const auto& u_pos = Vertices[u_idx].wp;
+  auto& robot_pos = Vertices[v_bot_idx].wp;
+  auto& v_pos = Vertices[v_idx].wp;
+  auto& u_pos = Vertices[u_idx].wp;
 
-  // Simple check: is robot close to the line segment?
-  double edge_length = d_pi(v_pos, u_pos);
-  double dist_v_robot = d_pi(v_pos, robot_pos);
-  double dist_u_robot = d_pi(u_pos, robot_pos);
+  double distance = PerpendicularDistanceToLineSegment(robot_pos, v_pos, u_pos);
+  double robot_radius = cfg::SystemConfig::robot_size_m[0] / 2.0;  // Assuming square robot
 
-  // Robot is on edge if dist_v_robot + dist_u_robot ≈ edge_length
-  return std::abs((dist_v_robot + dist_u_robot) - edge_length) < 0.05;
+  return distance <= robot_radius;  // Robot body intersects edge
 }
 
 void algos::RRTX::ClearRobotPath() {
-  // Option 1: Mark robot as needing replanning
+  // Mark robot as needing replanning
   Vertices[v_bot_idx].g = std::numeric_limits<double>::infinity();
   Vertices[v_bot_idx].lmc = std::numeric_limits<double>::infinity();
   Vertices[v_bot_idx].parent_idx = -1;
 
-  // Option 2: Add to verification queue
+  // Add to verification queue
   VerifyQueue(v_bot_idx);
 }
 
@@ -520,6 +538,19 @@ std::pair<double, double> algos::RRTX::getKey(int v_idx) {
 }
 
 void algos::RRTX::MakeParentOf(int parent_idx, int child_idx) {
+  int check_idx = parent_idx;
+  std::unordered_set<int> visited;
+
+  while (check_idx != -1) {
+    if (check_idx == child_idx) {
+      std::cout << "[RRTX] Cycle prevented: " << parent_idx << " -> " << child_idx << std::endl;
+      return;  // Would create cycle
+    }
+    if (visited.count(check_idx)) break;  // Already has cycle
+    visited.insert(check_idx);
+    check_idx = Vertices[check_idx].parent_idx;
+  }
+
   if (Vertices[child_idx].parent_idx != -1) {
     int old_parent = Vertices[child_idx].parent_idx;
     auto& children = Vertices[old_parent].C_minus_T;
@@ -545,7 +576,7 @@ std::vector<int> algos::RRTX::getOutNeighbors(int v_idx) {
   return neighbors;
 }
 
-bool algos::RRTX::TrajectoryValid(const state::Waypoint& a, const state::Waypoint& b) {
+bool algos::RRTX::TrajectoryValid(state::Waypoint& a, state::Waypoint& b) {
   // Check endpoints first
   if (IsInObstacle(a) || IsInObstacle(b)) {
     return false;
@@ -574,7 +605,7 @@ bool algos::RRTX::IsInObstacle(const state::Waypoint& wp) {
 
   for (auto& obstacle : current_obstacles) {
     state::SoccerObject temp_robot("temp_check", Eigen::Vector3d(wp.x, wp.y, wp.angle),
-                                   Eigen::Vector2d(0.1, 0.1),  // Use robot size
+                                   cfg::SystemConfig::robot_size_m,  // Use robot size
                                    Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), 1.0);
 
     if (kin::CheckCircularCollision(temp_robot, obstacle)) {
@@ -660,33 +691,39 @@ state::Waypoint algos::RRTX::RandomNode() {
 state::Path algos::RRTX::ReconstructPath() {
   state::Path path;
 
-  // Check if we have a solution from current robot position
-  if (Vertices[v_bot_idx].g >= std::numeric_limits<double>::infinity()) {
-    return path;  // Return empty path if no solution
+  if (Vertices[v_bot_idx].g == std::numeric_limits<double>::infinity()) {
+    return path;  // No path exists
   }
 
-  // In RRT-X: follow parent chain from current robot position TO goal
+  // Validate each edge in the path before adding it
+  std::vector<int> vertex_path;
   int current_idx = v_bot_idx;
 
-  while (current_idx != -1) {
-    path.push_back(Vertices[current_idx].wp);
+  while (current_idx != -1 && current_idx != v_goal_idx) {
+    vertex_path.push_back(current_idx);
+    int parent_idx = Vertices[current_idx].parent_idx;
 
-    // Break if we reach goal
-    if (current_idx == v_goal_idx) {
-      break;
+    // Validate edge from current to parent
+    if (parent_idx != -1) {
+      if (!TrajectoryValid(Vertices[current_idx].wp, Vertices[parent_idx].wp)) {
+        // Path is invalid, trigger replanning
+        return state::Path();
+      }
     }
 
-    // Follow parent chain toward goal
-    current_idx = Vertices[current_idx].parent_idx;
-
-    // Safety check to prevent infinite loops
-    if (path.size() > Vertices.size()) {
-      std::cout << "[RRTX] Path reconstruction failed - possible cycle detected" << std::endl;
-      return state::Path();  // Return empty path
-    }
+    current_idx = parent_idx;
   }
 
-  // Path now goes from current robot position to goal following parent pointers
+  if (current_idx == v_goal_idx) {
+    vertex_path.push_back(v_goal_idx);
+  }
+
+  // Build path
+  path.push_back(robot_pos);
+  for (int idx : vertex_path) {
+    path.push_back(Vertices[idx].wp);
+  }
+
   return path;
 }
 
@@ -701,7 +738,25 @@ double algos::RRTX::GetSolutionCost() {
 }
 
 void algos::RRTX::UpdateRobotPosition(const state::Waypoint& new_pos) {
-  Vertices[v_bot_idx].wp = new_pos;
+  double movement = (Vertices[v_bot_idx].wp - new_pos).Norm();
+  const double ROBOT_MOVEMENT_THRESHOLD = 0.05;  // 2cm threshold
+
+  if (movement < ROBOT_MOVEMENT_THRESHOLD) {
+    return;  // No significant movement
+  }
+
+  // Store robot position separately (don't modify vertices!)
+  robot_pos = new_pos;
+
+  // Find the nearest vertex to the robot's new position
+  int nearest_idx = Nearest(robot_pos);
+
+  // Update v_bot_idx to point to nearest vertex (not modify the vertex itself!)
+  v_bot_idx = nearest_idx;
+
+  // Optional: Debug output to track robot movement
+  std::cout << "Robot moved to: (" << robot_pos.x << ", " << robot_pos.y
+            << "), nearest vertex: " << v_bot_idx << std::endl;
 }
 
 bool algos::RRTX::HasObstaclesChanged(const std::vector<state::SoccerObject>& new_obstacles) {
@@ -710,7 +765,7 @@ bool algos::RRTX::HasObstaclesChanged(const std::vector<state::SoccerObject>& ne
     return true;  // Different number of obstacles
   }
 
-  const double MOVEMENT_THRESHOLD = 0.05;  // 5cm threshold
+  const double MOVEMENT_THRESHOLD = 0.01;  // 1cm threshold
 
   // Use name-based comparison instead of index-based
   for (const auto& new_obs : new_obstacles) {
@@ -800,6 +855,27 @@ void algos::RRTX::UpdateGoal(const state::Waypoint& new_goal) {
   // Process inconsistencies to rebuild tree with new goal
   ReduceInconsistency();
 }
+std::vector<std::pair<state::SoccerObject, state::SoccerObject>> algos::RRTX::FindMovedObstacles(
+    std::vector<state::SoccerObject>& new_obstacles) {
+  std::vector<std::pair<state::SoccerObject, state::SoccerObject>> moved;
+
+  const double MOVEMENT_THRESHOLD = 0.05;  // 5cm threshold
+
+  for (auto& new_obs : new_obstacles) {
+    for (auto& current_obs : current_obstacles) {
+      if (new_obs.name == current_obs.name) {
+        double distance = (new_obs.position - current_obs.position).norm();
+        if (distance > MOVEMENT_THRESHOLD) {
+          // Same obstacle, but moved significantly
+          moved.push_back({current_obs, new_obs});
+        }
+        break;  // Found matching obstacle
+      }
+    }
+  }
+
+  return moved;
+}
 
 std::vector<state::SoccerObject> algos::RRTX::FindVanishedObstacles(
     std::vector<state::SoccerObject>& new_obstacles) {
@@ -844,5 +920,5 @@ std::vector<state::SoccerObject> algos::RRTX::FindAppearedObstacles(
 bool algos::RRTX::ObstaclesEqual(state::SoccerObject& obs1, state::SoccerObject& obs2) {
   // Use name comparison or position threshold
   return (obs1.name == obs2.name) &&
-         ((obs1.position - obs2.position).norm() < 0.05);  // 5cm threshold
+         ((obs1.position - obs2.position).norm() < 0.01);  // 1cm threshold
 }

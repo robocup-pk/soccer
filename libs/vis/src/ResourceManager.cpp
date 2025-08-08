@@ -92,7 +92,7 @@ vis::Texture2D vis::ResourceManager::loadTextureFromFile(const char* file, bool 
     texture.Internal_Format = GL_RGBA;
     texture.Image_Format = GL_RGBA;
   }
-  
+
   // now generate texture
   texture.Generate(width, height, data);
   // and finally free image data
