@@ -52,8 +52,9 @@ bool UniformBSplineTrajectoryPlanner::SetPath(const std::vector<Eigen::Vector3d>
         ApplyBoundaryConstraints();
         
         // Generate uniform knot vector
-        GenerateUniformKnotVector();
-        
+        //GenerateUniformKnotVector();
+        GenerateCentripetalKnotVector();
+
         // Calculate arc length for velocity planning
         CalculateArcLength();
         
@@ -73,11 +74,14 @@ bool UniformBSplineTrajectoryPlanner::SetPath(const std::vector<Eigen::Vector3d>
             trajectory_duration_ = 2 * accel_time + cruise_distance / v_max_;
         }
         
+        
         is_trajectory_active_ = true;
         is_trajectory_finished_ = false;
         
         // Reset control state
         has_previous_update_ = false;
+        has_previous_command_ = false;  // Reset velocity filter
+        previous_velocity_command_ = Eigen::Vector3d::Zero();
         previous_pose_error_ = Eigen::Vector3d::Zero();
         previous_update_time_ = 0.0;
         t_error_integral_ = 0.0;
@@ -87,6 +91,13 @@ bool UniformBSplineTrajectoryPlanner::SetPath(const std::vector<Eigen::Vector3d>
                   << "Control points: " << control_points_.size() 
                   << ", Arc length: " << total_arc_length_ << "m"
                   << ", Duration: " << trajectory_duration_ << "s" << std::endl;
+        
+        // Debug: check endpoint interpolation
+        Eigen::Vector3d start_point = EvaluateBSpline(0.0);
+        Eigen::Vector3d end_point = EvaluateBSpline(1.0);
+        std::cout << "[DEBUG] Spline start: (" << start_point[0] << ", " << start_point[1] << ", " << start_point[2] << ")" << std::endl;
+        std::cout << "[DEBUG] Spline end: (" << end_point[0] << ", " << end_point[1] << ", " << end_point[2] << ")" << std::endl;
+        std::cout << "[DEBUG] Expected end: (" << waypoints_.back()[0] << ", " << waypoints_.back()[1] << ", " << waypoints_.back()[2] << ")" << std::endl;
         
         return true;
         
@@ -155,29 +166,42 @@ void UniformBSplineTrajectoryPlanner::GenerateControlPointsFromWaypoints() {
                     
                     // For 90-degree corners on a square path
                     if (std::abs(angle - M_PI/2) < 0.1) {
-                        // Place control points on an arc inside the corner
-                        // This ensures the convex hull property keeps the trajectory inside
-                        double corner_offset = 0.05; // 5cm inside corner
+                        // Standard corner handling
+                        double corner_offset = 0.025; // 2.5cm offset for smooth corners
                         
-                        // Before corner
+                        // Before corner - very close to waypoint
                         Eigen::Vector3d before_corner = curr;
                         before_corner.head<2>() = curr.head<2>() - v1 * corner_offset;
                         control_points_.push_back(before_corner);
                         
-                        // Corner point (pulled inward)
+                        // Corner point - minimal inward offset for tight tracking
                         Eigen::Vector3d corner_point = curr;
-                        corner_point.head<2>() = curr.head<2>() + bisector * corner_offset * 0.7;
+                        corner_point.head<2>() = curr.head<2>() + bisector * corner_offset * 0.5;  // Standard inward pull
                         control_points_.push_back(corner_point);
                         
-                        // After corner
+                        // After corner - very close to waypoint
                         Eigen::Vector3d after_corner = curr;
                         after_corner.head<2>() = curr.head<2>() + v2 * corner_offset;
-                        after_corner[2] = curr[2] + 0.5 * NormalizeAngle(next[2] - curr[2]);
                         control_points_.push_back(after_corner);
                         
                     } else {
                         // Other sharp corners
-                        control_points_.push_back(curr);
+                        double general_offset = 0.08; // 8cm for other angles
+                        
+                        // Before corner
+                        Eigen::Vector3d before_corner = curr;
+                        before_corner.head<2>() = curr.head<2>() - v1 * general_offset;
+                        control_points_.push_back(before_corner);
+                        
+                        // Corner point
+                        Eigen::Vector3d corner_point = curr;
+                        corner_point.head<2>() = curr.head<2>() + bisector * general_offset * 0.4;
+                        control_points_.push_back(corner_point);
+                        
+                        // After corner
+                        Eigen::Vector3d after_corner = curr;
+                        after_corner.head<2>() = curr.head<2>() + v2 * general_offset;
+                        control_points_.push_back(after_corner);
                     }
                 } else {
                     // Smooth corner or straight line
@@ -202,6 +226,48 @@ void UniformBSplineTrajectoryPlanner::GenerateControlPointsFromWaypoints() {
             control_points_.push_back(Eigen::Vector3d::Zero());
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+//  Centripetal knot vector (open, clamped) –
+//  internal knots are spaced according to the √(chord-length) between control
+//  points, which prevents tight corners from getting too little “time”.
+// ---------------------------------------------------------------------------
+void UniformBSplineTrajectoryPlanner::GenerateCentripetalKnotVector()
+{
+    knot_vector_.clear();
+
+    const int n = static_cast<int>(control_points_.size()) - 1; // last index
+    const int p = SPLINE_DEGREE;                                // spline degree
+    const int m = n + p + 1;                                    // last knot index
+
+    // 1.  Parameter-values u[i] using centripetal (√chord-length) measure
+    std::vector<double> u(n + 1, 0.0);          // u[0] = 0
+    double total = 0.0;
+    for (int i = 1; i <= n; ++i)
+    {
+        // chord length in XY plane (orientation does not affect spacing)
+        double chord =  (control_points_[i].head<2>() -
+                         control_points_[i - 1].head<2>()).norm();
+        total       += std::sqrt(chord);        // centripetal → √-distance
+        u[i]         = total;
+    }
+    for (double &val : u) val /= total;         // normalise to [0,1]
+
+    // 2.  Build open (clamped) knot vector
+    //     first (p+1) zeros, last (p+1) ones
+    for (int i = 0; i <= p; ++i) knot_vector_.push_back(0.0);
+
+    const int num_internal = m - 2 * (p + 1);   // how many interior knots?
+    for (int j = 1; j <= num_internal; ++j)
+    {
+        // each interior knot is the average of p consecutive u’s
+        double sum = 0.0;
+        for (int k = j; k < j + p; ++k) sum += u[k];
+        knot_vector_.push_back(sum / p);
+    }
+
+    for (int i = 0; i <= p; ++i) knot_vector_.push_back(1.0);
 }
 
 void UniformBSplineTrajectoryPlanner::GenerateUniformKnotVector() {
@@ -325,8 +391,9 @@ void UniformBSplineTrajectoryPlanner::CalculateArcLength() {
         double angular_dist = std::abs(NormalizeAngle(current_point[2] - prev_point[2]));
         
         // Weight angular distance (robot radius ~0.09m)
-        // Reduce weight for angular distance to avoid overestimating arc length
-        double segment_length = linear_dist + 0.05 * angular_dist;
+        // Use smaller weight for angular distance to avoid overestimating arc length
+        // For straight paths, angular changes should have minimal impact
+        double segment_length = linear_dist + 0.02 * angular_dist;
         
         total_arc_length_ += segment_length;
         arc_length_samples_.push_back(total_arc_length_);
@@ -414,13 +481,15 @@ double UniformBSplineTrajectoryPlanner::ComputeDesiredSpeed(double elapsed_time)
     } else {
         // Trapezoidal profile
         double cruise_time = (total_arc_length_ - 2 * accel_distance) / v_max_;
+        double total_time = 2 * accel_time + cruise_time;
         
         if (elapsed_time < accel_time) {
             return a_max_ * elapsed_time;
         } else if (elapsed_time < accel_time + cruise_time) {
             return v_max_;
-        } else if (elapsed_time < 2 * accel_time + cruise_time) {
-            return v_max_ - a_max_ * (elapsed_time - accel_time - cruise_time);
+        } else if (elapsed_time < total_time) {
+            double decel_time = elapsed_time - accel_time - cruise_time;
+            return std::max(0.0, v_max_ - a_max_ * decel_time);
         } else {
             return 0.0;
         }
@@ -472,102 +541,215 @@ Eigen::Vector3d UniformBSplineTrajectoryPlanner::Update(const Eigen::Vector3d& c
     
     double elapsed_time = current_time - trajectory_start_time_;
     
-    // Check if trajectory is finished
+    // Check if trajectory is finished with smooth deceleration
     if (elapsed_time >= trajectory_duration_) {
-        is_trajectory_finished_ = true;
-        is_trajectory_active_ = false;
-        // Reset integral term
-        t_error_integral_ = 0.0;
-        return Eigen::Vector3d::Zero();
+        // Instead of abruptly stopping, smoothly decelerate to final position
+        Eigen::Vector3d final_target = EvaluateBSpline(1.0);
+        Eigen::Vector3d position_error = final_target - current_pose;
+        
+        // Debug output once
+        static bool debug_printed = false;
+        if (!debug_printed) {
+            std::cout << "[DEBUG] Trajectory ended. Current pose: (" << current_pose[0] << ", " 
+                      << current_pose[1] << ", " << current_pose[2] << ")" << std::endl;
+            std::cout << "[DEBUG] Final target: (" << final_target[0] << ", " 
+                      << final_target[1] << ", " << final_target[2] << ")" << std::endl;
+            std::cout << "[DEBUG] Position error: " << position_error.head<2>().norm() << "m" << std::endl;
+            debug_printed = true;
+        }
+        
+        // Check if we're close enough to the final position
+        double position_tolerance = 0.02; // 2cm
+        double angle_tolerance = 0.05; // ~3 degrees
+        
+        if (position_error.head<2>().norm() < position_tolerance && 
+            std::abs(NormalizeAngle(position_error[2])) < angle_tolerance) {
+            is_trajectory_finished_ = true;
+            is_trajectory_active_ = false;
+            t_error_integral_ = 0.0;
+            debug_printed = false; // Reset for next trajectory
+            return Eigen::Vector3d::Zero();
+        }
+        
+        // Apply P-controller to reach final position
+        Eigen::Vector3d velocity_command;
+        
+        // Use moderate gains for final approach
+        velocity_command.head<2>() = kp_ * 10.0 * position_error.head<2>();
+        velocity_command[2] = kp_ * 10.0 * NormalizeAngle(position_error[2]);
+        
+        // Apply stricter velocity limits for final approach
+        double max_final_vel = 0.10; // 15 cm/s max for final approach
+        double max_final_omega = 0.3; // 0.3 rad/s max for final rotation
+        velocity_command[0] = std::clamp(velocity_command[0], -max_final_vel, max_final_vel);
+        velocity_command[1] = std::clamp(velocity_command[1], -max_final_vel, max_final_vel);
+        velocity_command[2] = std::clamp(velocity_command[2], -max_final_omega, max_final_omega);
+        
+        return velocity_command;
     }
     
     // Time step
     double dt = has_previous_update_ ? (current_time - previous_update_time_) : 0.01;
     dt = std::max(dt, 0.001);  // Minimum 1ms to avoid division issues
     
-    // 1. Compute desired parameter based on time and speed
+    // EWOK-style approach: compute desired position/velocity from time-parameterized trajectory
     double desired_arc_length = ComputeDesiredArcLength(elapsed_time);
-    double t_desired = ArcLengthToParameter(desired_arc_length);
+    double u_desired = ArcLengthToParameter(desired_arc_length);
     
-    // 2. Find actual parameter (closest point on spline)
-    double t_actual = FindClosestParameter(current_pose.head<2>());
+    // Get desired pose and velocity from the trajectory
+    Eigen::Vector3d desired_pose = EvaluateBSpline(u_desired);
+    Eigen::Vector3d desired_velocity_tangent = EvaluateBSplineDerivative(u_desired, 1);
     
-    // 3. Longitudinal control (along path) with PID
-    double t_error = t_desired - t_actual;
-    t_error_integral_ += t_error * dt;
-    double t_error_dot = (t_error - t_error_prev_) / dt;
+    // Compute position error
+    Eigen::Vector3d pose_error = desired_pose - current_pose;
     
-    // Anti-windup for integral term
-    t_error_integral_ = std::clamp(t_error_integral_, -0.5, 0.5);
+    // Compute feedforward velocity from trajectory speed  
+    double desired_speed = ComputeDesiredSpeed(elapsed_time);
     
-    double t_dot_command = kp_longitudinal_ * t_error + 
-                          ki_longitudinal_ * t_error_integral_ + 
-                          kd_longitudinal_ * t_error_dot;
-    
-    // 4. Get path direction and base velocity
-    Eigen::Vector3d spline_tangent = EvaluateBSplineDerivative(t_actual, 1);
-    Eigen::Vector2d tangent = spline_tangent.head<2>();
-    
-    // Handle zero tangent case
-    if (tangent.norm() < 1e-6) {
-        // Use direction to next point if tangent is zero
-        if (t_actual < 0.99) {
-            Eigen::Vector3d next_point = EvaluateBSpline(t_actual + 0.01);
-            Eigen::Vector3d curr_point = EvaluateBSpline(t_actual);
-            tangent = (next_point - curr_point).head<2>();
-        }
+    // Normalize tangent for velocity direction
+    if (desired_velocity_tangent.head<2>().norm() > 1e-6) {
+        desired_velocity_tangent.head<2>().normalize();
+        desired_velocity_tangent.head<2>() *= desired_speed;
     }
     
-    if (tangent.norm() > 1e-6) {
-        tangent.normalize();
-    } else {
-        tangent = Eigen::Vector2d(1, 0);  // Default forward direction
-    }
-    
-    // Current speed along the path
-    double current_speed = ComputeDesiredSpeed(elapsed_time);
-    Eigen::Vector2d velocity_long = (current_speed + t_dot_command * current_speed) * tangent;
-    
-    // 5. Lateral control (cross-track error)
-    Eigen::Vector2d current_pos = current_pose.head<2>();
-    Eigen::Vector3d closest_point_3d = EvaluateBSpline(t_actual);
-    Eigen::Vector2d closest_point = closest_point_3d.head<2>();
-    Eigen::Vector2d cross_track = current_pos - closest_point;
-    
-    // Normal vector (perpendicular to tangent)
-    Eigen::Vector2d normal(-tangent[1], tangent[0]);
-    double lateral_error = cross_track.dot(normal);
-    Eigen::Vector2d velocity_lat = -kp_lateral_ * lateral_error * normal;
-    
-    // 6. Combine linear velocities
+    // Stable trajectory tracking with moderate cross-track correction
     Eigen::Vector3d velocity_command;
-    velocity_command.head<2>() = velocity_long + velocity_lat;
+    double curvature = 0.0;  // Declare curvature at outer scope
     
-    // 7. Angular control to match path heading
-    double desired_heading = std::atan2(tangent[1], tangent[0]);
-    
-    // Add a look-ahead for smoother turning
-    if (t_actual < 0.95) {
-        double look_ahead_param = std::min(t_actual + 0.05, 1.0);
-        Eigen::Vector3d look_ahead_tangent = EvaluateBSplineDerivative(look_ahead_param, 1);
-        if (look_ahead_tangent.head<2>().norm() > 1e-6) {
-            double look_ahead_heading = std::atan2(look_ahead_tangent[1], look_ahead_tangent[0]);
-            desired_heading = 0.7 * desired_heading + 0.3 * look_ahead_heading;
+    // Compute cross-track error (perpendicular to trajectory)
+    Eigen::Vector2d tangent_2d = desired_velocity_tangent.head<2>();
+    if (tangent_2d.norm() > 1e-6) {
+        tangent_2d.normalize();
+        
+        // Compute perpendicular vector (rotate 90 degrees)
+        Eigen::Vector2d perpendicular(-tangent_2d[1], tangent_2d[0]);
+        
+        // Project position error onto perpendicular direction (cross-track error)
+        double cross_track_error = pose_error.head<2>().dot(perpendicular);
+        
+        // Project position error onto tangent direction (along-track error)
+        double along_track_error = pose_error.head<2>().dot(tangent_2d);
+        
+        // Look ahead for corner detection (shorter lookahead for stability)
+        double lookahead_time = 0.15; // 150ms lookahead
+        double future_u = std::clamp(ArcLengthToParameter(ComputeDesiredArcLength(elapsed_time + lookahead_time)), 0.0, 1.0);
+        Eigen::Vector3d future_tangent = EvaluateBSplineDerivative(future_u, 1);
+        
+        // Calculate curvature for corner detection
+        if (future_tangent.head<2>().norm() > 1e-6) {
+            future_tangent.head<2>().normalize();
+            double angle_change = std::acos(std::clamp(tangent_2d.dot(future_tangent.head<2>()), -1.0, 1.0));
+            curvature = angle_change / lookahead_time;
         }
+        
+        // Simple stable gains
+        double cross_track_gain = 10.0;   // Base gain
+        double along_track_gain = 3.0;    // Along-track gain  
+        double speed_factor = 1.0;
+        
+        // Simple adaptive control
+        double error_magnitude = std::abs(cross_track_error);
+        
+        if (error_magnitude > 0.05) {  // More than 5cm error
+            cross_track_gain = 15.0;
+        } else if (error_magnitude > 0.02) {  // 2-5cm error  
+            cross_track_gain = 12.0;
+        }
+        // For <2cm error, use base gain of 10.0
+        
+        // Corner handling  
+        if (curvature > 1.5) {  // Sharp corner
+            cross_track_gain *= 1.5;  // Increase gain for corners
+            speed_factor = 0.7;  // Slow down
+        } else if (curvature > 1.0) {  // Moderate corner
+            cross_track_gain *= 1.2;  
+            speed_factor = 0.70;  // Slightly slower
+        }
+        
+        // Feedforward velocity
+        velocity_command.head<2>() = tangent_2d * (desired_speed * speed_factor);
+        
+        // Simple proportional control for cross-track error
+        velocity_command.head<2>() += perpendicular * (cross_track_gain * cross_track_error);
+        
+        // Simple proportional control for along-track error
+        velocity_command.head<2>() += tangent_2d * (along_track_gain * along_track_error);
+        
+        // Minimal pre-compensation
+        if (curvature > 2.5) {  // Very sharp corners only
+            velocity_command.head<2>() += perpendicular * 0.02;  // Fixed 2cm compensation
+        }
+        
+        // Remove anticipatory steering - it causes oscillations
+        // Just rely on the trajectory following
+    } else {
+        // Fallback position control with actual kp
+        velocity_command.head<2>() = kp_ * 2.0 * pose_error.head<2>();  // Use actual kp
+    }
+    
+    // Light damping
+    if (has_previous_update_ && dt > 0.001) {
+        Eigen::Vector3d error_derivative = (pose_error - previous_pose_error_) / dt;
+        double damping_gain = 0.1;  // Light damping
+        velocity_command.head<2>() -= damping_gain * error_derivative.head<2>();
+    }
+    
+    // Angular control: compute desired heading from trajectory direction
+    double desired_heading = 0.0;
+    
+    // Use moderate lookahead for smooth heading control
+    double heading_lookahead = 0.1; // 100ms lookahead
+    double heading_u = std::clamp(ArcLengthToParameter(ComputeDesiredArcLength(elapsed_time + heading_lookahead)), 0.0, 1.0);
+    Eigen::Vector3d heading_tangent = EvaluateBSplineDerivative(heading_u, 1);
+    
+    if (heading_tangent.head<2>().norm() > 0.1) {
+        desired_heading = std::atan2(heading_tangent[1], heading_tangent[0]);
+    } else if (velocity_command.head<2>().norm() > 0.1) {
+        // Use commanded velocity direction if trajectory tangent is too small
+        desired_heading = std::atan2(velocity_command[1], velocity_command[0]);
+    } else {
+        // Keep current heading if velocity is very small
+        desired_heading = current_pose[2];
     }
     
     double heading_error = NormalizeAngle(desired_heading - current_pose[2]);
-    velocity_command[2] = kp_angular_ * heading_error;
+    
+    // Moderate heading control for smooth orientation tracking
+    double heading_gain = 8.0;  // Fixed moderate gain
+    
+    // Reduce gain for small errors to prevent oscillation
+    if (std::abs(heading_error) < 0.1) {  // Less than ~6 degrees
+        heading_gain = 5.0;
+    } else if (std::abs(heading_error) > 0.5) {  // More than ~30 degrees
+        heading_gain = 12.0;  // Stronger correction for large errors
+    }
+    
+    velocity_command[2] = heading_gain * heading_error;
     
     // Update previous values for next iteration
-    t_error_prev_ = t_error;
+    previous_pose_error_ = pose_error;
     previous_update_time_ = current_time;
     has_previous_update_ = true;
     
     // Apply velocity limits
-    velocity_command[0] = std::clamp(velocity_command[0], -v_max_, v_max_);
-    velocity_command[1] = std::clamp(velocity_command[1], -v_max_, v_max_);
+    double vel_magnitude = velocity_command.head<2>().norm();
+    if (vel_magnitude > v_max_) {
+        velocity_command.head<2>() = velocity_command.head<2>().normalized() * v_max_;
+    }
+    
     velocity_command[2] = std::clamp(velocity_command[2], -omega_max_, omega_max_);
+    
+    // Light low-pass filter to reduce jitter
+    if (has_previous_command_) {
+        // Light filtering (0.6 = less smoothing for responsiveness)
+        double filter_alpha = 0.6;
+        velocity_command = filter_alpha * velocity_command + 
+                          (1.0 - filter_alpha) * previous_velocity_command_;
+    }
+    
+    // Store for next iteration
+    previous_velocity_command_ = velocity_command;
+    has_previous_command_ = true;
     
     return velocity_command;
 }
@@ -610,9 +792,11 @@ void UniformBSplineTrajectoryPlanner::SetFeedbackGains(double kp, double kd) {
     kp_ = kp;
     kd_ = kd;
     
-    // Reset derivative control state when gains change
+    // Reset control state when gains change
     has_previous_update_ = false;
     previous_pose_error_ = Eigen::Vector3d::Zero();
+    t_error_integral_ = 0.0;
+    t_error_prev_ = 0.0;
     
     std::cout << "[UniformBSplineTrajectoryPlanner] Feedback gains set to: kp=" << kp_ << ", kd=" << kd_ << std::endl;
 }

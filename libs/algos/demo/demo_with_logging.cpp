@@ -1,5 +1,7 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
+#include <chrono>
 #include "Waypoint.h"
 #include "GLSimulation.h"
 #include "SoccerObject.h"
@@ -7,31 +9,43 @@
 #include "Utils.h"
 #include "RRTX.h"
 #include "Kick.h"
-//#include "BsplineManager.h"
+
 using namespace std;
+
 int main(int argc, char* argv[]) {
-    std::cout << "[Demo] Running RobotManager demo" << std::endl;
+    std::cout << "[Demo] Running RobotManager demo with trajectory logging" << std::endl;
 
     // Initialize objects
-   vector<state::SoccerObject> soccer_objects;
+    vector<state::SoccerObject> soccer_objects;
     state::InitSoccerObjects(soccer_objects);
     vis::GLSimulation gl_simulation;
     gl_simulation.InitGameObjects(soccer_objects);
+    
     // Initialize RobotManager
     rob::RobotManager robot_manager;
     ctrl::BSplineTrajectoryManager bspline_manager;
-    bspline_manager.SetFeedbackGains(0.5, 0.1); // Set feedback gains for smoother control
+    bspline_manager.SetFeedbackGains(0.5, 0.1);
+    
     // Set initial robot pose
-    Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0); // Robot starts at origin facing up
+    Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0);
     robot_manager.InitializePose(robot_start_pose);
     vector<Eigen::Vector3d> waypoints;
-    robot_manager.GetUniformBSplinePlanner().SetLimits(0.8, 0.5, 0.8, 0.5); // v_max, a_max, omega_max, alpha_max
-    robot_manager.GetUniformBSplinePlanner().SetFeedbackGains(0.1, 0.05); // kp, kd (EWOK-style simplified gains)
+    robot_manager.GetUniformBSplinePlanner().SetLimits(0.8, 0.5, 0.8, 0.5);
+    robot_manager.GetUniformBSplinePlanner().SetFeedbackGains(0.1, 0.05);
+    
     // Choose a test case based on command line argument
     int test_case = 1;
     if (argc > 1) {
         test_case = std::atoi(argv[1]);
     }
+    
+    // Open log file for trajectory data
+    std::ofstream trajectory_log("trajectory_log.txt");
+    trajectory_log << "# Trajectory Log File" << std::endl;
+    trajectory_log << "# Format: timestamp(s) x(m) y(m) theta(rad) vx(m/s) vy(m/s) omega(rad/s)" << std::endl;
+    
+    // Log waypoints
+    trajectory_log << "# WAYPOINTS" << std::endl;
     
     switch (test_case) {
         case 1: {
@@ -85,74 +99,54 @@ int main(int argc, char* argv[]) {
             break;
         }
         default: {
-            // Default: The problematic sequence for testing
-            std::cout << "Test 4: Simple straight line (for debugging)" << std::endl;
+            // Default: Straight line
+            std::cout << "Test 4: Straight line" << std::endl;
             waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
             waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
             break;
         }
     }
     
-    // Print waypoints
+    // Log waypoints to file
+    for (size_t i = 0; i < waypoints.size(); ++i) {
+        trajectory_log << "# WP " << i << " " << waypoints[i][0] << " " 
+                      << waypoints[i][1] << " " << waypoints[i][2] << std::endl;
+    }
+    
     std::cout << "Waypoints:" << std::endl;
     for (size_t i = 0; i < waypoints.size(); ++i) {
         std::cout << "  " << i << ": (" << waypoints[i][0] << ", " 
                   << waypoints[i][1] << ", " << waypoints[i][2] << ")" << std::endl;
     }
     
-    std::cout << "\nTrajectory type options:" << std::endl;
-    std::cout << "  1: B-spline (traditional)" << std::endl;
-    std::cout << "  2: Uniform B-spline (EWOK-based)" << std::endl;
-    std::cout << "  3: Bezier trajectory (RoboJackets-style)" << std::endl;
-    std::cout << "  4: DB-RRT (Dynamically feasible B-spline based RRT)" << std::endl;
-
     // Choose trajectory type based on second argument
-    int traj_type = 1;
+    int traj_type = 2; // Default to Uniform B-spline
     if (argc > 2) {
         traj_type = std::atoi(argv[2]);
     }
     
+    trajectory_log << "# TRAJECTORY_TYPE " << traj_type << std::endl;
+    
     switch (traj_type) {
         case 1:
-            std::cout << "Using B-spline trajectory for smoother motion" << std::endl;
+            std::cout << "Using B-spline trajectory" << std::endl;
             robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BSpline);
             robot_manager.SetBSplinePath(waypoints, util::GetCurrentTime());
             break;
         case 2:
-            std::cout << "Using Uniform B-spline trajectory (EWOK-based) for robust motion" << std::endl;
+            std::cout << "Using Uniform B-spline trajectory (EWOK-based)" << std::endl;
             robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::UniformBSpline);
             robot_manager.SetUniformBSplinePath(waypoints, util::GetCurrentTime());
             break;
         case 3:
-            std::cout << "Using Bezier trajectory (RoboJackets-style) for accurate waypoint following" << std::endl;
+            std::cout << "Using Bezier trajectory" << std::endl;
             robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BezierTrajectory);
-            
-            // Configure planner
             robot_manager.GetBezierTrajectoryPlanner().SetLimits(0.8, 0.5, 2.5, 3.0);
             robot_manager.GetBezierTrajectoryPlanner().SetFeedbackGains(0.05, 0.3);
-            
-            // For square paths, use smaller corner cut distance
             if (test_case == 1) {
                 robot_manager.GetBezierTrajectoryPlanner().SetCornerCutDistance(0.05);
             }
-            
             robot_manager.SetBezierTrajectoryPath(waypoints, util::GetCurrentTime());
-            break;
-        case 4:
-            std::cout << "Using DB-RRT trajectory planner for dynamic path planning" << std::endl;
-            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::DBRRT);
-            
-            // Configure DB-RRT planner
-            robot_manager.GetDBRRTPlanner().SetDynamicLimits(1.0, 0.8, 3.0, 4.0);
-            robot_manager.GetDBRRTPlanner().SetBSplineParameters(3, 0.1);
-            robot_manager.GetDBRRTPlanner().SetControlGains(2.0, 0.5, 1.5, 0.5);
-            
-            // For DB-RRT, we plan to each waypoint sequentially
-            if (waypoints.size() > 1) {
-                // Plan to first waypoint that's different from start
-                Eigen::Vector3d goal = waypoints[2];
-                robot_manager.SetDBRRTGoal(goal);
-            }
             break;
         default:
             std::cout << "Using B-spline trajectory (default)" << std::endl;
@@ -160,13 +154,19 @@ int main(int argc, char* argv[]) {
             robot_manager.SetBSplinePath(waypoints, util::GetCurrentTime());
             break;
     }
-    // Add goals to the queue
     
-    // For DB-RRT, track current waypoint
+    trajectory_log << "# DATA_START" << std::endl;
+    
+    // Timing
+    auto start_time = std::chrono::steady_clock::now();
+    int frame_count = 0;
+    const int max_frames = 1000; // Limit to prevent infinite logging
+    
+    // For DB-RRT tracking
     int current_waypoint_idx = 1;
     bool db_rrt_finished = true;
     
-    while (true) {
+    while (frame_count < max_frames) {
         // Run simulation step
         if (!gl_simulation.RunSimulationStep(soccer_objects, util::CalculateDt())) {
             std::cout << "[Demo] Simulation finished" << std::endl;
@@ -181,40 +181,36 @@ int main(int argc, char* argv[]) {
         
         // Sense logic for RobotManager
         robot_manager.SenseLogic();
-
+        
+        // Get current robot state
+        Eigen::Vector3d current_pose = robot_manager.GetPoseInWorldFrame();
+        Eigen::Vector3d current_velocity = robot_manager.GetVelocityInWorldFrame();
+        
+        // Calculate timestamp
+        auto current_time = std::chrono::steady_clock::now();
+        std::chrono::duration<double> elapsed = current_time - start_time;
+        double timestamp = elapsed.count();
+        
+        // Log trajectory data
+        trajectory_log << timestamp << " " 
+                      << current_pose[0] << " " << current_pose[1] << " " << current_pose[2] << " "
+                      << current_velocity[0] << " " << current_velocity[1] << " " << current_velocity[2] 
+                      << std::endl;
         
         // Update soccer objects with current robot pose
-        soccer_objects[0].position = robot_manager.GetPoseInWorldFrame();
+        soccer_objects[0].position = current_pose;
         
-        // For DB-RRT, check if we need to replan to next waypoint
-        if (traj_type == 4 && waypoints.size() > 1 && !db_rrt_finished) {
-            Eigen::Vector3d current_pose = robot_manager.GetPoseInWorldFrame();
-            Eigen::Vector3d current_goal = waypoints[current_waypoint_idx];
-            double dist_to_goal = (current_pose.head<2>() - current_goal.head<2>()).norm();
-            
-            // If close to current goal, plan to next waypoint
-            if (dist_to_goal < 0.05 && robot_manager.GetRobotState() == "IDLE") {
-                current_waypoint_idx++;
-                
-                // Check if we've reached all waypoints
-                if (current_waypoint_idx >= waypoints.size()) {
-                    // For cyclic paths (like square), go back to waypoint 1
-                    if (waypoints.front().isApprox(waypoints.back(), 0.1)) {
-                        current_waypoint_idx = 1;
-                    } else {
-                        db_rrt_finished = true;
-                        std::cout << "[Demo] DB-RRT: Reached final waypoint!" << std::endl;
-                        continue;
-                    }
-                }
-                
-                std::cout << "[Demo] Reached waypoint " << (current_waypoint_idx-1) 
-                          << ", planning to waypoint " << current_waypoint_idx 
-                          << ": " << waypoints[current_waypoint_idx].transpose() << std::endl;
-                robot_manager.SetDBRRTGoal(waypoints[current_waypoint_idx]);
-            }
+        frame_count++;
+        
+        // Check if we should exit (press ESC in the window)
+        if (glfwGetKey(gl_simulation.GetRawGLFW(), GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+            break;
         }
     }
-
+    
+    trajectory_log.close();
+    std::cout << "[Demo] Trajectory data saved to trajectory_log.txt" << std::endl;
+    std::cout << "[Demo] Recorded " << frame_count << " frames" << std::endl;
+    
     return 0;
 }

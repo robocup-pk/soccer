@@ -14,6 +14,7 @@ target_link_libraries(demo_astar PRIVATE state_lib vis_lib cfg_lib rob_lib algos
 =======
 add_executable(demo_rrt_kick DemoRRTKick.cpp)
 add_executable(basic_demo demo.cpp)
+add_executable(demo_with_logging demo_with_logging.cpp)
 # Link required libraries
 target_link_libraries(demo_rrt_kick 
     algos_lib 
@@ -25,6 +26,7 @@ target_link_libraries(demo_rrt_kick
     utils_lib
     Eigen3::Eigen
 )
+<<<<<<< HEAD
 <<<<<<< HEAD
 add_executable(demo_opponent_dribbling DemoOpponentDribbling.cpp)
 target_link_libraries(demo_opponent_dribbling
@@ -53,6 +55,19 @@ add_executable(basic_demo demo.cpp)
 add_executable(simulate_log_file_demo simulate_log_file_demo.cpp)
 >>>>>>> 01c08237 (Simulate BSpline on real data)
 target_link_libraries(basic_demo 
+=======
+target_link_libraries(demo_with_logging 
+    algos_lib 
+    state_lib 
+    vis_lib 
+    kin_lib 
+    rob_lib 
+    cfg_lib 
+    utils_lib
+    Eigen3::Eigen
+)
+target_link_libraries(simulate_log_file_demo 
+>>>>>>> 376f91f0 (Improve BSpline Corner turns)
     algos_lib 
     state_lib 
     vis_lib 
