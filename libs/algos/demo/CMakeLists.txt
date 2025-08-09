@@ -15,6 +15,7 @@ target_link_libraries(demo_astar PRIVATE state_lib vis_lib cfg_lib rob_lib algos
 add_executable(demo_rrt_kick DemoRRTKick.cpp)
 add_executable(basic_demo demo.cpp)
 add_executable(demo_with_logging demo_with_logging.cpp)
+add_executable(demo_kalman_logging demo_kalman_logging.cpp)
 # Link required libraries
 target_link_libraries(demo_rrt_kick 
     algos_lib 
@@ -78,6 +79,7 @@ target_link_libraries(simulate_log_file_demo
     Eigen3::Eigen
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 <<<<<<< HEAD
 >>>>>>> 2cdab88a (Temp Changes)
@@ -117,6 +119,10 @@ target_link_libraries(demo_trajectory_comparison
 
 add_executable(demo_virtual_robot_bspline demo_virtual_robot_bspline.cpp)
 target_link_libraries(demo_virtual_robot_bspline 
+=======
+)
+target_link_libraries(demo_kalman_logging 
+>>>>>>> 95c268e7 (Debug Kalmans Filter)
     algos_lib 
     state_lib 
     vis_lib 
@@ -125,6 +131,7 @@ target_link_libraries(demo_virtual_robot_bspline
     cfg_lib 
     utils_lib
     est_lib
+<<<<<<< HEAD
     Eigen3::Eigen
 )
 
@@ -259,3 +266,8 @@ target_link_libraries(demo_bspline_corner_improved
 =======
 )
 >>>>>>> 01c08237 (Simulate BSpline on real data)
+=======
+    hw_lib
+    Eigen3::Eigen
+)
+>>>>>>> 95c268e7 (Debug Kalmans Filter)

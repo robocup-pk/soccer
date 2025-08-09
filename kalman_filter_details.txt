@@ -1,0 +1,643 @@
+===== UPDATE STEP (Camera Measurement) #1 =====
+Camera Input: -0.00372307  0.00427007    0.020478
+Position before update: 0 0 0
+Innovation (measurement - prediction): -0.00372307  0.00427007    0.020478
+Kalman Gain K:
+Corrected Position: -0.0037227 0.00426964   0.020427
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #2 =====
+Camera Input:   0.010486 0.00513952  0.0184488
+Position before update: -0.00159563   0.0043131    0.020427
+Innovation (measurement - prediction):   0.0120816 0.000826426 -0.00197817
+Kalman Gain K:
+Corrected Position:  0.0104262 0.00513543  0.0186482
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #3 =====
+Camera Input: -0.0174922 -0.0136485 -0.0319361
+Position before update:  0.0154197 0.00522856  0.0186482
+Innovation (measurement - prediction): -0.0329119  -0.018877 -0.0505842
+Kalman Gain K:
+Corrected Position: -0.0174103 -0.0136018 -0.0292078
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #4 =====
+Camera Input: -0.00913122 -0.00538876   0.0235251
+Position before update: -0.0109382 -0.0137909 -0.0292078
+Innovation (measurement - prediction): 0.00180698 0.00840211  0.0527329
+Kalman Gain K:
+Corrected Position: -0.00913719  -0.0054162   0.0198023
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #5 =====
+Camera Input:  0.0227865 -0.0216365 -0.0673606
+Position before update: -0.00164032 -0.00526773   0.0198023
+Innovation (measurement - prediction):  0.0244268 -0.0163688 -0.0871629
+Kalman Gain K:
+Corrected Position:  0.0227056 -0.0215831 -0.0612407
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #6 =====
+Camera Input: 0.0379509 0.0543295 0.0432703
+Position before update:  0.0314059 -0.0221166 -0.0612407
+Innovation (measurement - prediction): 0.00654492  0.0764461   0.104511
+Kalman Gain K:
+Corrected Position: 0.0379293 0.0540776  0.036581
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #7 =====
+Camera Input: 0.0140889  0.019449 0.0883329
+Position before update: 0.0479108 0.0544429  0.036581
+Innovation (measurement - prediction): -0.0338219 -0.0349939  0.0517518
+Kalman Gain K:
+Corrected Position: 0.0142009 0.0195655 0.0842195
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #8 =====
+Camera Input:   0.0602127 -0.00209057   0.0406853
+Position before update: 0.0288024 0.0207981 0.0842195
+Innovation (measurement - prediction):  0.0314103 -0.0228887 -0.0435342
+Kalman Gain K:
+Corrected Position:   0.0601088 -0.00201565    0.043361
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #9 =====
+Camera Input:   0.071139  0.0159762 -0.0368891
+Position before update:  0.0768496 -0.0012893   0.043361
+Innovation (measurement - prediction): -0.00571064   0.0172655  -0.0802501
+Kalman Gain K:
+Corrected Position:  0.0711579  0.0159176 -0.0307829
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #10 =====
+Camera Input:    0.119861 -0.00704571    0.020489
+Position before update:  0.0908051  0.0153126 -0.0307829
+Innovation (measurement - prediction):  0.0290562 -0.0223583  0.0512718
+Kalman Gain K:
+Corrected Position:   0.119789 -0.0069892  0.0172166
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #11 =====
+Camera Input:   0.115713 -0.0254687  0.0625491
+Position before update:     0.13623 -0.00670612   0.0172166
+Innovation (measurement - prediction): -0.0205164 -0.0187626  0.0453325
+Kalman Gain K:
+Corrected Position:   0.115781 -0.0254058  0.0589379
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #12 =====
+Camera Input:  0.111043 0.0224062 0.0385367
+Position before update:   0.132974 -0.0243913  0.0589379
+Innovation (measurement - prediction): -0.0219308  0.0467976 -0.0204012
+Kalman Gain K:
+Corrected Position:  0.111116 0.0222511 0.0409743
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #13 =====
+Camera Input:   0.196395 -0.0174479   0.058592
+Position before update:  0.133553  0.023171 0.0409743
+Innovation (measurement - prediction):  0.0628412 -0.0406189  0.0176178
+Kalman Gain K:
+Corrected Position:   0.196187 -0.0173133  0.0561614
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #14 =====
+Camera Input:    0.153451  -0.0340563 -0.00403633
+Position before update:   0.215877 -0.0162063  0.0561614
+Innovation (measurement - prediction): -0.0624257   -0.01785 -0.0601977
+Kalman Gain K:
+Corrected Position:     0.153658   -0.0339987 -3.11941e-05
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #15 =====
+Camera Input:   0.250111 0.00288132  0.0676631
+Position before update:     0.184989   -0.0339996 -3.11941e-05
+Innovation (measurement - prediction): 0.0651225  0.036881 0.0676943
+Kalman Gain K:
+Corrected Position:   0.249949 0.00279208  0.0649878
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #16 =====
+Camera Input:    0.258849 -0.00921473    0.023439
+Position before update:   0.271835 0.00421638  0.0649878
+Innovation (measurement - prediction): -0.0129855 -0.0134311 -0.0415488
+Kalman Gain K:
+Corrected Position:    0.258892 -0.00917143   0.0261037
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== PREDICTION STEP (Encoder Update) #50 =====
+Position after prediction:    0.273508 -0.00878982   0.0261037
+P-Matrix (State Covariance) after prediction:
+===== UPDATE STEP (Camera Measurement) #17 =====
+Camera Input:   0.216607 -0.0110394  0.0145052
+Position before update:     0.28145 -0.00858245   0.0261037
+Innovation (measurement - prediction):   -0.064843 -0.00245696  -0.0115986
+Kalman Gain K:
+Corrected Position:   0.216822 -0.0110316    0.01532
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #18 =====
+Camera Input:   0.261425 -0.0231021  0.0645041
+Position before update:   0.241558 -0.0106526    0.01532
+Innovation (measurement - prediction):  0.0198663 -0.0124495  0.0491841
+Kalman Gain K:
+Corrected Position:   0.261359 -0.0230596  0.0605848
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #19 =====
+Camera Input:   0.323673 -0.0136785 0.00656345
+Position before update:   0.288737 -0.0213988  0.0605848
+Innovation (measurement - prediction):  0.0349358 0.00772025 -0.0540214
+Kalman Gain K:
+Corrected Position:   0.323558 -0.0137058   0.010638
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #20 =====
+Camera Input:   0.325438 -0.0346384   -0.01873
+Position before update:   0.350993 -0.0134139   0.010638
+Innovation (measurement - prediction): -0.0255547 -0.0212244  -0.029368
+Kalman Gain K:
+Corrected Position:   0.325523 -0.0345693 -0.0172738
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #21 =====
+Camera Input:   0.36762 0.0119456 0.0567186
+Position before update:   0.356702 -0.0351079 -0.0172738
+Innovation (measurement - prediction): 0.0109187 0.0470535 0.0739924
+Kalman Gain K:
+Corrected Position:  0.367584  0.011793 0.0530025
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #22 =====
+Camera Input:   0.383821 0.00771407  0.0772961
+Position before update:  0.398379 0.0134267 0.0530025
+Innovation (measurement - prediction):  -0.0145578 -0.00571264   0.0242936
+Kalman Gain K:
+Corrected Position:   0.383869 0.00773377  0.0753715
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #23 =====
+Camera Input:    0.411557   -0.029703 -0.00266329
+Position before update:  0.416819  0.010222 0.0753715
+Innovation (measurement - prediction): -0.00526238   -0.039925  -0.0780348
+Kalman Gain K:
+Corrected Position:   0.411575 -0.0295746 0.00141602
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #24 =====
+Camera Input:   0.466152 -0.0172138  0.0669315
+Position before update:   0.443381 -0.0295296 0.00141602
+Innovation (measurement - prediction): 0.0227714 0.0123158 0.0655155
+Kalman Gain K:
+Corrected Position:   0.466077 -0.0172519  0.0626522
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #25 =====
+Camera Input:   0.495235 -0.0279166    0.04692
+Position before update:   0.495921 -0.0153797  0.0626522
+Innovation (measurement - prediction): -0.00068666   -0.012537  -0.0157323
+Kalman Gain K:
+Corrected Position:   0.495237 -0.0278758  0.0476283
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #26 =====
+Camera Input:  0.519295 0.0205916 0.0240035
+Position before update:   0.524858 -0.0264639  0.0476283
+Innovation (measurement - prediction): -0.00556314   0.0470555  -0.0236248
+Kalman Gain K:
+Corrected Position:  0.519313 0.0204356 0.0273674
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #27 =====
+Camera Input:   0.569646 -0.0295877 -0.0329046
+Position before update:  0.546104  0.021169 0.0273674
+Innovation (measurement - prediction):  0.0235419 -0.0507567  -0.060272
+Kalman Gain K:
+Corrected Position:   0.569568  -0.029422 -0.0301317
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #28 =====
+Camera Input:    0.563787   0.0161976 -0.00225642
+Position before update:   0.596186 -0.0302243 -0.0301317
+Innovation (measurement - prediction): -0.0323997   0.046422  0.0278753
+Kalman Gain K:
+Corrected Position:    0.563894   0.0160452 -0.00290029
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #29 =====
+Camera Input:    0.595233   0.0220936 -0.00501149
+Position before update:    0.587749   0.0159761 -0.00290029
+Innovation (measurement - prediction): 0.00748415 0.00611756 -0.0021112
+Kalman Gain K:
+Corrected Position:    0.595208   0.0220733 -0.00469338
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #30 =====
+Camera Input:   0.595871 0.00784712   0.088496
+Position before update:    0.618385   0.0219646 -0.00469338
+Innovation (measurement - prediction): -0.0225144 -0.0141174  0.0931894
+Kalman Gain K:
+Corrected Position:   0.595945 0.00789628  0.0814052
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #31 =====
+Camera Input:  0.665951 0.0273451 0.0138974
+Position before update:   0.617274 0.00963637  0.0814052
+Innovation (measurement - prediction):   0.048677  0.0177087 -0.0675078
+Kalman Gain K:
+Corrected Position:   0.66579 0.0272849 0.0190924
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #32 =====
+Camera Input:    0.660531 -0.00439235    -0.02233
+Position before update:  0.687085 0.0276915 0.0190924
+Innovation (measurement - prediction): -0.0265547 -0.0320838 -0.0414224
+Kalman Gain K:
+Corrected Position:    0.660618 -0.00428733  -0.0201009
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #33 =====
+Camera Input:   0.665395 0.00815159  0.0186997
+Position before update:    0.678995 -0.00465676  -0.0201009
+Innovation (measurement - prediction): -0.0135995  0.0128083  0.0388006
+Kalman Gain K:
+Corrected Position:    0.66544 0.00811006   0.016171
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== PREDICTION STEP (Encoder Update) #100 =====
+Position after prediction:   0.671636 0.00821025   0.016171
+P-Matrix (State Covariance) after prediction:
+===== UPDATE STEP (Camera Measurement) #34 =====
+Camera Input:     0.694514    0.0177144 -0.000855724
+Position before update:   0.683531 0.00840264   0.016171
+Innovation (measurement - prediction):  0.0109825 0.00931174 -0.0170267
+Kalman Gain K:
+Corrected Position:   0.694478  0.0176832 0.00055433
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #35 =====
+Camera Input:   0.720761 -0.0422389 0.00705672
+Position before update:   0.710461  0.0176921 0.00055433
+Innovation (measurement - prediction):  0.0103006  -0.059931 0.00650239
+Kalman Gain K:
+Corrected Position:   0.720727 -0.0420406 0.00550184
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #36 =====
+Camera Input:   0.767586 -0.0170557  -0.110263
+Position before update:   0.735188  -0.041961 0.00550184
+Innovation (measurement - prediction): 0.0323979 0.0249053 -0.115765
+Kalman Gain K:
+Corrected Position:  0.767479  -0.01714 -0.101537
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #37 =====
+Camera Input:   0.744791  0.0341948 0.00634446
+Position before update:   0.785619 -0.0189883  -0.101537
+Innovation (measurement - prediction): -0.0408286  0.0531831   0.107882
+Kalman Gain K:
+Corrected Position:   0.744893  0.0340645 0.00114359
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #38 =====
+Camera Input:    0.772984 -0.00673111   0.0128903
+Position before update:   0.757448  0.0340789 0.00114359
+Innovation (measurement - prediction): 0.0155358  -0.04081 0.0117467
+Kalman Gain K:
+Corrected Position:    0.772933 -0.00659591   0.0114759
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #39 =====
+Camera Input:  0.794641 0.0296445 0.0603951
+Position before update:    0.783736 -0.00647192   0.0114759
+Innovation (measurement - prediction): 0.0109049 0.0361164 0.0489192
+Kalman Gain K:
+Corrected Position:  0.794605 0.0295256 0.0573232
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #40 =====
+Camera Input:  0.790502 0.0412756 0.0363638
+Position before update:  0.806295 0.0301965 0.0573232
+Innovation (measurement - prediction): -0.0157929  0.0110791 -0.0209594
+Kalman Gain K:
+Corrected Position:  0.790555 0.0412386 0.0380331
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #41 =====
+Camera Input:   0.786556 -0.0240833  0.0765692
+Position before update:   0.79883 0.0415535 0.0380331
+Innovation (measurement - prediction):  -0.012274 -0.0656368  0.0385361
+Kalman Gain K:
+Corrected Position:   0.786597 -0.0238656  0.0732158
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #42 =====
+Camera Input:    0.793055 -0.00293122   0.0270218
+Position before update:   0.793795 -0.0233376  0.0732158
+Innovation (measurement - prediction): -0.000740766    0.0204064    -0.046194
+Kalman Gain K:
+Corrected Position:    0.793057 -0.00299914   0.0305018
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #43 =====
+Camera Input:    0.799877 -0.00255767   0.0336565
+Position before update:    0.798646 -0.00282863   0.0305018
+Innovation (measurement - prediction):  0.00123175 0.000270959  0.00315472
+Kalman Gain K:
+Corrected Position:    0.799873 -0.00255855   0.0334314
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #44 =====
+Camera Input:    0.86155 -0.0337782  0.0316245
+Position before update:   0.804159 -0.0024152  0.0334314
+Innovation (measurement - prediction):   0.0573904   -0.031363 -0.00180684
+Kalman Gain K:
+Corrected Position:    0.86136 -0.0336744   0.031599
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #45 =====
+Camera Input:  0.776557  0.020964 0.0190447
+Position before update:   0.864603 -0.0335719   0.031599
+Innovation (measurement - prediction): -0.0880462  0.0545359 -0.0125543
+Kalman Gain K:
+Corrected Position:  0.776849 0.0207834 0.0201426
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #46 =====
+Camera Input:   0.781317 -0.0122693 -0.0399337
+Position before update:  0.779088 0.0208285 0.0201426
+Innovation (measurement - prediction): 0.00222938 -0.0330978 -0.0600763
+Kalman Gain K:
+Corrected Position:    0.78131 -0.0121598 -0.0357031
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #47 =====
+Camera Input:   0.823245 0.00714709  0.0125781
+Position before update:   0.782122 -0.0121889 -0.0357031
+Innovation (measurement - prediction): 0.0411223 0.0193359 0.0482811
+Kalman Gain K:
+Corrected Position:   0.823108 0.00708309 0.00912224
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+[DEBUG] Position error: 0.00410153m
+===== UPDATE STEP (Camera Measurement) #48 =====
+Camera Input:    0.839827 -0.00450587   0.0476837
+Position before update:    0.82291 0.00708127 0.00912224
+Innovation (measurement - prediction):  0.0169178 -0.0115871  0.0385614
+Kalman Gain K:
+Corrected Position:    0.839785 -0.00447705   0.0455339
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #49 =====
+Camera Input:   0.798499 -0.0140432 0.00821594
+Position before update:    0.839785 -0.00447705   0.0455339
+Innovation (measurement - prediction):   -0.041286 -0.00956614   -0.037318
+Kalman Gain K:
+Corrected Position:   0.798636 -0.0140115  0.0108922
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== PREDICTION STEP (Encoder Update) #150 =====
+Position after prediction:   0.798636 -0.0140115  0.0108922
+P-Matrix (State Covariance) after prediction:
+===== UPDATE STEP (Camera Measurement) #50 =====
+Camera Input:     0.81979 -0.00845913   0.0226883
+Position before update:   0.798636 -0.0140115  0.0108922
+Innovation (measurement - prediction):  0.0211539 0.00555238  0.0117962
+Kalman Gain K:
+Corrected Position:     0.81972 -0.00847752   0.0218414
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #51 =====
+Camera Input:   0.808854 -0.0070742  0.0324222
+Position before update:     0.81972 -0.00847752   0.0218414
+Innovation (measurement - prediction): -0.0108656 0.00140332  0.0105808
+Kalman Gain K:
+Corrected Position:     0.80889 -0.00707885   0.0316626
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #52 =====
+Camera Input:    0.791012 -0.00268991   0.0558119
+Position before update:     0.80889 -0.00707885   0.0316626
+Innovation (measurement - prediction):  -0.017878 0.00438894  0.0241493
+Kalman Gain K:
+Corrected Position:    0.791071 -0.00270444    0.054078
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #53 =====
+Camera Input:   0.817603 0.00151366  0.0105706
+Position before update:    0.791071 -0.00270444    0.054078
+Innovation (measurement - prediction):   0.026532  0.0042181 -0.0435074
+Kalman Gain K:
+Corrected Position:   0.817516 0.00149969  0.0136943
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #54 =====
+Camera Input:    0.811528   0.0160778 -0.00720369
+Position before update:   0.817516 0.00149969  0.0136943
+Innovation (measurement - prediction): -0.00598754   0.0145781   -0.020898
+Kalman Gain K:
+Corrected Position:    0.811548   0.0160295 -0.00570328
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #55 =====
+Camera Input:   0.812486  0.0266283 -0.0664538
+Position before update:    0.811548   0.0160295 -0.00570328
+Innovation (measurement - prediction): 0.000938068   0.0105988  -0.0607506
+Kalman Gain K:
+Corrected Position:   0.812484   0.026602 -0.0630653
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #56 =====
+Camera Input:   0.788867 -0.0311472  0.0670364
+Position before update:   0.812484   0.026602 -0.0630653
+Innovation (measurement - prediction): -0.0236166 -0.0577491   0.130102
+Kalman Gain K:
+Corrected Position:   0.788945 -0.0309559  0.0577063
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #57 =====
+Camera Input:   0.778432 -0.0121155  0.0407357
+Position before update:   0.788945 -0.0309559  0.0577063
+Innovation (measurement - prediction): -0.0105128  0.0188404 -0.0169705
+Kalman Gain K:
+Corrected Position:   0.778467 -0.0121779  0.0419541
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #58 =====
+Camera Input:    0.788518  -0.0164702 -0.00612667
+Position before update:   0.778467 -0.0121779  0.0419541
+Innovation (measurement - prediction):   0.0100504 -0.00429226  -0.0480808
+Kalman Gain K:
+Corrected Position:    0.788484   -0.016456 -0.00267462
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #59 =====
+Camera Input:   0.826017 -0.0271355   0.074544
+Position before update:    0.788484   -0.016456 -0.00267462
+Innovation (measurement - prediction):   0.037533 -0.0106796  0.0772186
+Kalman Gain K:
+Corrected Position:   0.825893 -0.0271002  0.0689999
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #60 =====
+Camera Input:   0.785243 -0.0199258  0.0130515
+Position before update:   0.825893 -0.0271002  0.0689999
+Innovation (measurement - prediction): -0.0406504 0.00717437 -0.0559484
+Kalman Gain K:
+Corrected Position:   0.785377 -0.0199496  0.0170685
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #61 =====
+Camera Input:    0.791398 -0.00110573  -0.0104483
+Position before update:   0.785377 -0.0199496  0.0170685
+Innovation (measurement - prediction): 0.00602068  0.0188438 -0.0275168
+Kalman Gain K:
+Corrected Position:    0.791378 -0.00116813  -0.0084727
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #62 =====
+Camera Input:   0.81579 0.0120238 0.0571414
+Position before update:    0.791378 -0.00116813  -0.0084727
+Innovation (measurement - prediction): 0.0244119 0.0131919 0.0656141
+Kalman Gain K:
+Corrected Position:  0.815729  0.011991 0.0534815
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #63 =====
+Camera Input:    0.80017 -0.0280469 -0.0188184
+Position before update:  0.815729  0.011991 0.0534815
+Innovation (measurement - prediction): -0.0155594 -0.0400378    -0.0723
+Kalman Gain K:
+Corrected Position:   0.800221 -0.0279143 -0.0136335
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #64 =====
+Camera Input:   0.820631  0.0236739 -0.0247247
+Position before update:   0.800221 -0.0279143 -0.0136335
+Innovation (measurement - prediction):  0.0204094  0.0515882 -0.0110912
+Kalman Gain K:
+Corrected Position:   0.820563  0.0235031 -0.0239284
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #65 =====
+Camera Input:  0.801523 0.0109597 0.0214647
+Position before update:   0.820563  0.0235031 -0.0239284
+Innovation (measurement - prediction): -0.0190402 -0.0125434  0.0453931
+Kalman Gain K:
+Corrected Position:  0.801586 0.0110012 0.0182056
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== PREDICTION STEP (Encoder Update) #200 =====
+Position after prediction:  0.801586 0.0110012 0.0182056
+P-Matrix (State Covariance) after prediction:
+===== UPDATE STEP (Camera Measurement) #66 =====
+Camera Input:   0.805777 -0.0104459 0.00789393
+Position before update:  0.801586 0.0110012 0.0182056
+Innovation (measurement - prediction): 0.00419107 -0.0214471 -0.0103117
+Kalman Gain K:
+Corrected Position:   0.805763 -0.0103749 0.00863428
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #67 =====
+Camera Input:   0.828148 0.00874997  0.0688527
+Position before update:   0.805763 -0.0103749 0.00863428
+Innovation (measurement - prediction):  0.022385 0.0191248 0.0602184
+Kalman Gain K:
+Corrected Position:   0.828074 0.00868665  0.0645292
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #68 =====
+Camera Input:   0.823447  0.0066436 -0.0575976
+Position before update:   0.828074 0.00868665  0.0645292
+Innovation (measurement - prediction): -0.00462672 -0.00204304   -0.122127
+Kalman Gain K:
+Corrected Position:   0.823463 0.00665037 -0.0488293
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #69 =====
+Camera Input:     0.791525   -0.0145994 -0.000864443
+Position before update:   0.823463 0.00665037 -0.0488293
+Innovation (measurement - prediction): -0.0319374 -0.0212498  0.0479649
+Kalman Gain K:
+Corrected Position:    0.791605  -0.0145465 -0.00353983
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:
+===== UPDATE STEP (Camera Measurement) #70 =====
+Camera Input:  0.805609 0.0108397 0.0375299
+Position before update:    0.791605  -0.0145465 -0.00353983
+Innovation (measurement - prediction): 0.0140045 0.0253862 0.0410697
+Kalman Gain K:
+Corrected Position:  0.805563 0.0107557 0.0345846
+Innovation Covariance S:
+P-Matrix before update:
+P-Matrix after update:

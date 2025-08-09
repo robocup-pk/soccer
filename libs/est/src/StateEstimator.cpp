@@ -18,12 +18,17 @@ est::StateEstimator::StateEstimator() {
   pose_est << 0, 0, 0;
   initialized_gyro = false;
   initialized_encoder = false;
+  
+  // Initialize analysis variables
+  last_kalman_gain = Eigen::Matrix3d::Zero();
+  last_innovation = Eigen::Vector3d::Zero();
+  last_innovation_cov = Eigen::Matrix3d::Zero();
   // P_init
   init_sigma_m = 1;
   init_sigma_rad = 2 * M_PI;
 
   // Q
-  process_sigma_m = 0.01;
+  process_sigma_m = 0.1;// Old value = 0.01
   process_sigma_rad = 0.2 * M_PI;
 
   // R
@@ -116,6 +121,11 @@ void est::StateEstimator::NewCameraData(Eigen::Vector3d pose_meas) {
   Eigen::Vector3d innovation = pose_meas - pose_est;
   Eigen::Matrix3d innovation_cov = state_cov + meas_cov;
   Eigen::Matrix3d kalman_gain = state_cov * innovation_cov.inverse();
+  
+  // Store for analysis
+  last_innovation = innovation;
+  last_innovation_cov = innovation_cov;
+  last_kalman_gain = kalman_gain;
 
   // Pose Update
   pose_est += kalman_gain * innovation;
