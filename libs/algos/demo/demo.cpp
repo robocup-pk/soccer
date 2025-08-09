@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
     robot_manager.InitializePose(robot_start_pose);
     vector<Eigen::Vector3d> waypoints;
     robot_manager.GetUniformBSplinePlanner().SetLimits(0.8, 0.5, 0.8, 0.5); // v_max, a_max, omega_max, alpha_max
-    robot_manager.GetUniformBSplinePlanner().SetFeedbackGains(0.1, 0.05); // kp, kd (EWOK-style simplified gains)
+    robot_manager.GetUniformBSplinePlanner().SetFeedbackGains(0.02, 0.0); // kp, kd
     // Choose a test case based on command line argument
     int test_case = 1;
     if (argc > 1) {
@@ -35,60 +35,140 @@ int main(int argc, char* argv[]) {
     
     switch (test_case) {
         case 1: {
-            // Test 1: Simple square path
-            std::cout << "Test 1: Simple square path" << std::endl;
-            waypoints.push_back(Eigen::Vector3d(0, 0, 0));
-            waypoints.push_back(Eigen::Vector3d(-1, 0, 0));
-            waypoints.push_back(Eigen::Vector3d(-1, 1, 0));
-            waypoints.push_back(Eigen::Vector3d(0, 1, 0));
-            waypoints.push_back(Eigen::Vector3d(0, 0, 0));
+            // Test 1: Straight line trajectory
+            std::cout << "Test 1: Straight line trajectory" << std::endl;
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.0, 1.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.5, 0.5, 0.0));
+            // waypoints.push_back(Eigen::Vector3d(1.5, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
             break;
         }
         case 2: {
-            // Test 2: Circular path centered at origin
-            std::cout << "Test 2: Circular path" << std::endl;
-            int N = 24;  // Fewer points for smoother circle
-            double radius = 0.5;
-            
-            // Start from current robot position (0, 0) and move to circle smoothly
-            // Add transition waypoints from origin to circle
-            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));  // Start at origin
-            waypoints.push_back(Eigen::Vector3d(radius * 0.5, 0.0, 0.0));  // Halfway to circle
-            
-            // Generate circle waypoints starting from right side (radius, 0)
-            for (int i = 0; i <= N; ++i) {
-                double angle = 2.0 * M_PI * i / N;
-                double x = radius * std::cos(angle);
-                double y = radius * std::sin(angle);
-                // Use atan2 for proper heading that follows the tangent
-                double heading = angle + M_PI/2;  // Tangent to circle
-                waypoints.push_back(Eigen::Vector3d(x, y, heading));
-            }
-            
-            // Add transition back to origin if desired
-            waypoints.push_back(Eigen::Vector3d(radius * 0.5, 0.0, M_PI));  // Halfway back
-            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, M_PI));  // Back to origin
+            // Test 2: L-shaped path (90-degree turn)
+            std::cout << "Test 2: L-shaped path (90-degree turn)" << std::endl;
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(1.0, 0.5, M_PI/2));
+            waypoints.push_back(Eigen::Vector3d(1.0, 1.0, M_PI/2));
             break;
         }
         case 3: {
-            // Test 3: Figure-8 pattern
-            std::cout << "Test 3: Figure-8 pattern" << std::endl;
+            // Test 3: Square path
+            std::cout << "Test 3: Square path" << std::endl;
             waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(0.3, 0.2, M_PI/4));
-            waypoints.push_back(Eigen::Vector3d(0.5, 0.5, M_PI/2));
-            waypoints.push_back(Eigen::Vector3d(0.3, 0.8, 3*M_PI/4));
+            waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(1.0, 1.0, M_PI/2));
             waypoints.push_back(Eigen::Vector3d(0.0, 1.0, M_PI));
-            waypoints.push_back(Eigen::Vector3d(-0.3, 0.8, -3*M_PI/4));
-            waypoints.push_back(Eigen::Vector3d(-0.5, 0.5, -M_PI/2));
-            waypoints.push_back(Eigen::Vector3d(-0.3, 0.2, -M_PI/4));
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, -M_PI/2));
+            break;
+        }
+        case 4: {
+            // Test 4: Circular path
+            std::cout << "Test 4: Circular path" << std::endl;
+            int N = 16;
+            double radius = 0.5;
+            for (int i = 0; i <= N; ++i) {
+                double angle = 2.0 * M_PI * i / N;
+                waypoints.push_back(Eigen::Vector3d(
+                    radius * std::cos(angle),
+                    radius * std::sin(angle),
+                    angle
+                ));
+            }
+            break;
+        }
+        case 5: {
+            // Test 5: S-curve trajectory
+            std::cout << "Test 5: S-curve trajectory" << std::endl;
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.5, 0.2, M_PI/6));
+            waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(1.5, -0.2, -M_PI/6));
+            waypoints.push_back(Eigen::Vector3d(2.0, 0.0, 0.0));
+            break;
+        }
+        case 6: {
+            // Test 6: Sharp zigzag (stress test for corners)
+            std::cout << "Test 6: Sharp zigzag trajectory" << std::endl;
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.3, 0.3, M_PI/4));
+            waypoints.push_back(Eigen::Vector3d(0.6, 0.0, -M_PI/4));
+            waypoints.push_back(Eigen::Vector3d(0.9, 0.3, M_PI/4));
+            waypoints.push_back(Eigen::Vector3d(1.2, 0.0, -M_PI/4));
+            waypoints.push_back(Eigen::Vector3d(1.5, 0.3, M_PI/4));
+            break;
+        }
+        case 7: {
+            // Test 7: Lane change maneuver
+            std::cout << "Test 7: Lane change maneuver" << std::endl;
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(1.0, 0.3, M_PI/8));
+            waypoints.push_back(Eigen::Vector3d(1.5, 0.5, 0.0));
+            waypoints.push_back(Eigen::Vector3d(2.0, 0.5, 0.0));
+            waypoints.push_back(Eigen::Vector3d(2.5, 0.5, 0.0));
+            break;
+        }
+        case 8: {
+            // Test 8: Figure-8 pattern
+            std::cout << "Test 8: Figure-8 pattern" << std::endl;
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.25, 0.25, M_PI/4));
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.5, M_PI/2));
+            waypoints.push_back(Eigen::Vector3d(-0.25, 0.25, 3*M_PI/4));
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, M_PI));
+            waypoints.push_back(Eigen::Vector3d(0.25, -0.25, -3*M_PI/4));
+            waypoints.push_back(Eigen::Vector3d(0.0, -0.5, -M_PI/2));
+            waypoints.push_back(Eigen::Vector3d(-0.25, -0.25, -M_PI/4));
             waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
             break;
         }
+        case 9: {
+            // Test 9: Star pattern (multiple sharp turns)
+            std::cout << "Test 9: Star pattern" << std::endl;
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+            for (int i = 0; i < 5; ++i) {
+                double angle = 2.0 * M_PI * i / 5;
+                waypoints.push_back(Eigen::Vector3d(
+                    0.5 * std::cos(angle),
+                    0.5 * std::sin(angle),
+                    angle
+                ));
+                // Inner point
+                double inner_angle = angle + 2.0 * M_PI / 10;
+                waypoints.push_back(Eigen::Vector3d(
+                    0.2 * std::cos(inner_angle),
+                    0.2 * std::sin(inner_angle),
+                    inner_angle
+                ));
+            }
+            break;
+        }
+        case 10: {
+            // Test 10: Spiral trajectory (increasing radius)
+            std::cout << "Test 10: Spiral trajectory" << std::endl;
+            int N = 20;
+            for (int i = 0; i <= N; ++i) {
+                double angle = 3.0 * M_PI * i / N;  // 1.5 full rotations
+                double radius = 0.1 + 0.4 * i / N;  // Radius from 0.1 to 0.5
+                waypoints.push_back(Eigen::Vector3d(
+                    radius * std::cos(angle),
+                    radius * std::sin(angle),
+                    angle
+                ));
+            }
+            break;
+        }
         default: {
-            // Default: The problematic sequence for testing
-            std::cout << "Test 4: Simple straight line (for debugging)" << std::endl;
+            // Default: Simple forward and back
+            std::cout << "Default: Forward and back trajectory" << std::endl;
             waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
             waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(1.0, 0.0, M_PI));
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, M_PI));
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
             break;
         }
     }

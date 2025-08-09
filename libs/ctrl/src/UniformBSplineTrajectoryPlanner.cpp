@@ -99,6 +99,13 @@ bool UniformBSplineTrajectoryPlanner::SetPath(const std::vector<Eigen::Vector3d>
         std::cout << "[DEBUG] Spline end: (" << end_point[0] << ", " << end_point[1] << ", " << end_point[2] << ")" << std::endl;
         std::cout << "[DEBUG] Expected end: (" << waypoints_.back()[0] << ", " << waypoints_.back()[1] << ", " << waypoints_.back()[2] << ")" << std::endl;
         
+        // Debug control points
+        std::cout << "[DEBUG] Control points:" << std::endl;
+        for (size_t i = 0; i < control_points_.size(); ++i) {
+            std::cout << "  CP[" << i << "]: (" << control_points_[i][0] << ", " 
+                      << control_points_[i][1] << ", " << control_points_[i][2] << ")" << std::endl;
+        }
+        
         return true;
         
     } catch (const std::exception& e) {
@@ -329,6 +336,16 @@ double UniformBSplineTrajectoryPlanner::BSplineBasis(int i, int p, double u,
 Eigen::Vector3d UniformBSplineTrajectoryPlanner::EvaluateBSpline(double u) const {
     // Clamp parameter to valid range
     u = std::clamp(u, 0.0, 1.0);
+    
+    // Special case for endpoints to ensure exact interpolation
+    if (u >= 1.0 - 1e-10) {
+        // Return last control point for u=1
+        return control_points_.back();
+    }
+    if (u <= 1e-10) {
+        // Return first control point for u=0
+        return control_points_.front();
+    }
     
     Eigen::Vector3d result = Eigen::Vector3d::Zero();
     
