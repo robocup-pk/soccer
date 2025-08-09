@@ -104,11 +104,6 @@ int main() {
       replan = true;
     }
 
-    // std::cout << "Robot at vertex " << rrtx_planner.v_bot_idx
-    //           << ", g=" << rrtx_planner.Vertices[rrtx_planner.v_bot_idx].g << ", Goal at vertex
-    //           "
-    //           << rrtx_planner.v_goal_idx << std::endl;
-
     if (replan) {
       rrtx_planner.PlanStep(obstacles);
 
@@ -125,10 +120,9 @@ int main() {
                     << ", Orphans: " << rrtx_planner.V_c_T.size() << std::endl;
 
           replan = false;
+        } else {
+          gl_simulation.ClearVisualizationPath();
         }
-      } else {
-        // Clear path if no solution exists
-        gl_simulation.ClearVisualizationPath();
       }
     }
     // Update physics
