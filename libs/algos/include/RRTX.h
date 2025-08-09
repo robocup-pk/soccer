@@ -34,23 +34,25 @@ struct Vertex {
 class RRTX {
  public:
   RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal, double epsilon = 0.1);
+  void PlanStep(std::vector<state::SoccerObject>& soccer_objects);  // Main planning step
+
   // Core functions
-  int Extend(state::Waypoint v_new, double r);                // Algorithm 2
-  void CullNeighbors(int v_idx, double r);                    // Algorithm 3
-  void RewireNeighbors(int v_idx);                            // Algorithm 4
-  void ReduceInconsistency();                                 // Algorithm 5
-  void FindParent(Vertex& v_new, const std::vector<int>& U);  // Algorithm 6
+  int Extend(state::Waypoint v_new, double r);
+  void CullNeighbors(int v_idx, double r);
+  void RewireNeighbors(int v_idx);
+  void ReduceInconsistency();
+  void FindParent(Vertex& v_new, const std::vector<int>& U);
 
   // Obstacle handling
-  void UpdateObstacles(std::vector<state::SoccerObject>& robots);  // Algorithm 7
-  void PropogateDescendants();                                     // Algorithm 8
+  void UpdateObstacles(std::vector<state::SoccerObject>& robots);
+  void PropogateDescendants();
   void AddNewObstacle(state::SoccerObject& obstacle);
   void RemoveObstacle(state::SoccerObject& obstacle);
 
   // Utility functions
-  void VerifyQueue(int v_idx);   // Algorithm 12
-  void UpdateLMC(int v_idx);     // Algorithm 13
-  void VerifyOrphan(int v_idx);  // Algorithm 9
+  void VerifyQueue(int v_idx);
+  void UpdateLMC(int v_idx);
+  void VerifyOrphan(int v_idx);
   void MakeParentOf(int parent_idx, int child_idx);
 
   // Sampling and nearest neighbor
@@ -67,27 +69,22 @@ class RRTX {
   state::Path ReconstructPath();
 
   // Dynamic environment support
-  // void InvalidateEdges(const std::vector<state::Waypoint>& obstacles);
   void UpdateRobotPosition(const state::Waypoint& new_pos);
+  void UpdateGoal(const state::Waypoint& new_goal);
 
   // Parameter updates
   double ShrinkingBallRadius();
   bool KeyLess(const std::pair<double, double>& key1, const std::pair<double, double>& key2);
   std::pair<double, double> getKey(int v_idx);
 
-  void PlanStep(std::vector<state::SoccerObject>& soccer_objects);  // Main planning step
-  bool SolutionExists();
-  double GetSolutionCost();
-  bool IsInVertices(state::Waypoint v_new);
-
-  void UpdateGoal(const state::Waypoint& new_goal);
-
+  // Helper Functions
   std::set<std::pair<int, int>> GetEdgesIntersectingObstacle(state::SoccerObject& obstacle);
   bool IsTrajectoryBlockedByObstacle(state::Waypoint& from, state::Waypoint& to,
                                      state::SoccerObject& obstacle);
   std::set<int> GetVerticesWithEdgesInObstacle(std::set<std::pair<int, int>>& edges);
-
-  // Helper Functions
+  bool SolutionExists();
+  double GetSolutionCost();
+  bool IsInVertices(state::Waypoint v_new);
   std::vector<std::pair<state::SoccerObject, state::SoccerObject>> FindMovedObstacles(
       std::vector<state::SoccerObject>& new_obstacles);
   std::vector<state::SoccerObject> FindVanishedObstacles(
@@ -96,12 +93,24 @@ class RRTX {
       std::vector<state::SoccerObject>& new_obstacles);
   double PerpendicularDistanceToLineSegment(state::Waypoint& point, state::Waypoint& line_start,
                                             state::Waypoint& line_end);
-
   void RemoveEdgeConnection(int v_idx, int u_idx);
   bool IsRobotOnEdge(int v_idx, int u_idx);
   void ClearRobotPath();
-
   bool ObstaclesEqual(state::SoccerObject& obs1, state::SoccerObject& obs2);
+  bool IsInObstacle(const state::Waypoint& wp);
+  bool HasObstaclesChanged(const std::vector<state::SoccerObject>& current_obstacles);
+  bool IsRobotPoseChanged();
+  std::vector<int> getOutNeighbors(int v_idx);  // N⁺(v) = N₀⁺(v) ∪ Nᵣ⁺(v)
+  std::vector<int> getInNeighbors(int v_idx);   // N⁻(v) = N₀⁻(v) ∪ Nᵣ⁻(v)
+
+  bool IsPathValid(state::Path& path);
+  void CleanupQueue();
+  bool IsInGoalMovementCone(const state::Waypoint& vertex, const state::Waypoint& old_goal,
+                            const state::Waypoint& new_goal, double radius);
+  void InvalidateAffectedVertices(const state::Waypoint& old_goal, const state::Waypoint& new_goal,
+                                  double radius);
+
+  double CalculateInvalidationRadius(double goal_movement);
 
   // Core data structures
   std::vector<Vertex> Vertices;   // vertex set
@@ -125,26 +134,12 @@ class RRTX {
 
   // Environment
   std::vector<state::Waypoint> obstacles;
-
   std::vector<state::SoccerObject> previous_obstacles;
   std::vector<state::SoccerObject> current_obstacles;
 
   int current_robot_id;
   state::Waypoint robot_pos;
-
-  // Helper functions
-  bool IsInObstacle(const state::Waypoint& wp);
-  bool HasObstaclesChanged(const std::vector<state::SoccerObject>& current_obstacles);
-  bool IsRobotPoseChanged();
-
-  std::vector<int> getNeighbors(int v_idx);     // N(v) = N⁺(v) ∪ N⁻(v)
-  std::vector<int> getOutNeighbors(int v_idx);  // N⁺(v) = N₀⁺(v) ∪ Nᵣ⁺(v)
-  std::vector<int> getInNeighbors(int v_idx);   // N⁻(v) = N₀⁻(v) ∪ Nᵣ⁻(v)
 };
-
-// Convenience function
-// state::Path FindSinglePath_RRTX(state::Waypoint x_init, state::Waypoint x_goal);
-
 }  // namespace algos
 
 #endif  // RRTX_H

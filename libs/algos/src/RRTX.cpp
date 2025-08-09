@@ -132,7 +132,7 @@ void algos::RRTX::RewireNeighbors(int v_idx) {
     for (int u_idx : in_neighbors) {
       if (u_idx != Vertices[v_idx].parent_idx) {
         if (Vertices[u_idx].lmc >
-            d_pi(Vertices[v_idx].wp, Vertices[u_idx].wp) + Vertices[v_idx].lmc) {
+            d_pi(Vertices[u_idx].wp, Vertices[v_idx].wp) + Vertices[v_idx].lmc) {
           Vertices[u_idx].lmc = d_pi(Vertices[v_idx].wp, Vertices[u_idx].wp) + Vertices[v_idx].lmc;
 
           MakeParentOf(v_idx, u_idx);
@@ -222,12 +222,6 @@ void algos::RRTX::UpdateObstacles(std::vector<state::SoccerObject>& new_obstacle
     VerifyQueue(v_bot_idx);
     ReduceInconsistency();
   }
-
-  std::cout << "[RRTX::UpdateObstacles] Updated obstacles: "
-            << "Vanished: " << vanished_obstacles.size()
-            << ", Appeared: " << appeared_obstacles.size() << ", Moved: " << moved_obstacles.size()
-            << std::endl;
-  // Update obstacle tracking
   current_obstacles = new_obstacles;
 }
 
@@ -529,8 +523,37 @@ bool algos::RRTX::KeyLess(const std::pair<double, double>& key1,
 }
 
 void algos::RRTX::VerifyQueue(int v_idx) {
+  if (Q.size() > 200) {
+    CleanupQueue();
+  }
+
   auto key = getKey(v_idx);
   Q.push({key, v_idx});
+}
+
+void algos::RRTX::CleanupQueue() {
+  std::vector<std::pair<std::pair<double, double>, int>> valid_entries;
+
+  // Extract all entries and check if they're still relevant
+  while (!Q.empty()) {
+    auto entry = Q.top();
+    Q.pop();
+
+    int v_idx = entry.second;
+    auto current_key = getKey(v_idx);
+
+    // Only keep entry if its key matches current vertex key
+    // (this eliminates stale entries automatically)
+    if (!KeyLess(entry.first, current_key) && !KeyLess(current_key, entry.first)) {
+      valid_entries.push_back(entry);
+    }
+    // Stale entries are simply discarded
+  }
+
+  // Rebuild queue with only valid entries
+  for (const auto& entry : valid_entries) {
+    Q.push(entry);
+  }
 }
 
 std::pair<double, double> algos::RRTX::getKey(int v_idx) {
@@ -543,7 +566,7 @@ void algos::RRTX::MakeParentOf(int parent_idx, int child_idx) {
 
   while (check_idx != -1) {
     if (check_idx == child_idx) {
-      std::cout << "[RRTX] Cycle prevented: " << parent_idx << " -> " << child_idx << std::endl;
+      // std::cout << "[RRTX] Cycle prevented: " << parent_idx << " -> " << child_idx << std::endl;
       return;  // Would create cycle
     }
     if (visited.count(check_idx)) break;  // Already has cycle
@@ -724,7 +747,36 @@ state::Path algos::RRTX::ReconstructPath() {
     path.push_back(Vertices[idx].wp);
   }
 
-  return path;
+  if (IsPathValid(path)) {
+    return path;  // Valid path found
+  } else {
+    return state::Path();  // Invalid path, trigger replanning
+  }
+}
+
+bool algos::RRTX::IsPathValid(state::Path& path) {
+  if (path.empty()) return false;  // No path to validate
+
+  // Check if path starts from robot pose
+  if ((path[0] - robot_pos).Norm() > 0.05) {
+    return false;
+  }
+
+  // Check if path ends at goal
+  if ((path.back() - Vertices[v_goal_idx].wp).Norm() > 0.05) {
+    return false;
+  }
+
+  // Check path continuity (consecutive waypoints should be reasonably close)
+  const double MAX_SEGMENT_LENGTH = delta * 2.0;  // Based on step size limit
+  for (size_t i = 0; i < path.size() - 1; ++i) {
+    double segment_length = (path[i + 1] - path[i]).Norm();
+    if (segment_length > MAX_SEGMENT_LENGTH) {
+      return false;
+    }
+  }
+
+  return true;  // All segments are valid
 }
 
 bool algos::RRTX::SolutionExists() {
@@ -812,49 +864,130 @@ bool algos::RRTX::IsInVertices(state::Waypoint v_new_wp) {
 }
 
 void algos::RRTX::UpdateGoal(const state::Waypoint& new_goal) {
-  // Check if goal actually changed
-  if (Vertices[v_goal_idx].wp == new_goal) {
-    return;
-  }
+  // ADAPTIVE INVALIDATION RADIUS based on goal movement
+  double goal_movement = (Vertices[v_goal_idx].wp - new_goal).Norm();
+  double invalidation_radius = CalculateInvalidationRadius(goal_movement);
 
   // Update goal position
+  state::Waypoint old_goal = Vertices[v_goal_idx].wp;
   Vertices[v_goal_idx].wp = new_goal;
 
-  // Mark all vertices as inconsistent since the goal changed
-  // This forces recalculation of all cost-to-goal values
-  for (size_t i = 0; i < Vertices.size(); ++i) {
-    if (i != v_goal_idx) {
-      // Invalidate all costs except goal
-      Vertices[i].g = std::numeric_limits<double>::infinity();
-      Vertices[i].lmc = std::numeric_limits<double>::infinity();
+  // Smart invalidation strategy
+  InvalidateAffectedVertices(old_goal, new_goal, invalidation_radius);
 
-      // Add to priority queue for reprocessing
-      VerifyQueue(i);
-    }
-  }
-
-  // Clear all parent-child relationships except goal
-  for (size_t i = 0; i < Vertices.size(); ++i) {
-    if (i != v_goal_idx) {
-      // Remove from old parent's children list
-      if (Vertices[i].parent_idx != -1) {
-        auto& parent_children = Vertices[Vertices[i].parent_idx].C_minus_T;
-        parent_children.erase(std::remove(parent_children.begin(), parent_children.end(), i),
-                              parent_children.end());
-      }
-      Vertices[i].parent_idx = -1;
-      Vertices[i].C_minus_T.clear();
-    }
-  }
-
-  // Goal vertex properties remain the same
+  // Goal vertex properties
   Vertices[v_goal_idx].g = 0.0;
   Vertices[v_goal_idx].lmc = 0.0;
   Vertices[v_goal_idx].parent_idx = -1;
 
-  // Process inconsistencies to rebuild tree with new goal
+  // Efficient inconsistency reduction
   ReduceInconsistency();
 }
+
+double algos::RRTX::CalculateInvalidationRadius(double goal_movement) {
+  // Base radius proportional to goal movement
+  double base_radius = goal_movement * 2.0;  // 2x the movement distance
+
+  // Scale based on tree size (larger trees need larger invalidation)
+  double tree_scale = std::sqrt(Vertices.size()) * 0.1;  // Scale factor
+
+  // Consider field dimensions
+  double field_diagonal =
+      std::sqrt(std::pow(vis::SoccerField::GetInstance().playing_area_width_mm / 1000.0, 2) +
+                std::pow(vis::SoccerField::GetInstance().playing_area_height_mm / 1000.0, 2));
+
+  double adaptive_radius = std::min(std::max(base_radius + tree_scale, 0.2),  // Minimum 20cm
+                                    field_diagonal * 0.3  // Maximum 30% of field diagonal
+  );
+
+  return adaptive_radius;
+}
+
+void algos::RRTX::InvalidateAffectedVertices(const state::Waypoint& old_goal,
+                                             const state::Waypoint& new_goal, double radius) {
+  size_t invalidated_count = 0;
+
+  for (size_t i = 0; i < Vertices.size(); ++i) {
+    if (i == v_goal_idx) continue;
+
+    // Check if vertex is affected by goal change
+    bool should_invalidate = false;
+
+    // Strategy 1: Distance to old goal position
+    double dist_to_old = d_pi(Vertices[i].wp, old_goal);
+    if (dist_to_old < radius) {
+      should_invalidate = true;
+    }
+
+    // Strategy 2: Distance to new goal position
+    double dist_to_new = d_pi(Vertices[i].wp, new_goal);
+    if (dist_to_new < radius) {
+      should_invalidate = true;
+    }
+
+    // Strategy 3: Path potentially affected by goal movement
+    // Check if vertex lies in the "cone of influence" between old and new goal
+    if (IsInGoalMovementCone(Vertices[i].wp, old_goal, new_goal, radius)) {
+      should_invalidate = true;
+    }
+
+    if (should_invalidate) {
+      // Invalidate this vertex
+      Vertices[i].g = std::numeric_limits<double>::infinity();
+      Vertices[i].lmc = std::numeric_limits<double>::infinity();
+
+      // Remove parent-child relationships for affected vertices
+      if (Vertices[i].parent_idx != -1) {
+        auto& parent_children = Vertices[Vertices[i].parent_idx].C_minus_T;
+        parent_children.erase(std::remove(parent_children.begin(), parent_children.end(), i),
+                              parent_children.end());
+        Vertices[i].parent_idx = -1;
+      }
+      Vertices[i].C_minus_T.clear();
+
+      VerifyQueue(i);
+      invalidated_count++;
+    }
+  }
+}
+
+bool algos::RRTX::IsInGoalMovementCone(const state::Waypoint& vertex,
+                                       const state::Waypoint& old_goal,
+                                       const state::Waypoint& new_goal, double radius) {
+  // Calculate the line segment between old and new goal
+  Eigen::Vector2d old_pos(old_goal.x, old_goal.y);
+  Eigen::Vector2d new_pos(new_goal.x, new_goal.y);
+  Eigen::Vector2d vertex_pos(vertex.x, vertex.y);
+
+  // Vector from old to new goal
+  Eigen::Vector2d movement_vec = new_pos - old_pos;
+  double movement_length = movement_vec.norm();
+
+  if (movement_length < 0.01) return false;  // No significant movement
+
+  // Normalize movement vector
+  Eigen::Vector2d movement_dir = movement_vec / movement_length;
+
+  // Vector from old goal to vertex
+  Eigen::Vector2d to_vertex = vertex_pos - old_pos;
+
+  // Project vertex onto movement line
+  double projection = to_vertex.dot(movement_dir);
+
+  // Check if projection is within the movement segment (with extension)
+  double extension = radius;
+  if (projection < -extension || projection > movement_length + extension) {
+    return false;
+  }
+
+  // Calculate perpendicular distance from vertex to movement line
+  Eigen::Vector2d projected_point = old_pos + projection * movement_dir;
+  double perp_distance = (vertex_pos - projected_point).norm();
+
+  // Vertex is affected if it's within the cone radius
+  return perp_distance < radius;
+}
+
 std::vector<std::pair<state::SoccerObject, state::SoccerObject>> algos::RRTX::FindMovedObstacles(
     std::vector<state::SoccerObject>& new_obstacles) {
   std::vector<std::pair<state::SoccerObject, state::SoccerObject>> moved;
