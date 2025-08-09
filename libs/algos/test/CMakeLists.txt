@@ -13,6 +13,7 @@ foreach(test_src ${TEST_SOURCES})
     state_lib
     cfg_lib
     algos_lib
+    vis_lib
   )
 
   # Register with ctest
