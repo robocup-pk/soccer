@@ -34,7 +34,7 @@ struct Vertex {
 class RRTX {
  public:
   RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal, double epsilon = 0.1);
-  void PlanStep(std::vector<state::SoccerObject>& soccer_objects);  // Main planning step
+  void PlanStep();  // Main planning step
 
   // Core functions
   int Extend(state::Waypoint v_new, double r);
@@ -70,7 +70,6 @@ class RRTX {
 
   // Dynamic environment support
   void UpdateRobotPosition(const state::Waypoint& new_pos);
-  void UpdateGoal(const state::Waypoint& new_goal);
 
   // Parameter updates
   double ShrinkingBallRadius();
@@ -105,12 +104,6 @@ class RRTX {
 
   bool IsPathValid(state::Path& path);
   void CleanupQueue();
-  bool IsInGoalMovementCone(const state::Waypoint& vertex, const state::Waypoint& old_goal,
-                            const state::Waypoint& new_goal, double radius);
-  void InvalidateAffectedVertices(const state::Waypoint& old_goal, const state::Waypoint& new_goal,
-                                  double radius);
-
-  double CalculateInvalidationRadius(double goal_movement);
 
   // Core data structures
   std::vector<Vertex> Vertices;   // vertex set
@@ -139,6 +132,8 @@ class RRTX {
 
   int current_robot_id;
   state::Waypoint robot_pos;
+
+  std::unordered_set<int> vertices_in_queue;
 };
 }  // namespace algos
 

@@ -221,39 +221,12 @@ TEST_F(RRTXTest, ObstacleChangeDetection) {
   EXPECT_TRUE(rrtx->HasObstaclesChanged(obstacles));
 }
 
-// ============= DYNAMIC UPDATES TESTS =============
-
-TEST_F(RRTXTest, GoalUpdateBasic) {
-  state::Waypoint new_goal(3.0, 3.0, 0.0);
-
-  rrtx->UpdateGoal(new_goal);
-
-  EXPECT_EQ(rrtx->Vertices[rrtx->v_goal_idx].wp.x, new_goal.x);
-  EXPECT_EQ(rrtx->Vertices[rrtx->v_goal_idx].wp.y, new_goal.y);
-  EXPECT_EQ(rrtx->Vertices[rrtx->v_goal_idx].g, 0.0);
-  EXPECT_EQ(rrtx->Vertices[rrtx->v_goal_idx].lmc, 0.0);
-  EXPECT_EQ(rrtx->Vertices[rrtx->v_goal_idx].parent_idx, -1);
-}
-
-TEST_F(RRTXTest, InvalidationRadiusCalculation) {
-  // Small movement
-  double small_movement = 0.005;  // 5mm
-  double small_radius = rrtx->CalculateInvalidationRadius(small_movement);
-  EXPECT_GT(small_radius, 0.0);
-  EXPECT_LT(small_radius, 1.0);
-
-  // Large movement
-  double large_movement = 1.0;  // 1m
-  double large_radius = rrtx->CalculateInvalidationRadius(large_movement);
-  EXPECT_GT(large_radius, small_radius);
-}
-
 // ============= PLANNING ALGORITHM TESTS =============
 
 TEST_F(RRTXTest, PlanStepExecution) {
   size_t initial_vertices = rrtx->Vertices.size();
 
-  rrtx->PlanStep(obstacles);
+  rrtx->PlanStep();
 
   // Should add vertices (assuming successful planning)
   EXPECT_GE(rrtx->Vertices.size(), initial_vertices);
@@ -265,7 +238,7 @@ TEST_F(RRTXTest, SolutionExistence) {
 
   // Run planning steps to find solution
   for (int i = 0; i < 100; ++i) {
-    rrtx->PlanStep(obstacles);
+    rrtx->PlanStep();
     if (rrtx->SolutionExists()) break;
   }
 }
@@ -273,7 +246,7 @@ TEST_F(RRTXTest, SolutionExistence) {
 TEST_F(RRTXTest, PathReconstruction) {
   // First ensure we have a solution
   for (int i = 0; i < 100; ++i) {
-    rrtx->PlanStep(obstacles);
+    rrtx->PlanStep();
     if (rrtx->SolutionExists()) break;
   }
 
@@ -295,25 +268,9 @@ TEST_F(RRTXTest, PathReconstruction) {
 TEST_F(RRTXTest, QueueManagement) {
   // Add many vertices and check queue doesn't grow unbounded
   for (int i = 0; i < 200; ++i) {
-    rrtx->PlanStep(obstacles);
+    rrtx->PlanStep();
   }
 
   // Queue size should be reasonable relative to vertex count
   EXPECT_LT(rrtx->Q.size(), rrtx->Vertices.size() * 2);
-}
-
-TEST_F(RRTXTest, MultipleGoalUpdates) {
-  // Simulate ball movement with multiple rapid goal updates
-  std::vector<state::Waypoint> goals = {
-      state::Waypoint(2.0, 2.0, 0.0), state::Waypoint(2.1, 2.1, 0.0),
-      state::Waypoint(2.2, 2.0, 0.0), state::Waypoint(2.0, 2.2, 0.0)};
-
-  for (const auto& new_goal : goals) {
-    rrtx->UpdateGoal(new_goal);
-    rrtx->PlanStep(obstacles);  // Run one planning step
-
-    // Verify goal was updated correctly
-    EXPECT_NEAR(rrtx->Vertices[rrtx->v_goal_idx].wp.x, new_goal.x, 1e-6);
-    EXPECT_NEAR(rrtx->Vertices[rrtx->v_goal_idx].wp.y, new_goal.y, 1e-6);
-  }
 }

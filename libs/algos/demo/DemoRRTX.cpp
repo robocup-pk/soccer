@@ -83,7 +83,10 @@ int main() {
         (soccer_objects[soccer_objects.size() - 1].position - last_ball_pos).norm();
     if (ball_movement > BALL_MOVEMENT_THRESHOLD) {
       // Update goal in planner
-      rrtx_planner.UpdateGoal(current_ball_pos);
+      rrtx_planner = algos::RRTX(current_robot_pos, current_ball_pos, 0.01);
+      while (!rrtx_planner.SolutionExists()) {
+        rrtx_planner.PlanStep();
+      }
       last_ball_pos = soccer_objects[soccer_objects.size() - 1].position;
       replan = true;
     }
@@ -93,6 +96,7 @@ int main() {
       last_robot_pos = soccer_objects[0].position;
       replan = true;
     }
+
     // Run planning steps
     std::vector<state::SoccerObject> obstacles;
     std::copy_if(
@@ -104,27 +108,32 @@ int main() {
       replan = true;
     }
 
-    if (replan) {
-      rrtx_planner.PlanStep(obstacles);
+    if (replan) rrtx_planner.PlanStep();
 
-      if (rrtx_planner.SolutionExists()) {
-        state::Path path = rrtx_planner.ReconstructPath();
-        if (!path.empty()) {
-          PrintPath(path);
+    int i = 0;
+    while (i < 5 && !rrtx_planner.SolutionExists()) {
+      rrtx_planner.PlanStep();
+      i++;
+    }
 
-          // Visualize the path with red color
-          gl_simulation.SetVisualizationPath(path, glm::vec3(1.0f, 0.0f, 0.0f));
+    if (rrtx_planner.SolutionExists()) {
+      state::Path path = rrtx_planner.ReconstructPath();
 
-          std::cout << "Vertices: " << rrtx_planner.Vertices.size()
-                    << ", Queue size: " << rrtx_planner.Q.size()
-                    << ", Orphans: " << rrtx_planner.V_c_T.size() << std::endl;
+      if (!path.empty()) {
+        PrintPath(path);
+        // Visualize the path with red color
+        gl_simulation.SetVisualizationPath(path, glm::vec3(1.0f, 0.0f, 0.0f));
 
-          replan = false;
-        } else {
-          gl_simulation.ClearVisualizationPath();
-        }
+        std::cout << "Vertices: " << rrtx_planner.Vertices.size()
+                  << ", Queue size: " << rrtx_planner.Q.size()
+                  << ", Orphans: " << rrtx_planner.V_c_T.size() << std::endl;
+
+        replan = false;
+      } else {
+        gl_simulation.ClearVisualizationPath();
       }
     }
+
     // Update physics
     kin::UpdateKinematics(soccer_objects, dt);
 
