@@ -192,41 +192,35 @@ void algos::RRTX::UpdateObstacles(std::vector<state::SoccerObject>& new_obstacle
   previous_obstacles = current_obstacles;
 
   // Detect vanished and appeared obstacles
-  std::vector<state::SoccerObject> vanished_obstacles = FindVanishedObstacles(new_obstacles);
-  std::vector<state::SoccerObject> appeared_obstacles = FindAppearedObstacles(new_obstacles);
-  std::vector<std::pair<state::SoccerObject, state::SoccerObject>> moved_obstacles =
-      FindMovedObstacles(new_obstacles);
+  std::vector<state::SoccerObject> vanished = FindVanishedObstacles(new_obstacles);
+  std::vector<state::SoccerObject> appeared = FindAppearedObstacles(new_obstacles);
+  std::vector<std::pair<state::SoccerObject, state::SoccerObject>> moved = FindMovedObstacles(new_obstacles);
 
-  // Lines 1-4: Handle vanished obstacles
-  if (!vanished_obstacles.empty()) {             // Line 1: if ∃O : O ∈ O ∧ O has vanished
-    for (auto& obstacle : vanished_obstacles) {  // Line 2: forall O : O ∈ O ∧ O has vanished do
-      RemoveObstacle(obstacle);                  // Line 3: removeObstacle(O)
-    }
-    ReduceInconsistency();  // Line 4: reduceInconsistency()
+  for (auto& obs : vanished) RemoveObstacle(obs);
+  for (auto& obs : appeared) AddNewObstacle(obs);
+  for (auto& [old_obs, new_obs] : moved) {
+    RemoveObstacle(old_obs);
+    AddNewObstacle(new_obs);
   }
 
-  // Lines 5-10: Handle appeared obstacles
-  if (!appeared_obstacles.empty()) {             // Line 5: if ∃O : O ∉ O ∧ O has appeared
-    for (auto& obstacle : appeared_obstacles) {  // Line 6: forall O : O ∉ O ∧ O has appeared do
-      AddNewObstacle(obstacle);                  // Line 7: addNewObstacle(O)
-    }
-    PropogateDescendants();  // Line 8: propogateDescendants()
-    VerifyQueue(v_bot_idx);  // Line 9: verrifyQueue(vbot)
-    ReduceInconsistency();   // Line 10: reduceInconsistency()
-  }
-
-  if (!moved_obstacles.empty()) {
-    for (auto& [old_obs, new_obs] : moved_obstacles) {
-      // Remove old obstacle
-      RemoveObstacle(old_obs);
-      // Add obstacle at new position
-      AddNewObstacle(new_obs);
-    }
+  // Only call expensive operations ONCE at the end
+  if (!vanished.empty() || !appeared.empty() || !moved.empty()) {
     PropogateDescendants();
     VerifyQueue(v_bot_idx);
-    ReduceInconsistency();
   }
+
   current_obstacles = new_obstacles;
+  ValidateRobotPath();
+}
+
+void algos::RRTX::ValidateRobotPath() {
+  if (Vertices[v_bot_idx].g < std::numeric_limits<double>::infinity()) {
+    // Robot thinks it has a path - validate it
+    if (!IsPathToGoalValid()) {
+      // Path is invalid - clear it and trigger replanning
+      ClearRobotPath();
+    }
+  }
 }
 
 void algos::RRTX::PropogateDescendants() {
@@ -384,7 +378,6 @@ bool algos::RRTX::IsTrajectoryBlockedByObstacle(state::Waypoint& from, state::Wa
 void algos::RRTX::AddNewObstacle(state::SoccerObject& new_obstacle) {
   // Line 2: EO ← {(v, u) ∈ E : π(v, u) ∩ O ≠ ∅} (Find intersecting edges)
   std::set<std::pair<int, int>> EO = GetEdgesIntersectingObstacle(new_obstacle);
-  // YOU ALREADY HAVE GetEdgesIntersectingObstacle - REUSE IT!
 
   // Lines 3-6: Process each intersecting edge
   for (const auto& edge : EO) {
@@ -792,8 +785,35 @@ bool algos::RRTX::IsPathValid(state::Path& path) {
 }
 
 bool algos::RRTX::SolutionExists() {
-  // In RRT-X, solution exists if robot can reach goal (finite cost-to-goal)
   return Vertices[v_bot_idx].g < std::numeric_limits<double>::infinity();
+
+  // // Check if robot has finite cost
+  // if (Vertices[v_bot_idx].g >= std::numeric_limits<double>::infinity()) {
+  //   return false;
+  // }
+
+  // // Quick path validation without full reconstruction
+  // return IsPathToGoalValid();
+}
+
+bool algos::RRTX::IsPathToGoalValid() {
+  int current_idx = v_bot_idx;
+
+  // Trace path and validate key edges
+  while (current_idx != -1 && current_idx != v_goal_idx) {
+    int parent_idx = Vertices[current_idx].parent_idx;
+
+    if (parent_idx != -1) {
+      // Quick trajectory validity check
+      if (!TrajectoryValid(Vertices[current_idx].wp, Vertices[parent_idx].wp)) {
+        return false;
+      }
+    }
+
+    current_idx = parent_idx;
+  }
+
+  return current_idx == v_goal_idx;  // Reached goal successfully
 }
 
 double algos::RRTX::GetSolutionCost() {
@@ -803,7 +823,7 @@ double algos::RRTX::GetSolutionCost() {
 
 void algos::RRTX::UpdateRobotPosition(const state::Waypoint& new_pos) {
   double movement = (Vertices[v_bot_idx].wp - new_pos).Norm();
-  const double ROBOT_MOVEMENT_THRESHOLD = 0.05;  // 2cm threshold
+  const double ROBOT_MOVEMENT_THRESHOLD = 0.05;  // 5cm threshold
 
   if (movement < ROBOT_MOVEMENT_THRESHOLD) {
     return;  // No significant movement
@@ -829,7 +849,7 @@ bool algos::RRTX::HasObstaclesChanged(const std::vector<state::SoccerObject>& ne
     return true;  // Different number of obstacles
   }
 
-  const double MOVEMENT_THRESHOLD = 0.01;  // 1cm threshold
+  const double MOVEMENT_THRESHOLD = 0.05;  // 5cm threshold
 
   // Use name-based comparison instead of index-based
   for (const auto& new_obs : new_obstacles) {
