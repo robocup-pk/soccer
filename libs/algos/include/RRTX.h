@@ -82,6 +82,7 @@ class RRTX {
                                      state::SoccerObject& obstacle);
   std::set<int> GetVerticesWithEdgesInObstacle(std::set<std::pair<int, int>>& edges);
   bool SolutionExists();
+  bool IsPathToGoalValid();
   double GetSolutionCost();
   bool IsInVertices(state::Waypoint v_new);
   std::vector<std::pair<state::SoccerObject, state::SoccerObject>> FindMovedObstacles(
@@ -98,6 +99,7 @@ class RRTX {
   bool ObstaclesEqual(state::SoccerObject& obs1, state::SoccerObject& obs2);
   bool IsInObstacle(const state::Waypoint& wp);
   bool HasObstaclesChanged(const std::vector<state::SoccerObject>& current_obstacles);
+  void ValidateRobotPath();
   bool IsRobotPoseChanged();
   std::vector<int> getOutNeighbors(int v_idx);  // N⁺(v) = N₀⁺(v) ∪ Nᵣ⁺(v)
   std::vector<int> getInNeighbors(int v_idx);   // N⁻(v) = N₀⁻(v) ∪ Nᵣ⁻(v)

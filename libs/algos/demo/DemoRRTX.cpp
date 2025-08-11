@@ -48,7 +48,7 @@ int main() {
       Eigen::Vector3d(initial_goal.x, initial_goal.y, 0.0);  // Ball
 
   // Create RRT-X planner
-  algos::RRTX rrtx_planner(start, initial_goal, 0.01);
+  algos::RRTX rrtx_planner(start, initial_goal, 0.1);
 
   // Tracking variables
   Eigen::Vector3d last_ball_pos = soccer_objects[soccer_objects.size() - 1].position;
@@ -83,7 +83,7 @@ int main() {
         (soccer_objects[soccer_objects.size() - 1].position - last_ball_pos).norm();
     if (ball_movement > BALL_MOVEMENT_THRESHOLD) {
       // Update goal in planner
-      rrtx_planner = algos::RRTX(current_robot_pos, current_ball_pos, 0.01);
+      rrtx_planner = algos::RRTX(current_robot_pos, current_ball_pos, 0.1);
       while (!rrtx_planner.SolutionExists()) {
         rrtx_planner.PlanStep();
       }
@@ -109,12 +109,6 @@ int main() {
     }
 
     if (replan) rrtx_planner.PlanStep();
-
-    int i = 0;
-    while (i < 5 && !rrtx_planner.SolutionExists()) {
-      rrtx_planner.PlanStep();
-      i++;
-    }
 
     if (rrtx_planner.SolutionExists()) {
       state::Path path = rrtx_planner.ReconstructPath();
