@@ -102,6 +102,8 @@ void rob::RobotManager::ControlLogic() {
     robot_state = RobotState::IDLE;
   }
 
+  // Store the computed velocity for external access
+  velocity_fBody = velocity_fBody_;
   hardware_manager.SetBodyVelocity(velocity_fBody_);
 }
 
@@ -278,6 +280,10 @@ void rob::RobotManager::SetBodyVelocity(Eigen::Vector3d& velocity_fBody) {
 Eigen::Vector3d rob::RobotManager::GetPoseInWorldFrame() const { return pose_fWorld; }
 Eigen::Vector3d rob::RobotManager::GetVelocityInWorldFrame() const {
   return util::RotateAboutZ(this->velocity_fBody, -pose_fWorld[2]);
+}
+
+Eigen::Vector3d rob::RobotManager::GetBodyVelocity() const {
+  return velocity_fBody;
 }
 
 void rob::RobotManager::AddGoal(const Eigen::Vector3d& goal) {

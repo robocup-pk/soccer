@@ -1,0 +1,40 @@
+[Demo] Running RobotManager demo with trajectory logging
+[est::StateEstimator::StateEstimator]
+[hw::HardwareManager::HardwareManager]
+[hw::SensorDriver::SensorDriver]
+[BSplineTrajectory] Initialized with 4 wheels
+[BSplineTrajectoryManager] Initialized with B-spline trajectory planner
+[UniformBSplineTrajectoryPlanner] Initialized with uniform B-spline approach
+[BezierTrajectoryPlanner] Initialized with RoboJackets-style Bezier approach
+[rob::RobotManager::RobotManager]
+[BSplineTrajectory] Initialized with 4 wheels
+[BSplineTrajectoryManager] Initialized with B-spline trajectory planner
+[UniformBSplineTrajectoryPlanner] Feedback gains set to: kp=0.1, kd=0.05
+[rob::RobotManager::ControlLogic] Gyro checks disabled. Going to IDLE state.
+Test 1: Straight line trajectory
+Waypoints:
+  0: (0, 0, 0)
+  1: (0, 1, 0)
+  2: (0.5, 0.5, 0)
+  3: (0, 0, 0)
+Using Uniform B-spline trajectory (EWOK-based)
+[rob::RobotManager::SetTrajectoryManagerType] Set to UNIFORM_B_SPLINE
+[rob::RobotManager::SetUniformBSplinePath] Uniform B-spline trajectory for smooth waypoint following: 0 0 0 -> 0 1 0 -> 0.5 0.5   0 -> 0 0 0
+[UniformBSplineTrajectoryPlanner::SetPath] Setting path with 4 waypoints
+[UniformBSplineTrajectoryPlanner::SetPath] Field boundaries: [-4.5, 4.5] x [-3, 3]
+[UniformBSplineTrajectoryPlanner::SetPath] Trajectory generated successfully. Control points: 8, Arc length: 1.86495m, Duration: 3.93118s
+[DEBUG] Spline start: (0, 0, 0)
+[DEBUG] Spline end: (0, 0, 0)
+[DEBUG] Expected end: (0, 0, 0)
+[DEBUG] Control points:
+  CP[0]: (0, 0, 0)
+  CP[1]: (0, 0, 0)
+  CP[2]: (0, 1, 0)
+  CP[3]: (0.482322, 0.517678, 0)
+  CP[4]: (0.5, 0.5125, 0)
+  CP[5]: (0.482322, 0.482322, 0)
+  CP[6]: (0, 0, 0)
+  CP[7]: (0, 0, 0)
+[rob::RobotManager::SetUniformBSplinePath] Finish creating Uniform B-spline trajectories
+[Demo] Trajectory data saved to trajectory_log.txt
+[Demo] Recorded 151 frames

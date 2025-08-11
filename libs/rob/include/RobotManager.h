@@ -88,6 +88,7 @@ class RobotManager {
   Eigen::Vector3d GetPoseInWorldFrame() const;
   void InitializePose(Eigen::Vector3d& pose_fWorld);
   Eigen::Vector3d GetVelocityInWorldFrame() const;
+  Eigen::Vector3d GetBodyVelocity() const;
   Eigen::Vector3d GetStateEstimationPose() const;
   void TryAssignNextGoal();
   
