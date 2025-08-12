@@ -5,8 +5,6 @@
 #include "Utils.h"
 #include "TrajectoryManager.h"
 #include "SystemConfig.h"
-#include "Spline2D.h"
-#include "Heading1D.h"
 
 static double angleBetweenVectors(const Eigen::Vector2d &a, const Eigen::Vector2d &b) {
   double dot = a.dot(b) / (a.norm() * b.norm());
@@ -17,35 +15,25 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
                                                          double t_start_s) {
   if (path_fWorld.size() <= 1) return false;
 
-  // === 1. Preprocess: Repeat sharp corners ===
-  std::vector<Eigen::Vector3d> processed_path;
-  processed_path.push_back(path_fWorld[0]);
-
-  for (size_t i = 1; i < path_fWorld.size() - 1; ++i) {
-    Eigen::Vector2d prev = path_fWorld[i] - path_fWorld[i - 1];
-    Eigen::Vector2d next = path_fWorld[i + 1] - path_fWorld[i];
-    double angle_deg = angleBetweenVectors(prev, next) * 180.0 / M_PI;
-
-    int repeats = 1;
-    if (angle_deg <= 60)
-      repeats = 4;
-    else if (angle_deg <= 90)
-      repeats = 3;
-    else if (angle_deg <= 120)
-      repeats = 2;
-
-    for (int r = 0; r < repeats; r++) {
-      processed_path.push_back(path_fWorld[i]);
-    }
+  // === 1. Build 2D path and headings (no corner repetition here) ===
+  std::vector<Eigen::Vector2d> processed_path_2d;
+  std::vector<double> headings;
+  processed_path_2d.reserve(path_fWorld.size());
+  headings.reserve(path_fWorld.size());
+  for (const auto &pt : path_fWorld) {
+    processed_path_2d.emplace_back(pt.x(), pt.y());
+    headings.push_back(pt[2]);
   }
-  processed_path.push_back(path_fWorld.back());
 
   // === 2. Create Spline2D for XY motion ===
-  spline_traj = std::make_unique<Spline2D>(processed_path, t_start_s);
-
+  spline_traj = std::make_unique<Spline2D>();
+  spline_traj->Init(processed_path_2d, ::cfg::SystemConfig::max_velocity_fBody_mps.x(),
+                    ::cfg::SystemConfig::max_acc_m_radpsps.x(),
+                    ::cfg::SystemConfig::max_acc_m_radpsps.y(), t_start_s);
+  spline_traj->logSplineData("/media/shared/robocup/spline_data.log");
   // === 3. Create Heading1D for orientation ===
-  double heading_start = processed_path.front()[2];
-  double heading_end = processed_path.back()[2];
+  double heading_start = headings.front();
+  double heading_end = headings.back();
   double spline_total_time = spline_traj->GetTotalTime();
 
   heading_traj = std::make_unique<Heading1D>(heading_start, heading_end, t_start_s,

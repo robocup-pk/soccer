@@ -9,7 +9,7 @@
 #include "StateEstimator.h"
 #include "HardwareManager.h"
 #include "MotionController.h"
-#include "AdaptiveTrajectory3D.h"
+#include "TrajectoryManager.h"
 #include "RobotPositions.h"
 
 namespace rob {
@@ -78,7 +78,7 @@ class RobotManager {
   est::StateEstimator state_estimator;
   hw::HardwareManager hardware_manager;
   ctrl::MotionController motion_controller;
-  ctrl::AdaptiveTrajectory trajectory_manager;
+  ctrl::TrajectoryManager trajectory_manager;
 
   std::thread control_thread;
   std::thread sense_thread;

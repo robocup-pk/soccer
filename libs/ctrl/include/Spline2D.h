@@ -15,7 +15,7 @@ namespace ctrl {
  * - time-parameterizes and supports VelocityAtTime queries (world frame)
  */
 class Spline2D {
-public:
+ public:
   Spline2D() = default;
 
   // main initializer:
@@ -25,9 +25,8 @@ public:
   // a_lat_max: max lateral accel used for curvature cap (m/s^2)
   // t_start_s: global start time for trajectory
   // samples: number of discretization samples for profiling
-  void Init(const std::vector<Eigen::Vector2d>& waypoints_xy,
-            double v_max, double a_max, double a_lat_max,
-            double t_start_s = 0.0, int samples = 300);
+  void Init(const std::vector<Eigen::Vector2d>& waypoints_xy, double v_max, double a_max,
+            double a_lat_max, double t_start_s = 0.0, int samples = 300);
 
   Eigen::Vector2d PositionAtT(double t) const;
   Eigen::Vector2d VelocityAtT(double t) const;
@@ -36,19 +35,20 @@ public:
   double GetTFinish() const { return t_finish_; }
   double TotalArcLength() const;
   double GetTotalTime() const;
+  void logSplineData(const std::string& filename) const;
 
   void Print() const;
 
-private:
+ private:
   struct Sample {
-    double u;               // spline parameter 0..1
+    double u;  // spline parameter 0..1
     Eigen::Vector2d pos;
-    Eigen::Vector2d d1;     // derivative wrt u
-    Eigen::Vector2d d2;     // second derivative wrt u
-    double arc;             // cumulative arc length
-    double kappa;           // curvature
-    double v;               // assigned speed
-    double t;               // global time
+    Eigen::Vector2d d1;  // derivative wrt u
+    Eigen::Vector2d d2;  // second derivative wrt u
+    double arc;          // cumulative arc length
+    double kappa;        // curvature
+    double v;            // assigned speed
+    double t;            // global time
   };
 
   // helpers
@@ -77,6 +77,6 @@ private:
   double findUforTime(double t) const;
 };
 
-} // namespace ctrl
+}  // namespace ctrl
 
-#endif // SPLINE2D_H
+#endif  // SPLINE2D_H

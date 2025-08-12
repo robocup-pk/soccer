@@ -2,6 +2,8 @@
 #include <cmath>
 #include <algorithm>
 #include <iostream>
+#include <fstream>
+#include <iomanip>
 
 namespace ctrl {
 
@@ -212,6 +214,48 @@ Eigen::Vector2d Spline2D::VelocityAtT(double t) const {
   double dudt = (norm_d1 > 1e-9) ? (v_local / norm_d1) : 0.0;
   Eigen::Vector2d vel = d1v * dudt;
   return vel;
+}
+
+
+void Spline2D::logSplineData(const std::string& filename) const {
+  std::ofstream logFile(filename);
+  if (!logFile.is_open()) {
+    std::cerr << "Error: Could not open log file " << filename << std::endl;
+    return;
+  }
+
+  logFile << std::fixed << std::setprecision(8);
+
+  // Write header with spline parameters
+  logFile << "# Spline2D Log File\n";
+  logFile << "# Parameters:\n";
+  logFile << "# v_max: " << v_max_ << " m/s\n";
+  logFile << "# a_max: " << a_max_ << " m/s²\n";
+  logFile << "# a_lat_max: " << a_lat_max_ << " m/s²\n";
+  logFile << "# t_start: " << t_start_ << " s\n";
+  logFile << "# t_finish: " << t_finish_ << " s\n";
+  logFile << "# samples: " << samples_n_ << "\n";
+  logFile << "# total_arc_length: " << TotalArcLength() << " m\n";
+  logFile << "# total_time: " << GetTotalTime() << " s\n";
+  logFile << "#\n";
+  logFile << "# Data Format: index u pos_x pos_y d1_x d1_y d2_x d2_y arc_length curvature velocity time\n";
+
+  // Write sample data
+  for (int i = 0; i < samples_n_; ++i) {
+    const auto& s = samples_[i];
+    logFile << i << " "
+            << s.u << " "
+            << s.pos.x() << " " << s.pos.y() << " "
+            << s.d1.x() << " " << s.d1.y() << " "
+            << s.d2.x() << " " << s.d2.y() << " "
+            << s.arc << " "
+            << s.kappa << " "
+            << s.v << " "
+            << s.t << "\n";
+  }
+
+  logFile.close();
+  std::cout << "Spline data logged to: " << filename << std::endl;
 }
 
 double Spline2D::TotalArcLength() const {
