@@ -13,6 +13,212 @@ namespace rob {
 
 namespace ctrl {
 
+struct PlannerConstants {
+    // =====================================================================================
+    // Control Point Generation
+    // These parameters control how the B-spline control points are generated from the waypoints.
+    // Adjust these to change the shape of the trajectory around corners.
+    // =====================================================================================
+
+    // The angle (in radians) below which a corner is considered "sharp".
+    // Smaller values will make more corners be treated as sharp corners.
+    static constexpr double SHARP_CORNER_ANGLE_RAD = M_PI * 0.75; // 135 degrees
+
+    // The angle (in radians) for a 90-degree corner.
+    static constexpr double NINETY_DEG_CORNER_ANGLE_RAD = M_PI / 2.0;
+
+    // The tolerance (in radians) for detecting a 90-degree corner.
+    static constexpr double NINETY_DEG_CORNER_ANGLE_TOLERANCE_RAD = 0.1;
+
+    // The distance to offset the control points from the waypoint for a 90-degree corner.
+    // Increasing this value will make the robot cut the corner more, resulting in a wider turn.
+    static constexpr double CORNER_OFFSET_M = 0.025;
+
+    // The factor by which to pull the corner control point inwards.
+    // This helps to tighten the turn. A value of 0.5 means the control point is placed halfway
+    // between the waypoint and the intersection of the two segments.
+    static constexpr double CORNER_INWARD_PULL_FACTOR = 0.5;
+
+    // The distance to offset the control points from the waypoint for a general sharp corner.
+    // Increasing this value will make the robot cut the corner more.
+    static constexpr double GENERAL_CORNER_OFFSET_M = 0.08;
+
+    // The inward pull factor for a general sharp corner.
+    static constexpr double GENERAL_CORNER_INWARD_PULL_FACTOR = 0.4;
+
+    // The distance to offset the control points from the waypoint for a smooth corner.
+    // Increasing this value will make the robot cut the corner more.
+    static constexpr double SMOOTH_CORNER_OFFSET_M = 0.1;
+
+
+    // =====================================================================================
+    // Boundary Constraints
+    // These parameters control how the robot behaves near the field boundaries.
+    // =====================================================================================
+
+    // The margin (in meters) from the field boundary to a corner of the field.
+    // If the robot is within this margin, the boundary constraints will be applied.
+    static constexpr double BOUNDARY_CORNER_MARGIN_M = 0.05;
+
+    // The distance (in meters) to pull the control point towards the center of the field
+    // when it is near a corner. This helps to prevent the robot from getting too close to the corner.
+    static constexpr double BOUNDARY_CORNER_PULL_M = 0.02;
+
+
+    // =====================================================================================
+    // Trajectory Following
+    // These parameters control how the robot follows the trajectory.
+    // =====================================================================================
+
+    // The tolerance (in meters) for the position error when the trajectory is finished.
+    // If the robot is within this distance of the final target, the trajectory is considered finished.
+    static constexpr double POSITION_TOLERANCE_M = 0.02;
+
+    // The tolerance (in radians) for the angle error when the trajectory is finished.
+    static constexpr double ANGLE_TOLERANCE_RAD = 0.05;
+
+    // The maximum velocity (in m/s) for the final approach to the target.
+    static constexpr double FINAL_APPROACH_MAX_VEL_MS = 0.10;
+
+    // The maximum angular velocity (in rad/s) for the final approach to the target.
+    static constexpr double FINAL_APPROACH_MAX_OMEGA_RADS = 0.3;
+
+    // The minimum time step (in seconds) for the update loop.
+    static constexpr double MIN_DT_S = 0.001;
+
+    // The step size for numerical differentiation.
+    static constexpr double NUMERICAL_DIFF_H = 1e-6;
+
+    // The lookahead time (in seconds) for corner detection.
+    // Increasing this value will make the robot detect corners earlier and start turning sooner.
+    static constexpr double LOOKAHEAD_TIME_S = 0.15;
+
+    // The curvature threshold for detecting a sharp corner.
+    // Higher values will make the corner detection less sensitive.
+    static constexpr double SHARP_CORNER_CURVATURE = 1.5;
+
+    // The curvature threshold for detecting a moderate corner.
+    static constexpr double MODERATE_CORNER_CURVATURE = 1.0;
+
+    // The factor by which to increase the cross-track gain for a sharp corner.
+    // This makes the robot turn more aggressively in sharp corners.
+    static constexpr double SHARP_CORNER_GAIN_FACTOR = 1.5;
+
+    // The factor by which to increase the cross-track gain for a moderate corner.
+    static constexpr double MODERATE_CORNER_GAIN_FACTOR = 1.2;
+
+    // The factor by which to reduce the speed for a sharp corner.
+    static constexpr double SHARP_CORNER_SPEED_FACTOR = 0.7;
+
+    // The factor by which to reduce the speed for a moderate corner.
+    static constexpr double MODERATE_CORNER_SPEED_FACTOR = 0.7;
+
+    // The curvature threshold for detecting a very sharp corner.
+    static constexpr double VERY_SHARP_CORNER_CURVATURE = 2.5;
+
+    // The compensation distance (in meters) for a very sharp corner.
+    // This adds a small perpendicular velocity to help the robot turn.
+    static constexpr double VERY_SHARP_CORNER_COMPENSATION_M = 0.02;
+
+    // The lookahead time (in seconds) for heading control.
+    static constexpr double HEADING_LOOKAHEAD_S = 0.1;
+
+    // The alpha value for the low-pass filter on the velocity command.
+    // A value of 1.0 means no filtering, while a value of 0.0 means full filtering.
+    static constexpr double VELOCITY_FILTER_ALPHA = 0.6;
+
+
+    // =====================================================================================
+    // Gain Scheduling
+    // These parameters control the feedback gains for the trajectory controller.
+    // =====================================================================================
+
+    // The position error threshold (in meters) for using the large error gains.
+    static constexpr double LARGE_ERROR_THRESHOLD_M = 0.05;
+
+    // The position error threshold (in meters) for using the medium error gains.
+    static constexpr double MEDIUM_ERROR_THRESHOLD_M = 0.02;
+
+    // The base gain for cross-track error.
+    // This is the gain used when the error is small.
+    static constexpr double BASE_CROSS_TRACK_GAIN = 10.0;
+
+    // The gain for cross-track error when the error is large.
+    static constexpr double LARGE_ERROR_CROSS_TRACK_GAIN = 15.0;
+
+    // The gain for cross-track error when the error is medium.
+    static constexpr double MEDIUM_ERROR_CROSS_TRACK_GAIN = 12.0;
+
+    // The gain for along-track error.
+    static constexpr double BASE_ALONG_TRACK_GAIN = 3.0;
+
+    // The base gain for heading error.
+    static constexpr double BASE_HEADING_GAIN = 8.0;
+
+    // The gain for heading error when the error is small.
+    static constexpr double SMALL_HEADING_ERROR_GAIN = 5.0;
+
+    // The gain for heading error when the error is large.
+    static constexpr double LARGE_HEADING_ERROR_GAIN = 12.0;
+
+    // The heading error threshold (in radians) for using the small error gain.
+    static constexpr double SMALL_HEADING_ERROR_RAD = 0.1;
+
+    // The heading error threshold (in radians) for using the large error gain.
+    static constexpr double LARGE_HEADING_ERROR_RAD = 0.5;
+
+    // The damping gain for the PD controller.
+    static constexpr double DAMPING_GAIN = 0.1;
+
+
+    // =====================================================================================
+    // Arc Length Calculation
+    // =====================================================================================
+
+    // The number of samples to use for calculating the arc length of the spline.
+    // More samples will give a more accurate result, but will be slower.
+    static constexpr int ARC_LENGTH_NUM_SAMPLES = 200;
+
+    // The weight to give to the angular distance when calculating the arc length.
+    // This is used to account for the fact that the robot has to rotate as well as translate.
+    static constexpr double ARC_LENGTH_ANGULAR_WEIGHT = 0.02;
+
+
+    // =====================================================================================
+    // Closest Point Search
+    // =====================================================================================
+
+    // The number of coarse samples to use when searching for the closest point on the spline.
+    static constexpr int CLOSEST_POINT_COARSE_SAMPLES = 100;
+
+    // The number of gradient descent iterations to use when refining the closest point.
+    static constexpr int CLOSEST_POINT_GD_ITERATIONS = 10;
+
+    // The step size for the gradient descent.
+    static constexpr double CLOSEST_POINT_GD_STEP_SIZE = 0.01;
+
+    // The step size for numerical differentiation when calculating the gradient.
+    static constexpr double CLOSEST_POINT_GD_H = 0.001;
+
+
+    // =====================================================================================
+    // Replanning
+    // =====================================================================================
+
+    // The position error threshold (in meters) for triggering a replan.
+    static constexpr double REPLAN_POSITION_THRESHOLD_M = 0.05;
+
+    // The angle error threshold (in radians) for triggering a replan.
+    static constexpr double REPLAN_ANGLE_THRESHOLD_RAD = 0.1;
+
+    // The dot product threshold for determining if a waypoint is ahead of the robot.
+    static constexpr double REMAINING_PATH_WAYPOINT_DOT_THRESHOLD = 0.1;
+
+    // The minimum distance (in meters) between the robot and a waypoint for it to be included
+    // in the remaining path.
+    static constexpr double REMAINING_PATH_MIN_DIST_M = 0.05;
+};
+
 /**
  * UniformBSplineTrajectoryPlanner - Based on EWOK approach
  * 
@@ -92,6 +298,15 @@ private:
     
     // Evaluate B-spline derivative at parameter u
     Eigen::Vector3d EvaluateBSplineDerivative(double u, int derivative_order) const;
+
+    // Evaluate B-spline with given parameters
+    Eigen::Vector3d EvaluateBSpline(double u,
+                                    int degree,
+                                    const std::vector<Eigen::Vector3d>& control_points,
+                                    const std::vector<double>& knot_vector) const;
+
+    // Evaluate B-spline derivative analytically
+    Eigen::Vector3d EvaluateBSplineDerivativeAnalytically(double u, int derivative_order) const;
     
     // Generate control points from waypoints
     void GenerateControlPointsFromWaypoints();
@@ -125,6 +340,33 @@ private:
     
     // Find closest parameter on spline to a given position
     double FindClosestParameter(const Eigen::Vector2d& position) const;
+
+    // Refactored Update() methods
+    Eigen::Vector3d HandleFinishedTrajectory(const Eigen::Vector3d& current_pose);
+    
+    struct DesiredState {
+        Eigen::Vector3d pose;
+        Eigen::Vector3d velocity;
+    };
+    DesiredState CalculateDesiredState(double elapsed_time);
+
+    Eigen::Vector3d CalculateVelocityCommand(const Eigen::Vector3d& current_pose,
+                                             const DesiredState& desired_state,
+                                             double dt, double elapsed_time);
+
+    void ApplyControlGains(Eigen::Vector3d& velocity_command,
+                           const Eigen::Vector3d& pose_error,
+                           const Eigen::Vector3d& desired_velocity_tangent,
+                           double curvature,
+                           double desired_speed);
+
+    void ApplyVelocityLimitsAndFilter(Eigen::Vector3d& velocity_command);
+
+    void FindClosestParameterRecursive(const Eigen::Vector2d& position,
+                                       double u_min,
+                                       double u_max,
+                                       double& best_u,
+                                       double& min_dist_sq) const;
     
 private:
     // Robot description
@@ -138,6 +380,7 @@ private:
     // Control points and knot vector
     std::vector<Eigen::Vector3d> control_points_;
     std::vector<double> knot_vector_;
+    mutable std::vector<std::vector<Eigen::Vector3d>> derivative_control_points_;
     
     // Original waypoints from RRT*
     std::vector<Eigen::Vector3d> waypoints_;
