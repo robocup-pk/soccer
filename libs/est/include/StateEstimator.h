@@ -11,9 +11,12 @@ class StateEstimator {
  public:
   StateEstimator();
 
-  void NewMotorsData(Eigen::Vector4d wheel_speeds_rpm);
+  void Predict(const Eigen::Vector4d& wheel_speeds_rpm, double gyro_w_radps);
+  void Update(const Eigen::Vector3d& pose_meas);
+  
+  void NewMotorsData(const Eigen::Vector4d& wheel_speeds_rpm);
   void NewGyroData(double w_radps);
-  void NewCameraData(Eigen::Vector3d pose_meas);
+  void NewCameraData(const Eigen::Vector3d& pose_meas);
 
   void InitializePose(Eigen::Vector3d pose_fWorld_init);
 
@@ -35,6 +38,28 @@ class StateEstimator {
 
   bool initialized_pose;
 
+  // Noise Parameters (Tunable)
+  // =====================================================================================
+  // Initial state covariance (P)
+  // Represents the initial uncertainty in the robot's pose.
+  // =====================================================================================
+  double init_sigma_m;      // Initial uncertainty in position (m)
+  double init_sigma_rad;    // Initial uncertainty in orientation (rad)
+
+  // =====================================================================================
+  // Process noise covariance (Q)
+  // Represents the uncertainty in the robot's motion model.
+  // =====================================================================================
+  double process_sigma_m;   // Uncertainty in position due to motion (m/s)
+  double process_sigma_rad; // Uncertainty in orientation due to motion (rad/s)
+
+  // =====================================================================================
+  // Measurement noise covariance (R)
+  // Represents the uncertainty in the camera measurements.
+  // =====================================================================================
+  double meas_sigma_m;      // Uncertainty in camera position measurement (m)
+  double meas_sigma_rad;    // Uncertainty in camera orientation measurement (rad)
+
  private:
   // Encoders
   bool initialized_encoder;
@@ -50,17 +75,8 @@ class StateEstimator {
   Eigen::Vector3d pose_est;
 
   // Noise
-  // P
-  double init_sigma_m;
-  double init_sigma_rad;
   Eigen::Matrix3d state_cov;
-  // Q
-  double process_sigma_m;
-  double process_sigma_rad;
   Eigen::Matrix3d process_cov;
-  // R
-  double meas_sigma_m;
-  double meas_sigma_rad;
   Eigen::Matrix3d meas_cov;
   
   // Store last update values for analysis

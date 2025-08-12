@@ -45,7 +45,7 @@ est::StateEstimator::StateEstimator() {
       std::pow(meas_sigma_rad, 2);
 }
 
-void est::StateEstimator::NewMotorsData(Eigen::Vector4d wheel_speeds_rpm) {
+void est::StateEstimator::NewMotorsData(const Eigen::Vector4d& wheel_speeds_rpm) {
   if (!initialized_pose) {
     std::cout << "[est::StateEstimator::NewEncoderData] Pose uninitialized!" << std::endl;
     return;
@@ -108,17 +108,72 @@ void est::StateEstimator::NewGyroData(double w_radps) {
   state_cov(2, 2) += q;
 }
 
-void est::StateEstimator::NewCameraData(Eigen::Vector3d pose_meas) {
+void est::StateEstimator::NewCameraData(const Eigen::Vector3d& pose_meas) {
+  // Camera data provides pose measurements, so call Update
+  Update(pose_meas);
+}
+
+void est::StateEstimator::Predict(const Eigen::Vector4d& wheel_speeds_rpm, double gyro_w_radps) {
+  if (!initialized_pose) {
+    std::cout << "[est::StateEstimator::Predict] Pose uninitialized!" << std::endl;
+    return;
+  }
+
+  if (!initialized_encoder) {
+    initialized_encoder = true;
+    t_last_encoder = util::GetCurrentTime();
+    return;
+  }
+
+  double dt = util::GetCurrentTime() - t_last_encoder;
+  if (dt <= 0) {
+    std::cout << "[est::StateEstimator::Predict] dt <= 0. Some serious problem!"
+              << std::endl;
+    return;
+  }
+  t_last_encoder = util::GetCurrentTime();
+
+  // Calculate body velocity from wheel speeds
+  Eigen::Vector3d velocity_fBody = robot_model->WheelSpeedsRpmToRobotVelocity(wheel_speeds_rpm);
+
+  // Use gyro data for angular velocity if available
+  if (initialized_gyro) {
+    velocity_fBody[2] = gyro_w_radps;
+  }
+
+  // State transition model
+  double c_theta = std::cos(pose_est[2]);
+  double s_theta = std::sin(pose_est[2]);
+  double v_x = velocity_fBody[0];
+  double v_y = velocity_fBody[1];
+
+  pose_est[0] += (v_x * c_theta - v_y * s_theta) * dt;
+  pose_est[1] += (v_x * s_theta + v_y * c_theta) * dt;
+  pose_est[2] += velocity_fBody[2] * dt;
+  pose_est[2] = util::WrapAngle(pose_est[2]);
+
+  // Jacobian of state transition function
+  Eigen::Matrix3d F;
+  F << 1, 0, (-v_x * s_theta - v_y * c_theta) * dt,
+       0, 1, ( v_x * c_theta - v_y * s_theta) * dt,
+       0, 0, 1;
+
+  // Predict Covariance
+  state_cov = F * state_cov * F.transpose() + process_cov;
+}
+
+void est::StateEstimator::Update(const Eigen::Vector3d& pose_meas) {
   if (!initialized_pose) {
     initialized_pose = true;
     pose_est = pose_meas;
     pose_init = pose_meas;
-    std::cout << "[est::StateEstimator::NewCameraData] Initialized pose: " << pose_init.transpose()
+    std::cout << "[est::StateEstimator::Update] Initialized pose: " << pose_init.transpose()
               << std::endl;
     return;
   }
 
   Eigen::Vector3d innovation = pose_meas - pose_est;
+  innovation[2] = util::WrapAngle(innovation[2]); // Normalize angle innovation
   Eigen::Matrix3d innovation_cov = state_cov + meas_cov;
   Eigen::Matrix3d kalman_gain = state_cov * innovation_cov.inverse();
   
@@ -129,9 +184,8 @@ void est::StateEstimator::NewCameraData(Eigen::Vector3d pose_meas) {
 
   // Pose Update
   pose_est += kalman_gain * innovation;
+  pose_est[2] = util::WrapAngle(pose_est[2]);
 
-  // Covariance Update
-  // state_cov -= kalman_gain * state_cov;  // Prone to floating point errors
   // Covariance Update: Joseph form
   Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
   state_cov = (identity - kalman_gain) * state_cov * (identity - kalman_gain).transpose() +
