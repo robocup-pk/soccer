@@ -36,8 +36,9 @@ class TrajectoryManager {
   double active_traj_t_finish_s;
 
  private:
-  std::unique_ptr<ctrl::Trajectory3D> current_trajectory;
   std::mutex active_traj_mutex;
+  std::unique_ptr<Spline2D> spline_traj;
+  std::unique_ptr<Heading1D> heading_traj;
 };
 
 }  // namespace ctrl
