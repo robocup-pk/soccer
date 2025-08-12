@@ -90,19 +90,24 @@ int algos::RRTX::Extend(state::Waypoint v_new_wp, double r) {
 
   if (v_new.parent_idx == -1) return -1;
 
-  int v_new_idx = Vertices.size();
-  Vertices.push_back(v_new);
+  int v_new_idx = AddVertex(v_new.wp);
+  Vertices[v_new_idx].lmc = v_new.lmc;
+  Vertices[v_new_idx].g = v_new.g;
+  Vertices[v_new_idx].parent_idx = v_new.parent_idx;
+  Vertices[v_new_idx].wp = v_new.wp;
 
-  Vertices[Vertices[v_new_idx].parent_idx].C_minus_T.push_back(v_new_idx);
+  if (Vertices[v_new_idx].parent_idx != -1) {
+    Vertices[Vertices[v_new_idx].parent_idx].C_minus_T.insert(v_new_idx);
+  }
 
   for (int u_idx : v_near) {
     if (TrajectoryValid(Vertices[v_new_idx].wp, Vertices[u_idx].wp)) {
-      Vertices[v_new_idx].N_plus_0.push_back(u_idx);
-      Vertices[u_idx].N_minus_r.push_back(v_new_idx);
+      Vertices[v_new_idx].N_plus_0.insert(u_idx);
+      Vertices[u_idx].N_minus_r.insert(v_new_idx);
     }
     if (TrajectoryValid(Vertices[u_idx].wp, Vertices[v_new_idx].wp)) {
-      Vertices[u_idx].N_plus_r.push_back(v_new_idx);
-      Vertices[v_new_idx].N_minus_0.push_back(u_idx);
+      Vertices[u_idx].N_plus_r.insert(v_new_idx);
+      Vertices[v_new_idx].N_minus_0.insert(u_idx);
     }
   }
   n_samples++;
@@ -111,16 +116,15 @@ int algos::RRTX::Extend(state::Waypoint v_new_wp, double r) {
 
 void algos::RRTX::CullNeighbors(int v_idx, double r) {
   auto& N_plus_r = Vertices[v_idx].N_plus_r;
-  for (auto it = N_plus_r.begin(); it != N_plus_r.end();) {
-    int u_idx = *it;
+  std::vector<int> to_remove;
+  for (int u_idx : N_plus_r) {
     if (r < d_pi(Vertices[v_idx].wp, Vertices[u_idx].wp) && Vertices[v_idx].parent_idx != u_idx) {
-      it = N_plus_r.erase(it);
-      auto& N_minus_r_u = Vertices[u_idx].N_minus_r;
-      N_minus_r_u.erase(std::remove(N_minus_r_u.begin(), N_minus_r_u.end(), v_idx),
-                        N_minus_r_u.end());
-    } else {
-      ++it;
+      to_remove.push_back(u_idx);
     }
+  }
+  for (int u_idx : to_remove) {
+    N_plus_r.erase(u_idx);
+    Vertices[u_idx].N_minus_r.erase(v_idx);
   }
 }
 
@@ -194,7 +198,8 @@ void algos::RRTX::UpdateObstacles(std::vector<state::SoccerObject>& new_obstacle
   // Detect vanished and appeared obstacles
   std::vector<state::SoccerObject> vanished = FindVanishedObstacles(new_obstacles);
   std::vector<state::SoccerObject> appeared = FindAppearedObstacles(new_obstacles);
-  std::vector<std::pair<state::SoccerObject, state::SoccerObject>> moved = FindMovedObstacles(new_obstacles);
+  std::vector<std::pair<state::SoccerObject, state::SoccerObject>> moved =
+      FindMovedObstacles(new_obstacles);
 
   for (auto& obs : vanished) RemoveObstacle(obs);
   for (auto& obs : appeared) AddNewObstacle(obs);
@@ -226,7 +231,11 @@ void algos::RRTX::ValidateRobotPath() {
 void algos::RRTX::PropogateDescendants() {
   std::unordered_set<int> to_add;
   for (int v_idx : V_c_T) {
+    if (!Vertices[v_idx].alive) continue;
     for (int child_idx : Vertices[v_idx].C_minus_T) {
+      if (child_idx < 0 || child_idx >= static_cast<int>(Vertices.size()) ||
+          !Vertices[child_idx].alive)
+        continue;
       to_add.insert(child_idx);
     }
   }
@@ -249,9 +258,7 @@ void algos::RRTX::PropogateDescendants() {
     Vertices[v_idx].lmc = std::numeric_limits<double>::infinity();
 
     if (Vertices[v_idx].parent_idx != -1) {
-      auto& parent_children = Vertices[Vertices[v_idx].parent_idx].C_minus_T;
-      parent_children.erase(std::remove(parent_children.begin(), parent_children.end(), v_idx),
-                            parent_children.end());
+      Vertices[Vertices[v_idx].parent_idx].C_minus_T.erase(v_idx);
       Vertices[v_idx].parent_idx = -1;
     }
   }
@@ -260,19 +267,7 @@ void algos::RRTX::PropogateDescendants() {
 }
 
 void algos::RRTX::VerifyOrphan(int v_idx) {
-  std::priority_queue<std::pair<std::pair<double, double>, int>,
-                      std::vector<std::pair<std::pair<double, double>, int>>, std::greater<>>
-      newQ;
-
-  while (!Q.empty()) {
-    auto entry = Q.top();
-    Q.pop();
-    if (entry.second != v_idx) {
-      newQ.push(entry);
-    }
-  }
-
-  Q = std::move(newQ);
+  vertices_in_queue.erase(v_idx);
   V_c_T.insert(v_idx);
 }
 
@@ -336,6 +331,7 @@ std::set<std::pair<int, int>> algos::RRTX::GetEdgesIntersectingObstacle(
 
   // Check all vertices and their connections
   for (size_t i = 0; i < Vertices.size(); ++i) {
+    if (!Vertices[i].alive) continue;
     // Check parent edge (tree edge)
     if (Vertices[i].parent_idx != -1) {
       if (IsTrajectoryBlockedByObstacle(Vertices[i].wp, Vertices[Vertices[i].parent_idx].wp,
@@ -427,46 +423,47 @@ double algos::RRTX::PerpendicularDistanceToLineSegment(state::Waypoint& point,
               (point.y - closest_y) * (point.y - closest_y));
 }
 
+inline void eraseNeighbor(std::unordered_set<int>& neighbors, int idx) { neighbors.erase(idx); }
+
 void algos::RRTX::RemoveEdgeConnection(int v_idx, int u_idx) {
-  // Remove u from v's outgoing neighbors (both original and running)
-  auto& N_plus_0_v = Vertices[v_idx].N_plus_0;
-  N_plus_0_v.erase(std::remove(N_plus_0_v.begin(), N_plus_0_v.end(), u_idx), N_plus_0_v.end());
+  auto& v = Vertices[v_idx];
+  auto& u = Vertices[u_idx];
 
-  auto& N_plus_r_v = Vertices[v_idx].N_plus_r;
-  N_plus_r_v.erase(std::remove(N_plus_r_v.begin(), N_plus_r_v.end(), u_idx), N_plus_r_v.end());
+  // Remove u from v's outgoing neighbors
+  eraseNeighbor(v.N_plus_0, u_idx);
+  eraseNeighbor(v.N_plus_r, u_idx);
 
-  // Remove v from u's incoming neighbors (both original and running)
-  auto& N_minus_0_u = Vertices[u_idx].N_minus_0;
-  N_minus_0_u.erase(std::remove(N_minus_0_u.begin(), N_minus_0_u.end(), v_idx), N_minus_0_u.end());
+  // Remove v from u's incoming neighbors
+  eraseNeighbor(u.N_minus_0, v_idx);
+  eraseNeighbor(u.N_minus_r, v_idx);
 
-  auto& N_minus_r_u = Vertices[u_idx].N_minus_r;
-  N_minus_r_u.erase(std::remove(N_minus_r_u.begin(), N_minus_r_u.end(), v_idx), N_minus_r_u.end());
+  bool vChanged = false;
+  bool uChanged = false;
 
-  // If this was a parent-child relationship, break it
-  if (Vertices[v_idx].parent_idx == u_idx) {
-    // Remove v from u's children
-    auto& children = Vertices[u_idx].C_minus_T;
-    children.erase(std::remove(children.begin(), children.end(), v_idx), children.end());
-
-    // Mark v as having no parent
-    Vertices[v_idx].parent_idx = -1;
-
-    // Mark v as inconsistent (cost to goal becomes infinite)
-    Vertices[v_idx].g = std::numeric_limits<double>::infinity();
-    Vertices[v_idx].lmc = std::numeric_limits<double>::infinity();
+  // If v had u as parent
+  if (v.parent_idx == u_idx) {
+    eraseNeighbor(u.C_minus_T, v_idx);
+    v.parent_idx = -1;
+    v.g = std::numeric_limits<double>::infinity();
+    v.lmc = std::numeric_limits<double>::infinity();
+    vChanged = true;
   }
 
-  if (Vertices[u_idx].parent_idx == v_idx) {
-    // Remove u from v's children
-    auto& children = Vertices[v_idx].C_minus_T;
-    children.erase(std::remove(children.begin(), children.end(), u_idx), children.end());
+  // If u had v as parent
+  if (u.parent_idx == v_idx) {
+    eraseNeighbor(v.C_minus_T, u_idx);
+    u.parent_idx = -1;
+    u.g = std::numeric_limits<double>::infinity();
+    u.lmc = std::numeric_limits<double>::infinity();
+    uChanged = true;
+  }
 
-    // Mark u as having no parent
-    Vertices[u_idx].parent_idx = -1;
-
-    // Mark u as inconsistent
-    Vertices[u_idx].g = std::numeric_limits<double>::infinity();
-    Vertices[u_idx].lmc = std::numeric_limits<double>::infinity();
+  // Update priority queue for re-planning (RRTX's UpdateQueue)
+  if (vChanged) {
+    vertices_in_queue.insert(v_idx);
+  }
+  if (uChanged) {
+    vertices_in_queue.insert(u_idx);
   }
 }
 
@@ -542,17 +539,15 @@ void algos::RRTX::CleanupQueue() {
   while (!Q.empty()) {
     auto entry = Q.top();
     Q.pop();
-
     int v_idx = entry.second;
+    if (v_idx < 0 || v_idx >= static_cast<int>(Vertices.size()) || !Vertices[v_idx].alive) {
+      continue;  // drop dead/stale
+    }
     auto current_key = getKey(v_idx);
-
-    // Only keep entry if its key matches current vertex key
-    // (this eliminates stale entries automatically)
     if (!KeyLess(entry.first, current_key) && !KeyLess(current_key, entry.first)) {
       valid_entries.push_back(entry);
       vertices_in_queue.insert(v_idx);
     }
-    // Stale entries are simply discarded
   }
 
   // Rebuild queue with only valid entries
@@ -581,26 +576,39 @@ void algos::RRTX::MakeParentOf(int parent_idx, int child_idx) {
 
   if (Vertices[child_idx].parent_idx != -1) {
     int old_parent = Vertices[child_idx].parent_idx;
-    auto& children = Vertices[old_parent].C_minus_T;
-    children.erase(std::remove(children.begin(), children.end(), child_idx), children.end());
+    Vertices[old_parent].C_minus_T.erase(child_idx);
   }
 
   // Set new parent
   Vertices[child_idx].parent_idx = parent_idx;
-  Vertices[parent_idx].C_minus_T.push_back(child_idx);
+  Vertices[parent_idx].C_minus_T.insert(child_idx);
 }
 
 std::vector<int> algos::RRTX::getInNeighbors(int v_idx) {
-  std::vector<int> neighbors = Vertices[v_idx].N_minus_0;
-  neighbors.insert(neighbors.end(), Vertices[v_idx].N_minus_r.begin(),
-                   Vertices[v_idx].N_minus_r.end());
+  std::vector<int> neighbors;
+  neighbors.reserve(Vertices[v_idx].N_minus_0.size() + Vertices[v_idx].N_minus_r.size());
+  for (int u : Vertices[v_idx].N_minus_0) {
+    if (u >= 0 && u < static_cast<int>(Vertices.size()) && Vertices[u].alive)
+      neighbors.push_back(u);
+  }
+  for (int u : Vertices[v_idx].N_minus_r) {
+    if (u >= 0 && u < static_cast<int>(Vertices.size()) && Vertices[u].alive)
+      neighbors.push_back(u);
+  }
   return neighbors;
 }
 
 std::vector<int> algos::RRTX::getOutNeighbors(int v_idx) {
-  std::vector<int> neighbors = Vertices[v_idx].N_plus_0;
-  neighbors.insert(neighbors.end(), Vertices[v_idx].N_plus_r.begin(),
-                   Vertices[v_idx].N_plus_r.end());
+  std::vector<int> neighbors;
+  neighbors.reserve(Vertices[v_idx].N_plus_0.size() + Vertices[v_idx].N_plus_r.size());
+  for (int u : Vertices[v_idx].N_plus_0) {
+    if (u >= 0 && u < static_cast<int>(Vertices.size()) && Vertices[u].alive)
+      neighbors.push_back(u);
+  }
+  for (int u : Vertices[v_idx].N_plus_r) {
+    if (u >= 0 && u < static_cast<int>(Vertices.size()) && Vertices[u].alive)
+      neighbors.push_back(u);
+  }
   return neighbors;
 }
 
@@ -654,25 +662,31 @@ double algos::RRTX::ShrinkingBallRadius() {
 std::vector<int> algos::RRTX::Near(const state::Waypoint& wp, double r) {
   std::vector<int> near_vertices;
   for (size_t i = 0; i < Vertices.size(); ++i) {
+    if (!Vertices[i].alive) continue;
     if (d_pi(wp, Vertices[i].wp) <= r) {
-      near_vertices.push_back(i);
+      near_vertices.push_back(static_cast<int>(i));
     }
   }
   return near_vertices;
 }
 
 int algos::RRTX::Nearest(const state::Waypoint& wp) {
-  int nearest_idx = 0;
-  double min_dist = d_pi(wp, Vertices[0].wp);
+  int nearest_idx = -1;
+  double min_dist = std::numeric_limits<double>::infinity();
 
-  for (size_t i = 1; i < Vertices.size(); ++i) {
+  for (size_t i = 0; i < Vertices.size(); ++i) {
+    if (!Vertices[i].alive) continue;
     double dist = d_pi(wp, Vertices[i].wp);
     if (dist < min_dist) {
       min_dist = dist;
-      nearest_idx = i;
+      nearest_idx = static_cast<int>(i);
     }
   }
 
+  if (nearest_idx == -1) {
+    // fallback to goal if all somehow dead — shouldn't happen
+    return v_goal_idx;
+  }
   return nearest_idx;
 }
 
@@ -889,7 +903,8 @@ bool algos::RRTX::HasObstaclesChanged(const std::vector<state::SoccerObject>& ne
 bool algos::RRTX::IsRobotPoseChanged() { return false; }
 
 bool algos::RRTX::IsInVertices(state::Waypoint v_new_wp) {
-  for (int i = Vertices.size() - 1; i >= 0; i--) {
+  for (int i = static_cast<int>(Vertices.size()) - 1; i >= 0; --i) {
+    if (!Vertices[i].alive) continue;
     if (Vertices[i].wp == v_new_wp) return true;
   }
   return false;
@@ -961,4 +976,70 @@ bool algos::RRTX::ObstaclesEqual(state::SoccerObject& obs1, state::SoccerObject&
   // Use name comparison or position threshold
   return (obs1.name == obs2.name) &&
          ((obs1.position - obs2.position).norm() < 0.01);  // 1cm threshold
+}
+
+int algos::RRTX::AddVertex(const state::Waypoint& wp) {
+  if (!free_list.empty()) {
+    int idx = free_list.back();
+    free_list.pop_back();
+    Vertex& v = Vertices[idx];
+    v.wp = wp;
+    v.parent_idx = -1;
+    v.alive = true;
+    v.N_plus_0.clear();
+    v.N_plus_r.clear();
+    v.N_minus_0.clear();
+    v.N_minus_r.clear();
+    v.C_minus_T.clear();
+    v.g = std::numeric_limits<double>::infinity();
+    v.lmc = std::numeric_limits<double>::infinity();
+    return idx;
+  } else {
+    Vertex v;
+    v.wp = wp;
+    Vertices.push_back(std::move(v));
+    return static_cast<int>(Vertices.size()) - 1;
+  }
+}
+
+void algos::RRTX::RemoveVertex(int idx) {
+  if (idx < 0 || idx >= static_cast<int>(Vertices.size())) return;
+  Vertex& v = Vertices[idx];
+  if (!v.alive) return;
+  v.alive = false;
+
+  // Remove this idx from any neighbor/children sets of neighbours.
+  for (int u : v.N_plus_0) {
+    Vertices[u].N_minus_0.erase(idx);
+  }
+  for (int u : v.N_plus_r) {
+    Vertices[u].N_minus_r.erase(idx);
+  }
+  for (int u : v.N_minus_0) {
+    Vertices[u].N_plus_0.erase(idx);
+  }
+  for (int u : v.N_minus_r) {
+    Vertices[u].N_plus_r.erase(idx);
+  }
+
+  // Remove parent-child relation if any
+  if (v.parent_idx != -1) {
+    Vertices[v.parent_idx].C_minus_T.erase(idx);
+    v.parent_idx = -1;
+  }
+  // Remove children links to avoid dangling child entries
+  for (int child : v.C_minus_T) {
+    Vertices[child].parent_idx = -1;
+    // mark child inconsistent; they'll be handled by VerifyQueue/PropagateDescendants
+    Vertices[child].g = std::numeric_limits<double>::infinity();
+    Vertices[child].lmc = std::numeric_limits<double>::infinity();
+    VerifyQueue(child);
+  }
+  v.N_plus_0.clear();
+  v.N_plus_r.clear();
+  v.N_minus_0.clear();
+  v.N_minus_r.clear();
+  v.C_minus_T.clear();
+
+  free_list.push_back(idx);
 }

@@ -15,20 +15,22 @@
 namespace algos {
 
 struct Vertex {
-  state::Waypoint wp;          // v ∈ X
-  int parent_idx;              // p_T⁺(v) — parent in shortest-path tree T
-  double g;                    // g(v) — ε-consistent cost-to-goal
-  double lmc;                  // lmc(v) — look-ahead estimate of cost-to-goal
-  std::vector<int> N_plus_0;   // N₀⁺(v) — original outgoing neighbors
-  std::vector<int> N_plus_r;   // Nᵣ⁺(v) — running outgoing neighbors
-  std::vector<int> N_minus_0;  // N₀⁻(v) — original incoming neighbors
-  std::vector<int> N_minus_r;  // Nᵣ⁻(v) — running incoming neighbors
-  std::vector<int> C_minus_T;  // C_T⁻(v) — children in tree T
+  state::Waypoint wp;                 // v ∈ X
+  int parent_idx;                     // p_T⁺(v) — parent in shortest-path tree T
+  double g;                           // g(v) — ε-consistent cost-to-goal
+  double lmc;                         // lmc(v) — look-ahead estimate of cost-to-goal
+  bool alive;                         // true if vertex is alive, false if it has been removed
+  std::unordered_set<int> N_plus_0;   // N₀⁺(v) — original outgoing neighbors
+  std::unordered_set<int> N_plus_r;   // Nᵣ⁺(v) — running outgoing neighbors
+  std::unordered_set<int> N_minus_0;  // N₀⁻(v) — original incoming neighbors
+  std::unordered_set<int> N_minus_r;  // Nᵣ⁻(v) — running incoming neighbors
+  std::unordered_set<int> C_minus_T;  // C_T⁻(v) — children in tree T
 
   Vertex()
       : parent_idx(-1),
         g(std::numeric_limits<double>::infinity()),
-        lmc(std::numeric_limits<double>::infinity()) {}
+        lmc(std::numeric_limits<double>::infinity()),
+        alive(true) {}
 };
 
 class RRTX {
@@ -109,6 +111,7 @@ class RRTX {
 
   // Core data structures
   std::vector<Vertex> Vertices;   // vertex set
+  std::vector<int> free_list;     // list of free certex indices
   std::unordered_set<int> V_c_T;  // orphan nodes V^c_T
 
   // Priority queue Q with keys (min(g(v), lmc(v)), g(v))
@@ -136,6 +139,11 @@ class RRTX {
   state::Waypoint robot_pos;
 
   std::unordered_set<int> vertices_in_queue;
+
+    // Optimizations
+    int AddVertex(const state::Waypoint& wp);
+    void RemoveVertex(int v_idx);
+
 };
 }  // namespace algos
 
