@@ -24,31 +24,47 @@ int main(int argc, char* argv[]) {
   robot_manager.InitializePose(robot_start_pose);
   vector<Eigen::Vector3d> waypoints;
   // Choose a test case based on command line argument
-  int test_case = 1;
+  int test_case = 4;
   if (argc > 1) {
     test_case = std::atoi(argv[1]);
   }
 
   switch (test_case) {
     case 1: {
-      // Test 1: Simple forward movement with reasonable spacing
+      // Test 1: Simple forward movement with heading changes in radians
       std::cout << "Test 1: Simple forward movement" << std::endl;
       waypoints.push_back(Eigen::Vector3d(0, 0, 0));
-      waypoints.push_back(Eigen::Vector3d(-1, 0, 0));
-      waypoints.push_back(Eigen::Vector3d(-1, 1, 0));
-      waypoints.push_back(Eigen::Vector3d(0, 1, 0));
-      waypoints.push_back(Eigen::Vector3d(0, 0, 0));
+      waypoints.push_back(Eigen::Vector3d(-1, 0, M_PI / 4));
+      waypoints.push_back(Eigen::Vector3d(-1, 1, M_PI / 2));
+      waypoints.push_back(Eigen::Vector3d(0, 1, 3 * M_PI / 4));
+      waypoints.push_back(Eigen::Vector3d(0, 0, M_PI));
       break;
     }
     case 2: {
-      // Test 2: Circular path (example: 8 points around a circle)
+      // Test 2: Circular path (example: 8 points around a circle, heading in radians)
       std::cout << "Test 2: Circular path" << std::endl;
       double r = 1.0;
+      waypoints.push_back(Eigen::Vector3d(0,0,0));
       for (int i = 0; i < 8; ++i) {
         double theta = i * M_PI / 4;
-        waypoints.push_back(Eigen::Vector3d(r * cos(theta), r * sin(theta), 0));
+        waypoints.push_back(Eigen::Vector3d(r * cos(theta), r * sin(theta), theta));
       }
-      waypoints.push_back(waypoints[0]);  // Close the loop
+      waypoints.push_back(waypoints[1]);  // Close the loop
+      break;
+    }
+
+    case 3: {
+      // Test 3: Figure-8 pattern
+      std::cout << "Test 3: Figure-8 pattern" << std::endl;
+      waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+      waypoints.push_back(Eigen::Vector3d(0.3, 0.2, M_PI / 4));
+      waypoints.push_back(Eigen::Vector3d(0.5, 0.5, M_PI / 2));
+      waypoints.push_back(Eigen::Vector3d(0.3, 0.8, 3 * M_PI / 4));
+      waypoints.push_back(Eigen::Vector3d(0.0, 1.0, M_PI));
+      waypoints.push_back(Eigen::Vector3d(-0.3, 0.8, -3 * M_PI / 4));
+      waypoints.push_back(Eigen::Vector3d(-0.5, 0.5, -M_PI / 2));
+      waypoints.push_back(Eigen::Vector3d(-0.3, 0.2, -M_PI / 4));
+      waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
       break;
     }
     default: {

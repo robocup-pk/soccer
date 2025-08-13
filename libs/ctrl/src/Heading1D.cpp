@@ -3,13 +3,9 @@
 
 namespace ctrl {
 
-Heading1D::Heading1D(double theta_start_rad, double theta_end_rad, double t_start_s,
-                     double omega_max, double alpha_max) {
-  Init(theta_start_rad, theta_end_rad, t_start_s, omega_max, alpha_max);
-}
 
 void Heading1D::Init(double theta_start_rad, double theta_end_rad, double t_start_s,
-                     double omega_max, double alpha_max) {
+                     double omega_max, double alpha_max, double available_time_s) {
   theta0_ = theta_start_rad;
   theta1_ = theta_end_rad;
   t_start_ = t_start_s;
@@ -17,6 +13,10 @@ void Heading1D::Init(double theta_start_rad, double theta_end_rad, double t_star
   alpha_max_ = std::abs(alpha_max);
   sign_ = (theta1_ >= theta0_) ? 1.0 : -1.0;
   computeMinimalProfile();
+  // If available time is provided, adjust the profile to fit within it
+  if (available_time_s > 0) {
+    MakeFeasible(available_time_s);
+  }
 }
 
 void Heading1D::computeMinimalProfile() {
@@ -57,9 +57,37 @@ void Heading1D::SetTotalTime(double total_time_s) {
     // recompute omega_max_ and alpha_max_ roughly consistent with scaled times
     // (simple and conservative): reduce omega_max_ proportionally
     omega_max_ = omega_max_ / scale;
-    alpha_max_ = alpha_max_ / (scale * scale); // naive but safe-ish
+    alpha_max_ = alpha_max_ / (scale * scale);  // naive but safe-ish
   } else {
     // if new total is smaller than minimal feasible, ignore (do nothing)
+  }
+}
+
+void Heading1D::MakeFeasible(double available_time_s) {
+  if (available_time_s <= 0) return;
+
+  computeMinimalProfile();
+  if (total_time_ <= available_time_s) {
+    // Already feasible, just stretch to exactly available_time_s
+    SetTotalTime(available_time_s);
+    return;
+  }
+
+  // Too short: reduce omega_max_ first
+  double scale = available_time_s / total_time_;
+  omega_max_ *= scale;
+  computeMinimalProfile();
+
+  if (total_time_ > available_time_s) {
+    // Still too long: reduce alpha_max_ proportionally as well
+    double scale_alpha = available_time_s / total_time_;
+    alpha_max_ *= scale_alpha;
+    computeMinimalProfile();
+  }
+
+  // If still too long after both reductions, cap at minimal achievable
+  if (total_time_ > available_time_s) {
+    SetTotalTime(available_time_s);
   }
 }
 
@@ -113,8 +141,8 @@ double Heading1D::VelocityAtT(double t) const {
 }
 
 void Heading1D::Print() const {
-  std::cout << "[Heading1D] theta: " << theta0_ << " -> " << theta1_
-            << ", t_start: " << t_start_ << ", total_time: " << total_time_ << "\n";
+  std::cout << "[Heading1D] theta: " << theta0_ << " -> " << theta1_ << ", t_start: " << t_start_
+            << ", total_time: " << total_time_ << "\n";
 }
 
-} // namespace ctrl
+}  // namespace ctrl

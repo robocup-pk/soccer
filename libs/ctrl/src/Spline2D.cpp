@@ -11,7 +11,7 @@ using tsreal = tinyspline::real;
 
 void Spline2D::Init(const std::vector<Eigen::Vector2d>& waypoints_xy,
                     double v_max, double a_max, double a_lat_max,
-                    double t_start_s, int samples) {
+                    double t_start_s, int samples, bool log_data) {
   if (waypoints_xy.size() < 2) throw std::runtime_error("Spline2D: need >=2 pts");
 
   v_max_ = v_max;
@@ -26,6 +26,9 @@ void Spline2D::Init(const std::vector<Eigen::Vector2d>& waypoints_xy,
   computeCurvatureAndArc();
   computeVelocityProfile();
   t_finish_ = samples_.back().t;
+  if (log_data) {
+    logSplineData("../../../../libs/ctrl/spline_data.log");
+  }
 }
 
 std::vector<Eigen::Vector2d> Spline2D::preprocessCorners(const std::vector<Eigen::Vector2d>& pts) {
@@ -60,10 +63,8 @@ std::vector<Eigen::Vector2d> Spline2D::preprocessCorners(const std::vector<Eigen
 
 int Spline2D::repeatsForTurnAngle(double turn_deg) const {
   // mapping (turn angle in degrees):
-  // >= 120° -> 4 repeats
-  // >= 90°  -> 3 repeats
-  // >= 60°  -> 2 repeats
-  // else    -> 1
+
+  if (turn_deg >= 160.0) return 5;
   if (turn_deg >= 120.0) return 4;
   if (turn_deg >= 90.0) return 3;
   if (turn_deg >= 60.0) return 2;
@@ -72,7 +73,7 @@ int Spline2D::repeatsForTurnAngle(double turn_deg) const {
 
 void Spline2D::buildSpline(const std::vector<Eigen::Vector2d>& pts) {
   int ctrl_count = static_cast<int>(pts.size());
-  spline_xy_ = tinyspline::BSpline(ctrl_count, 2, 3); // cubic clamped default
+  spline_xy_ = tinyspline::BSpline(ctrl_count, 2, 5); // quintic clamped default
   std::vector<tsreal> ctrlp;
   ctrlp.reserve(ctrl_count * 2);
   for (const auto &p : pts) {

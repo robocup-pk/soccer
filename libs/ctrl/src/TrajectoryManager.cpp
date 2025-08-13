@@ -6,10 +6,6 @@
 #include "TrajectoryManager.h"
 #include "SystemConfig.h"
 
-static double angleBetweenVectors(const Eigen::Vector2d &a, const Eigen::Vector2d &b) {
-  double dot = a.dot(b) / (a.norm() * b.norm());
-  return std::acos(std::clamp(dot, -1.0, 1.0));  // radians
-}
 
 bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vector3d> path_fWorld,
                                                          double t_start_s) {
@@ -29,15 +25,16 @@ bool ctrl::TrajectoryManager::CreateTrajectoriesFromPath(std::vector<Eigen::Vect
   spline_traj = std::make_unique<Spline2D>();
   spline_traj->Init(processed_path_2d, ::cfg::SystemConfig::max_velocity_fBody_mps.x(),
                     ::cfg::SystemConfig::max_acc_m_radpsps.x(),
-                    ::cfg::SystemConfig::max_acc_m_radpsps.y(), t_start_s);
-  spline_traj->logSplineData("/media/shared/robocup/spline_data.log");
+                    ::cfg::SystemConfig::max_acc_m_radpsps.y(), t_start_s, 300, true);
   // === 3. Create Heading1D for orientation ===
   double heading_start = headings.front();
   double heading_end = headings.back();
   double spline_total_time = spline_traj->GetTotalTime();
 
-  heading_traj = std::make_unique<Heading1D>(heading_start, heading_end, t_start_s,
-                                             t_start_s + spline_total_time);
+  heading_traj = std::make_unique<Heading1D>();
+  heading_traj->Init(heading_start, heading_end, t_start_s,
+                     ::cfg::SystemConfig::max_velocity_fBody_mps.z(), ::cfg::SystemConfig::max_acc_m_radpsps.z(),
+                     spline_total_time);
 
   active_traj_t_finish_s = t_start_s + spline_total_time;
 

@@ -26,7 +26,7 @@ class Spline2D {
   // t_start_s: global start time for trajectory
   // samples: number of discretization samples for profiling
   void Init(const std::vector<Eigen::Vector2d>& waypoints_xy, double v_max, double a_max,
-            double a_lat_max, double t_start_s = 0.0, int samples = 300);
+            double a_lat_max, double t_start_s = 0.0, int samples = 300, bool log_data = false);
 
   Eigen::Vector2d PositionAtT(double t) const;
   Eigen::Vector2d VelocityAtT(double t) const;

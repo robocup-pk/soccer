@@ -12,13 +12,13 @@ namespace ctrl {
  * - can then be stretched externally by SetTotalTime if needed to sync durations
  */
 class Heading1D {
-public:
+ public:
   Heading1D() = default;
   Heading1D(double theta_start_rad, double theta_end_rad, double t_start_s = 0.0,
             double omega_max = 2.0, double alpha_max = 4.0);
 
   void Init(double theta_start_rad, double theta_end_rad, double t_start_s = 0.0,
-            double omega_max = 2.0, double alpha_max = 4.0);
+            double omega_max = 2.0, double alpha_max = 4.0, double available_time_s = 0.0);
 
   // If you want to override total duration (stretching), call this BEFORE queries:
   void SetTotalTime(double total_time_s);
@@ -28,8 +28,9 @@ public:
   double GetTStart() const { return t_start_; }
   double GetTFinish() const { return t_start_ + total_time_; }
   void Print() const;
+  void MakeFeasible(double available_time_s);  // New method declaration
 
-private:
+ private:
   double theta0_{0.0};
   double theta1_{0.0};
   double t_start_{0.0};
@@ -45,6 +46,6 @@ private:
   void computeMinimalProfile();
 };
 
-} // namespace ctrl
+}  // namespace ctrl
 
-#endif // HEADING1D_H
+#endif  // HEADING1D_H
