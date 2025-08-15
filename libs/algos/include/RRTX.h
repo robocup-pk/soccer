@@ -11,6 +11,7 @@
 
 #include "Waypoint.h"
 #include "SoccerObject.h"
+#include "Grid.h"
 
 namespace algos {
 
@@ -59,8 +60,8 @@ class RRTX {
 
   // Sampling and nearest neighbor
   state::Waypoint RandomNode();
-  int Nearest(const state::Waypoint& wp);
-  std::vector<int> Near(const state::Waypoint& wp, double r);
+  int Nearest(state::Waypoint& wp);
+  std::vector<int> Near(state::Waypoint& wp, double r);
   state::Waypoint Saturate(const state::Waypoint& v, const state::Waypoint& v_nearest);
 
   // Distance and trajectory functions
@@ -110,8 +111,9 @@ class RRTX {
   void CleanupQueue();
 
   // Core data structures
-  std::vector<Vertex> Vertices;   // vertex set
-  std::vector<int> free_list;     // list of free certex indices
+  std::vector<Vertex> Vertices;  // vertex set
+  std::unique_ptr<SpatialGrid> spatial_grid;
+  std::vector<int> free_list;     // list of free vertex indices
   std::unordered_set<int> V_c_T;  // orphan nodes V^c_T
 
   // Priority queue Q with keys (min(g(v), lmc(v)), g(v))
@@ -140,10 +142,9 @@ class RRTX {
 
   std::unordered_set<int> vertices_in_queue;
 
-    // Optimizations
-    int AddVertex(const state::Waypoint& wp);
-    void RemoveVertex(int v_idx);
-
+  // Optimizations
+  int AddVertex(state::Waypoint& wp);
+  void RemoveVertex(int v_idx);
 };
 }  // namespace algos
 
