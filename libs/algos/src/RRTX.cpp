@@ -2,6 +2,7 @@
 #include "SoccerField.h"
 #include "SoccerObject.h"
 #include "Kinematics.h"
+#include "Grid.h"
 
 #include <random>
 
@@ -51,6 +52,9 @@ algos::RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal,
   V_c_T.clear();
   vertices_in_queue.clear();
   robot_pos = x_start;
+  spatial_grid = std::make_unique<algos::SpatialGrid>(0.2);
+  spatial_grid->AddVertex(v_goal_idx, Vertices[v_goal_idx].wp);
+  spatial_grid->AddVertex(v_start_idx, Vertices[v_start_idx].wp);
 }
 
 void algos::RRTX::PlanStep() {
@@ -659,36 +663,11 @@ double algos::RRTX::ShrinkingBallRadius() {
   return gamma * std::pow(std::log(n_samples + 1) / (n_samples + 1), 1.0 / 2.0) * std::sqrt(area);
 }
 
-std::vector<int> algos::RRTX::Near(const state::Waypoint& wp, double r) {
-  std::vector<int> near_vertices;
-  for (size_t i = 0; i < Vertices.size(); ++i) {
-    if (!Vertices[i].alive) continue;
-    if (d_pi(wp, Vertices[i].wp) <= r) {
-      near_vertices.push_back(static_cast<int>(i));
-    }
-  }
-  return near_vertices;
+std::vector<int> algos::RRTX::Near(state::Waypoint& wp, double r) {
+  return spatial_grid->FindNear(wp, r, Vertices);
 }
 
-int algos::RRTX::Nearest(const state::Waypoint& wp) {
-  int nearest_idx = -1;
-  double min_dist = std::numeric_limits<double>::infinity();
-
-  for (size_t i = 0; i < Vertices.size(); ++i) {
-    if (!Vertices[i].alive) continue;
-    double dist = d_pi(wp, Vertices[i].wp);
-    if (dist < min_dist) {
-      min_dist = dist;
-      nearest_idx = static_cast<int>(i);
-    }
-  }
-
-  if (nearest_idx == -1) {
-    // fallback to goal if all somehow dead — shouldn't happen
-    return v_goal_idx;
-  }
-  return nearest_idx;
-}
+int algos::RRTX::Nearest(state::Waypoint& wp) { return spatial_grid->FindNearest(wp, Vertices); }
 
 double algos::RRTX::d_pi(const state::Waypoint& a, const state::Waypoint& b) {
   return (a - b).Norm();
@@ -978,9 +957,10 @@ bool algos::RRTX::ObstaclesEqual(state::SoccerObject& obs1, state::SoccerObject&
          ((obs1.position - obs2.position).norm() < 0.01);  // 1cm threshold
 }
 
-int algos::RRTX::AddVertex(const state::Waypoint& wp) {
+int algos::RRTX::AddVertex(state::Waypoint& wp) {
+  int idx;
   if (!free_list.empty()) {
-    int idx = free_list.back();
+    idx = free_list.back();
     free_list.pop_back();
     Vertex& v = Vertices[idx];
     v.wp = wp;
@@ -998,14 +978,20 @@ int algos::RRTX::AddVertex(const state::Waypoint& wp) {
     Vertex v;
     v.wp = wp;
     Vertices.push_back(std::move(v));
-    return static_cast<int>(Vertices.size()) - 1;
+    idx = static_cast<int>(Vertices.size()) - 1;
   }
+  spatial_grid->AddVertex(idx, wp);
+
+  return idx;
 }
 
 void algos::RRTX::RemoveVertex(int idx) {
   if (idx < 0 || idx >= static_cast<int>(Vertices.size())) return;
   Vertex& v = Vertices[idx];
   if (!v.alive) return;
+
+  spatial_grid->RemoveVertex(idx, v.wp);
+
   v.alive = false;
 
   // Remove this idx from any neighbor/children sets of neighbours.
