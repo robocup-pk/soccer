@@ -28,7 +28,7 @@ std::uniform_real_distribution<double> prob_dist(0.0, 1.0);
 }  // namespace
 
 algos::RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal, double eps)
-    : epsilon(eps), delta(0.5), gamma(2 * sqrt(2)), n_samples(2) {
+    : epsilon(eps), delta(0.5), gamma(1.5), n_samples(2) {
   Vertices.clear();
 
   // Goal vertex at index 0 - this is the ROOT of shortest path tree
@@ -231,53 +231,34 @@ void algos::RRTX::FindParent(Vertex& v_new, const std::vector<int>& U) {
 }
 
 void algos::RRTX::UpdateObstacles(std::vector<state::SoccerObject>& new_obstacles) {
-  bool only_positions_changed = true;
-  if (new_obstacles.size() == current_obstacles.size()) {
-    for (size_t i = 0; i < new_obstacles.size(); ++i) {
-      if (new_obstacles[i].name != current_obstacles[i].name) {
-        only_positions_changed = false;
-        break;
-      }
-      double distance = (new_obstacles[i].position - current_obstacles[i].position).norm();
-      if (distance > 0.05) {
-        only_positions_changed = true;
-      }
-    }
-  } else {
-    only_positions_changed = false;
-  }
-
-  if (only_positions_changed) {
-    // Batch update positions, avoid removals/additions
-    current_obstacles = new_obstacles;
-    PropogateDescendants();
-    VerifyQueue(v_bot_idx);
-    ReduceInconsistency();
-    ValidateRobotPath();
-    return;
-  }
-
-  std::cout << "Not Returning: " << std::endl;
-
-  // Otherwise, use full update logic
-  previous_obstacles = current_obstacles;
+  // Compute deltas
   std::vector<state::SoccerObject> vanished = FindVanishedObstacles(new_obstacles);
   std::vector<state::SoccerObject> appeared = FindAppearedObstacles(new_obstacles);
-  std::vector<std::pair<state::SoccerObject, state::SoccerObject>> moved =
-      FindMovedObstacles(new_obstacles);
+  auto moved_pairs = FindMovedObstacles(new_obstacles);  // pairs of (old,new)
 
+  bool any_change = !vanished.empty() || !appeared.empty() || !moved_pairs.empty();
+
+  // Process moves: first block newly-colliding edges, then free previously-blocked edges
+  for (auto& pair : moved_pairs) {
+    state::SoccerObject& old_obs = pair.first;
+    state::SoccerObject& new_obs = pair.second;
+    AddNewObstacle(new_obs);  // remove edges that now collide
+    RemoveObstacle(old_obs);  // restore edges that are now free
+  }
+
+  // Process full removal/additions
   for (auto& obs : vanished) RemoveObstacle(obs);
   for (auto& obs : appeared) AddNewObstacle(obs);
-  for (auto& [old_obs, new_obs] : moved) {
-    RemoveObstacle(old_obs);
-    AddNewObstacle(new_obs);
+
+  // Update state, propagate, reduce inconsistency
+  current_obstacles = new_obstacles;
+
+  if (any_change) {
+    PropogateDescendants();
+    // Drive inconsistency reduction; stop when robot is epsilon-consistent or queue is stable
+    ReduceInconsistency();
   }
 
-  if (!vanished.empty() || !appeared.empty() || !moved.empty()) {
-    PropogateDescendants();
-    VerifyQueue(v_bot_idx);
-  }
-  current_obstacles = new_obstacles;
   ValidateRobotPath();
 }
 
@@ -335,47 +316,49 @@ void algos::RRTX::VerifyOrphan(int v_idx) {
 }
 
 void algos::RRTX::RemoveObstacle(state::SoccerObject& obstacle) {
-  // Line 1: Find edges intersecting with this obstacle
   std::set<std::pair<int, int>> EO = GetEdgesIntersectingObstacle(obstacle);
 
-  // Line 3: Remove edges that still intersect with other obstacles
+  // Keep only edges not blocked by any remaining obstacle (truly free now)
   std::set<std::pair<int, int>> free_edges;
   for (const auto& edge : EO) {
     int v_idx = edge.first;
     int u_idx = edge.second;
 
     bool still_blocked = false;
-    // Check against all remaining obstacles
     for (auto& other_obstacle : current_obstacles) {
       if (other_obstacle.name == obstacle.name &&
           (other_obstacle.position - obstacle.position).norm() < 0.05) {
-        continue;  // Don't check against the obstacle being removed
+        continue;
       }
-
       if (IsTrajectoryBlockedByObstacle(Vertices[v_idx].wp, Vertices[u_idx].wp, other_obstacle)) {
         still_blocked = true;
         break;
       }
     }
-
-    if (!still_blocked) {
-      free_edges.insert(edge);
-    }
+    if (!still_blocked) free_edges.insert(edge);
   }
 
-  // Update EO to contain only truly free edges
-  EO = free_edges;
+  // Re-add freed edges (as running neighbors) and enqueue endpoints
+  for (const auto& edge : free_edges) {
+    int v_idx = edge.first;
+    int u_idx = edge.second;
 
-  std::set<int> VO = GetVerticesWithEdgesInObstacle(EO);
-
-  for (int v_idx : VO) {  // Line 5: forall v ∈ VO do
-    // Line 8: updateLMC(v)
-    UpdateLMC(v_idx);
-
-    // Line 9: if lmc(v) ≠ g(v) then verifyQueue(v)
-    if (std::abs(Vertices[v_idx].lmc - Vertices[v_idx].g) > epsilon) {
-      VerifyQueue(v_idx);
+    // Prune stale blocked edges around endpoints before reconnecting
+    PruneInvalidNeighbors(v_idx);
+    PruneInvalidNeighbors(u_idx);
+    // Reconnect both directions if valid
+    if (TrajectoryValid(Vertices[v_idx].wp, Vertices[u_idx].wp)) {
+      Vertices[v_idx].N_plus_r.insert(u_idx);
+      Vertices[u_idx].N_minus_r.insert(v_idx);
     }
+    if (TrajectoryValid(Vertices[u_idx].wp, Vertices[v_idx].wp)) {
+      Vertices[u_idx].N_plus_r.insert(v_idx);
+      Vertices[v_idx].N_minus_r.insert(u_idx);
+    }
+    UpdateLMC(v_idx);
+    if (std::abs(Vertices[v_idx].lmc - Vertices[v_idx].g) > epsilon) VerifyQueue(v_idx);
+    UpdateLMC(u_idx);
+    if (std::abs(Vertices[u_idx].lmc - Vertices[u_idx].g) > epsilon) VerifyQueue(u_idx);
   }
 }
 
@@ -454,6 +437,10 @@ void algos::RRTX::AddNewObstacle(state::SoccerObject& new_obstacle) {
     if (IsRobotOnEdge(v_idx, u_idx)) {
       ClearRobotPath();
     }
+
+    // Prune stale invalid neighbors around the impacted endpoints
+    PruneInvalidNeighbors(v_idx);
+    PruneInvalidNeighbors(u_idx);
   }
 }
 
@@ -491,18 +478,14 @@ void algos::RRTX::RemoveEdgeConnection(int v_idx, int u_idx) {
   auto& v = Vertices[v_idx];
   auto& u = Vertices[u_idx];
 
-  // Remove u from v's outgoing neighbors
   eraseNeighbor(v.N_plus_0, u_idx);
   eraseNeighbor(v.N_plus_r, u_idx);
-
-  // Remove v from u's incoming neighbors
   eraseNeighbor(u.N_minus_0, v_idx);
   eraseNeighbor(u.N_minus_r, v_idx);
 
   bool vChanged = false;
   bool uChanged = false;
 
-  // If v had u as parent
   if (v.parent_idx == u_idx) {
     eraseNeighbor(u.C_minus_T, v_idx);
     v.parent_idx = -1;
@@ -511,7 +494,6 @@ void algos::RRTX::RemoveEdgeConnection(int v_idx, int u_idx) {
     vChanged = true;
   }
 
-  // If u had v as parent
   if (u.parent_idx == v_idx) {
     eraseNeighbor(v.C_minus_T, u_idx);
     u.parent_idx = -1;
@@ -520,12 +502,13 @@ void algos::RRTX::RemoveEdgeConnection(int v_idx, int u_idx) {
     uChanged = true;
   }
 
-  // Update priority queue for re-planning (RRTX's UpdateQueue)
   if (vChanged) {
-    vertices_in_queue.insert(v_idx);
+    VerifyOrphan(v_idx);
+    VerifyQueue(v_idx);
   }
   if (uChanged) {
-    vertices_in_queue.insert(u_idx);
+    VerifyOrphan(u_idx);
+    VerifyQueue(u_idx);
   }
 }
 
@@ -552,10 +535,13 @@ void algos::RRTX::ClearRobotPath() {
 
 void algos::RRTX::UpdateLMC(int v_idx) {
   Vertex& v = Vertices[v_idx];
-  if (v_idx == v_goal_idx) {  // Early exit for goal
+  if (v_idx == v_goal_idx) {
     v.lmc = 0;
     return;
   }
+
+  // Remove any neighbors that have become invalid due to obstacle changes
+  PruneInvalidNeighbors(v_idx);
 
   const double r = ShrinkingBallRadius();
   CullNeighbors(v_idx, r);
@@ -564,25 +550,42 @@ void algos::RRTX::UpdateLMC(int v_idx) {
   int best_parent_idx = -1;
   double best_cost = v.lmc;
 
-  // Process out-neighbors
-  for (int u_idx : v.N_plus_0) {  // Original neighbors
+  // Original neighbors
+  std::vector<int> to_prune_0;
+  for (int u_idx : v.N_plus_0) {
     if (V_c_T.count(u_idx) || Vertices[u_idx].parent_idx == v_idx) continue;
-
+    if (!TrajectoryValid(v.wp, Vertices[u_idx].wp)) {
+      to_prune_0.push_back(u_idx);
+      continue;
+    }
     const double cost = d_pi(v.wp, Vertices[u_idx].wp) + Vertices[u_idx].lmc;
     if (cost < best_cost) {
       best_cost = cost;
       best_parent_idx = u_idx;
     }
   }
+  for (int u_idx : to_prune_0) {
+    v.N_plus_0.erase(u_idx);
+    Vertices[u_idx].N_minus_0.erase(v_idx);
+  }
 
-  for (int u_idx : v.N_plus_r) {  // Running neighbors
+  // Running neighbors
+  std::vector<int> to_prune_r;
+  for (int u_idx : v.N_plus_r) {
     if (V_c_T.count(u_idx) || Vertices[u_idx].parent_idx == v_idx) continue;
-
+    if (!TrajectoryValid(v.wp, Vertices[u_idx].wp)) {
+      to_prune_r.push_back(u_idx);
+      continue;
+    }
     const double cost = d_pi(v.wp, Vertices[u_idx].wp) + Vertices[u_idx].lmc;
     if (cost < best_cost) {
       best_cost = cost;
       best_parent_idx = u_idx;
     }
+  }
+  for (int u_idx : to_prune_r) {
+    v.N_plus_r.erase(u_idx);
+    Vertices[u_idx].N_minus_r.erase(v_idx);
   }
 
   if (best_parent_idx != -1) {
@@ -601,13 +604,10 @@ void algos::RRTX::VerifyQueue(int v_idx) {
     CleanupQueue();
   }
 
-  auto key = getKey(v_idx);
-
-  if (vertices_in_queue.count(v_idx)) {
-    Q.push({key, v_idx});
-  } else {
-    Q.push({key, v_idx});
+  if (v_idx < 0 || v_idx >= static_cast<int>(Vertices.size()) || !Vertices[v_idx].alive) return;
+  if (!vertices_in_queue.count(v_idx)) {
     vertices_in_queue.insert(v_idx);
+    Q.push({getKey(v_idx), v_idx});
   }
 }
 
@@ -684,6 +684,35 @@ std::vector<int> algos::RRTX::getOutNeighbors(int v_idx) {
   return neighbors;
 }
 
+void algos::RRTX::PruneInvalidNeighbors(int v_idx) {
+  if (v_idx < 0 || v_idx >= static_cast<int>(Vertices.size()) || !Vertices[v_idx].alive) return;
+  auto& v = Vertices[v_idx];
+  std::vector<int> rm0;
+  std::vector<int> rmr;
+  for (int u : v.N_plus_0) {
+    if (u < 0 || u >= static_cast<int>(Vertices.size()) || !Vertices[u].alive) {
+      rm0.push_back(u);
+      continue;
+    }
+    if (!TrajectoryValid(v.wp, Vertices[u].wp)) rm0.push_back(u);
+  }
+  for (int u : v.N_plus_r) {
+    if (u < 0 || u >= static_cast<int>(Vertices.size()) || !Vertices[u].alive) {
+      rmr.push_back(u);
+      continue;
+    }
+    if (!TrajectoryValid(v.wp, Vertices[u].wp)) rmr.push_back(u);
+  }
+  for (int u : rm0) {
+    v.N_plus_0.erase(u);
+    if (u >= 0 && u < static_cast<int>(Vertices.size())) Vertices[u].N_minus_0.erase(v_idx);
+  }
+  for (int u : rmr) {
+    v.N_plus_r.erase(u);
+    if (u >= 0 && u < static_cast<int>(Vertices.size())) Vertices[u].N_minus_r.erase(v_idx);
+  }
+}
+
 bool algos::RRTX::TrajectoryValid(state::Waypoint& a, state::Waypoint& b) {
   // Check endpoints first
   if (IsInObstacle(a) || IsInObstacle(b)) {
@@ -699,6 +728,7 @@ bool algos::RRTX::TrajectoryValid(state::Waypoint& a, state::Waypoint& b) {
 
   return true;
 }
+
 bool algos::RRTX::IsInObstacle(const state::Waypoint& wp) {
   double field_width = vis::SoccerField::GetInstance().playing_area_width_mm / 1000.0;
   double field_height = vis::SoccerField::GetInstance().playing_area_height_mm / 1000.0;
@@ -847,14 +877,6 @@ bool algos::RRTX::IsPathValid(state::Path& path) {
 
 bool algos::RRTX::SolutionExists() {
   return Vertices[v_bot_idx].g < std::numeric_limits<double>::infinity();
-
-  // // Check if robot has finite cost
-  // if (Vertices[v_bot_idx].g >= std::numeric_limits<double>::infinity()) {
-  //   return false;
-  // }
-
-  // // Quick path validation without full reconstruction
-  // return IsPathToGoalValid();
 }
 
 bool algos::RRTX::IsPathToGoalValid() {
@@ -901,6 +923,9 @@ void algos::RRTX::UpdateRobotPosition(state::Waypoint& new_pos) {
 
     // Update vertex position
     Vertices[v_bot_idx].wp = new_pos;
+
+    // Keep neighbor sets consistent around the robot
+    PruneInvalidNeighbors(v_bot_idx);
 
     // Recalculate LMC and trigger replanning if needed
     UpdateLMC(v_bot_idx);

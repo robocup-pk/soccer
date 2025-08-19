@@ -106,6 +106,7 @@ class RRTX {
   bool IsRobotPoseChanged();
   std::vector<int> getOutNeighbors(int v_idx);  // N⁺(v) = N₀⁺(v) ∪ Nᵣ⁺(v)
   std::vector<int> getInNeighbors(int v_idx);   // N⁻(v) = N₀⁻(v) ∪ Nᵣ⁻(v)
+  void PruneInvalidNeighbors(int v_idx);
 
   bool IsPathValid(state::Path& path);
   void CleanupQueue();
