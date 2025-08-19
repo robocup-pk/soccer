@@ -108,7 +108,11 @@ int main() {
       replan = true;
     }
 
-    if (replan) rrtx_planner.PlanStep();
+    for (int i = 0; i < 10; i++) {
+      rrtx_planner.PlanStep();
+    }
+
+    rrtx_planner.PlanStep();
 
     if (rrtx_planner.SolutionExists()) {
       state::Path path = rrtx_planner.ReconstructPath();

@@ -28,7 +28,7 @@ std::uniform_real_distribution<double> prob_dist(0.0, 1.0);
 }  // namespace
 
 algos::RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal, double eps)
-    : epsilon(eps), delta(0.5), gamma(0.5), n_samples(2) {
+    : epsilon(eps), delta(0.5), gamma(2 * sqrt(2)), n_samples(2) {
   Vertices.clear();
 
   // Goal vertex at index 0 - this is the ROOT of shortest path tree
@@ -55,6 +55,8 @@ algos::RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal,
   spatial_grid = std::make_unique<algos::SpatialGrid>(0.2);
   spatial_grid->AddVertex(v_goal_idx, Vertices[v_goal_idx].wp);
   spatial_grid->AddVertex(v_start_idx, Vertices[v_start_idx].wp);
+
+  free_list.clear();
 }
 
 void algos::RRTX::PlanStep() {
@@ -84,6 +86,10 @@ void algos::RRTX::PlanStep() {
 int algos::RRTX::Extend(state::Waypoint v_new_wp, double r) {
   std::vector<int> v_near = Near(v_new_wp, r);
 
+  if (IsInVertices(v_new_wp)) {
+    return -1;
+  }
+
   Vertex v_new;
   v_new.wp = v_new_wp;
   v_new.g = std::numeric_limits<double>::infinity();
@@ -100,9 +106,7 @@ int algos::RRTX::Extend(state::Waypoint v_new_wp, double r) {
   Vertices[v_new_idx].parent_idx = v_new.parent_idx;
   Vertices[v_new_idx].wp = v_new.wp;
 
-  if (Vertices[v_new_idx].parent_idx != -1) {
-    Vertices[Vertices[v_new_idx].parent_idx].C_minus_T.insert(v_new_idx);
-  }
+  Vertices[Vertices[v_new_idx].parent_idx].C_minus_T.insert(v_new_idx);
 
   for (int u_idx : v_near) {
     if (TrajectoryValid(Vertices[v_new_idx].wp, Vertices[u_idx].wp)) {
@@ -133,22 +137,52 @@ void algos::RRTX::CullNeighbors(int v_idx, double r) {
 }
 
 void algos::RRTX::RewireNeighbors(int v_idx) {
-  if (Vertices[v_idx].g - Vertices[v_idx].lmc > epsilon) {
-    double r = ShrinkingBallRadius();
-    CullNeighbors(v_idx, r);
+  Vertex& v = Vertices[v_idx];
 
-    std::vector<int> in_neighbors = getInNeighbors(v_idx);
-    for (int u_idx : in_neighbors) {
-      if (u_idx != Vertices[v_idx].parent_idx) {
-        if (Vertices[u_idx].lmc >
-            d_pi(Vertices[u_idx].wp, Vertices[v_idx].wp) + Vertices[v_idx].lmc) {
-          Vertices[u_idx].lmc = d_pi(Vertices[u_idx].wp, Vertices[v_idx].wp) + Vertices[v_idx].lmc;
+  // Line 1: Check ε-consistency condition
+  if (v.g - v.lmc <= epsilon) return;
 
-          MakeParentOf(v_idx, u_idx);
+  // Line 2: Cull neighbors outside shrinking ball radius
+  const double r = ShrinkingBallRadius();
+  CullNeighbors(v_idx, r);
 
-          if (Vertices[u_idx].g - Vertices[u_idx].lmc > epsilon) {
-            VerifyQueue(u_idx);
-          }
+  // Lines 3-7: Process all in-neighbors except parent
+  // Process original in-neighbors (N_minus_0)
+  for (int u_idx : v.N_minus_0) {
+    if (u_idx != v.parent_idx) {
+      const double new_lmc = d_pi(Vertices[u_idx].wp, v.wp) + v.lmc;
+
+      if (Vertices[u_idx].lmc > new_lmc) {
+        // Line 5: Update LMC
+        Vertices[u_idx].lmc = new_lmc;
+
+        // Line 6: Rewire parent
+        MakeParentOf(v_idx, u_idx);
+
+        // Line 7: Verify queue if inconsistent
+        if (Vertices[u_idx].g - Vertices[u_idx].lmc > epsilon) {
+          VerifyQueue(u_idx);
+        }
+      }
+    }
+  }
+
+  // Process running in-neighbors (N_minus_r)
+  for (int u_idx : v.N_minus_r) {
+    if (u_idx != v.parent_idx) {
+      const double edge_cost = d_pi(Vertices[u_idx].wp, v.wp);
+      const double new_lmc = edge_cost + v.lmc;
+
+      if (Vertices[u_idx].lmc > new_lmc) {
+        // Line 5: Update LMC
+        Vertices[u_idx].lmc = new_lmc;
+
+        // Line 6: Rewire parent
+        MakeParentOf(v_idx, u_idx);
+
+        // Line 7: Verify queue if inconsistent
+        if (Vertices[u_idx].g - Vertices[u_idx].lmc > epsilon) {
+          VerifyQueue(u_idx);
         }
       }
     }
@@ -197,9 +231,36 @@ void algos::RRTX::FindParent(Vertex& v_new, const std::vector<int>& U) {
 }
 
 void algos::RRTX::UpdateObstacles(std::vector<state::SoccerObject>& new_obstacles) {
-  previous_obstacles = current_obstacles;
+  bool only_positions_changed = true;
+  if (new_obstacles.size() == current_obstacles.size()) {
+    for (size_t i = 0; i < new_obstacles.size(); ++i) {
+      if (new_obstacles[i].name != current_obstacles[i].name) {
+        only_positions_changed = false;
+        break;
+      }
+      double distance = (new_obstacles[i].position - current_obstacles[i].position).norm();
+      if (distance > 0.05) {
+        only_positions_changed = true;
+      }
+    }
+  } else {
+    only_positions_changed = false;
+  }
 
-  // Detect vanished and appeared obstacles
+  if (only_positions_changed) {
+    // Batch update positions, avoid removals/additions
+    current_obstacles = new_obstacles;
+    PropogateDescendants();
+    VerifyQueue(v_bot_idx);
+    ReduceInconsistency();
+    ValidateRobotPath();
+    return;
+  }
+
+  std::cout << "Not Returning: " << std::endl;
+
+  // Otherwise, use full update logic
+  previous_obstacles = current_obstacles;
   std::vector<state::SoccerObject> vanished = FindVanishedObstacles(new_obstacles);
   std::vector<state::SoccerObject> appeared = FindAppearedObstacles(new_obstacles);
   std::vector<std::pair<state::SoccerObject, state::SoccerObject>> moved =
@@ -212,12 +273,10 @@ void algos::RRTX::UpdateObstacles(std::vector<state::SoccerObject>& new_obstacle
     AddNewObstacle(new_obs);
   }
 
-  // Only call expensive operations ONCE at the end
   if (!vanished.empty() || !appeared.empty() || !moved.empty()) {
     PropogateDescendants();
     VerifyQueue(v_bot_idx);
   }
-
   current_obstacles = new_obstacles;
   ValidateRobotPath();
 }
@@ -250,7 +309,7 @@ void algos::RRTX::PropogateDescendants() {
     if (Vertices[v_idx].parent_idx != -1) neighbors.push_back(Vertices[v_idx].parent_idx);
 
     for (int u_idx : neighbors) {
-      if (V_c_T.find(u_idx) == V_c_T.end()) {
+      if (V_c_T.count(u_idx) == 0) {
         Vertices[u_idx].g = std::numeric_limits<double>::infinity();
         VerifyQueue(u_idx);
       }
@@ -365,8 +424,7 @@ std::set<std::pair<int, int>> algos::RRTX::GetEdgesIntersectingObstacle(
 bool algos::RRTX::IsTrajectoryBlockedByObstacle(state::Waypoint& from, state::Waypoint& to,
                                                 state::SoccerObject& obstacle) {
   // Calculate path length
-  double total_radius =
-      (2 * obstacle.radius_m) + 0.02;  // Robot Radius + Obstacle(i-e Robot) Radius + Safety Margin
+  double total_radius = (2 * obstacle.radius_m);  // Robot Radius + Obstacle(i-e Robot) Radius
 
   // Create obstacle center as waypoint for your function
   state::Waypoint obstacle_center(obstacle.position[0], obstacle.position[1], 0.0);
@@ -493,24 +551,42 @@ void algos::RRTX::ClearRobotPath() {
 }
 
 void algos::RRTX::UpdateLMC(int v_idx) {
-  double r = ShrinkingBallRadius();
+  Vertex& v = Vertices[v_idx];
+  if (v_idx == v_goal_idx) {  // Early exit for goal
+    v.lmc = 0;
+    return;
+  }
+
+  const double r = ShrinkingBallRadius();
   CullNeighbors(v_idx, r);
 
-  Vertices[v_idx].lmc = std::numeric_limits<double>::infinity();
+  v.lmc = std::numeric_limits<double>::infinity();
   int best_parent_idx = -1;
+  double best_cost = v.lmc;
 
-  std::vector<int> out_neighbors = getOutNeighbors(v_idx);
-  for (int u_idx : out_neighbors) {
-    if (V_c_T.find(u_idx) == V_c_T.end() && Vertices[u_idx].parent_idx != v_idx) {
-      double new_cost = d_pi(Vertices[v_idx].wp, Vertices[u_idx].wp) + Vertices[u_idx].lmc;
-      if (Vertices[v_idx].lmc > new_cost) {
-        Vertices[v_idx].lmc = new_cost;
-        best_parent_idx = u_idx;
-      }
+  // Process out-neighbors
+  for (int u_idx : v.N_plus_0) {  // Original neighbors
+    if (V_c_T.count(u_idx) || Vertices[u_idx].parent_idx == v_idx) continue;
+
+    const double cost = d_pi(v.wp, Vertices[u_idx].wp) + Vertices[u_idx].lmc;
+    if (cost < best_cost) {
+      best_cost = cost;
+      best_parent_idx = u_idx;
+    }
+  }
+
+  for (int u_idx : v.N_plus_r) {  // Running neighbors
+    if (V_c_T.count(u_idx) || Vertices[u_idx].parent_idx == v_idx) continue;
+
+    const double cost = d_pi(v.wp, Vertices[u_idx].wp) + Vertices[u_idx].lmc;
+    if (cost < best_cost) {
+      best_cost = cost;
+      best_parent_idx = u_idx;
     }
   }
 
   if (best_parent_idx != -1) {
+    v.lmc = best_cost;
     MakeParentOf(best_parent_idx, v_idx);
   }
 }
@@ -565,26 +641,18 @@ std::pair<double, double> algos::RRTX::getKey(int v_idx) {
 }
 
 void algos::RRTX::MakeParentOf(int parent_idx, int child_idx) {
-  int check_idx = parent_idx;
-  std::unordered_set<int> visited;
-
-  while (check_idx != -1) {
-    if (check_idx == child_idx) {
-      // std::cout << "[RRTX] Cycle prevented: " << parent_idx << " -> " << child_idx << std::endl;
-      return;  // Would create cycle
-    }
-    if (visited.count(check_idx)) break;  // Already has cycle
-    visited.insert(check_idx);
-    check_idx = Vertices[check_idx].parent_idx;
+  for (int idx = parent_idx; idx != -1; idx = Vertices[idx].parent_idx) {
+    if (idx == child_idx) return;  // Cycle
   }
 
-  if (Vertices[child_idx].parent_idx != -1) {
-    int old_parent = Vertices[child_idx].parent_idx;
-    Vertices[old_parent].C_minus_T.erase(child_idx);
+  Vertex& child = Vertices[child_idx];
+
+  if (child.parent_idx != -1) {
+    Vertices[child.parent_idx].C_minus_T.erase(child_idx);
   }
 
-  // Set new parent
-  Vertices[child_idx].parent_idx = parent_idx;
+  // Update parent
+  child.parent_idx = parent_idx;
   Vertices[parent_idx].C_minus_T.insert(child_idx);
 }
 
@@ -643,11 +711,10 @@ bool algos::RRTX::IsInObstacle(const state::Waypoint& wp) {
 
   if (out_of_bounds) return true;
 
+  state::SoccerObject temp_robot("temp_check", Eigen::Vector3d(wp.x, wp.y, wp.angle),
+                                 cfg::SystemConfig::robot_size_m,  // Use robot size
+                                 Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), 1.0);
   for (auto& obstacle : current_obstacles) {
-    state::SoccerObject temp_robot("temp_check", Eigen::Vector3d(wp.x, wp.y, wp.angle),
-                                   cfg::SystemConfig::robot_size_m,  // Use robot size
-                                   Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), 1.0);
-
     if (kin::CheckCircularCollision(temp_robot, obstacle)) {
       return true;
     }
@@ -712,44 +779,45 @@ state::Waypoint algos::RRTX::RandomNode() {
 state::Path algos::RRTX::ReconstructPath() {
   state::Path path;
 
-  if (Vertices[v_bot_idx].g == std::numeric_limits<double>::infinity()) {
+  // Check if robot has finite cost-to-goal (solution exists)
+  if (Vertices[v_bot_idx].g >= std::numeric_limits<double>::infinity()) {
     return path;  // No path exists
   }
 
-  // Validate each edge in the path before adding it
-  std::vector<int> vertex_path;
+  // In goal-rooted tree: follow parent pointers FROM robot TO goal
+  std::vector<state::Waypoint> waypoints;
   int current_idx = v_bot_idx;
 
+  // Add robot's current position as starting point
+  waypoints.push_back(robot_pos);
+
+  // Follow parent pointers from robot towards goal
   while (current_idx != -1 && current_idx != v_goal_idx) {
-    vertex_path.push_back(current_idx);
     int parent_idx = Vertices[current_idx].parent_idx;
 
-    // Validate edge from current to parent
     if (parent_idx != -1) {
+      // Validate edge from current to parent
       if (!TrajectoryValid(Vertices[current_idx].wp, Vertices[parent_idx].wp)) {
-        // Path is invalid, trigger replanning
+        // Path is invalid, return empty path to trigger replanning
         return state::Path();
       }
+
+      // Add parent waypoint
+      waypoints.push_back(Vertices[parent_idx].wp);
     }
 
     current_idx = parent_idx;
   }
 
+  // Check if we successfully reached the goal
   if (current_idx == v_goal_idx) {
-    vertex_path.push_back(v_goal_idx);
+    // Convert waypoints to path
+    for (const auto& wp : waypoints) {
+      path.push_back(wp);
+    }
   }
 
-  // Build path
-  path.push_back(robot_pos);
-  for (int idx : vertex_path) {
-    path.push_back(Vertices[idx].wp);
-  }
-
-  if (IsPathValid(path)) {
-    return path;  // Valid path found
-  } else {
-    return state::Path();  // Invalid path, trigger replanning
-  }
+  return path;
 }
 
 bool algos::RRTX::IsPathValid(state::Path& path) {
@@ -814,26 +882,40 @@ double algos::RRTX::GetSolutionCost() {
   return Vertices[v_bot_idx].g;
 }
 
-void algos::RRTX::UpdateRobotPosition(const state::Waypoint& new_pos) {
-  double movement = (Vertices[v_bot_idx].wp - new_pos).Norm();
-  const double ROBOT_MOVEMENT_THRESHOLD = 0.05;  // 5cm threshold
+void algos::RRTX::UpdateRobotPosition(state::Waypoint& new_pos) {
+  double movement = (robot_pos - new_pos).Norm();
+  const double ROBOT_MOVEMENT_THRESHOLD = 0.05;
 
   if (movement < ROBOT_MOVEMENT_THRESHOLD) {
-    return;  // No significant movement
+    return;
   }
 
-  // Store robot position separately (don't modify vertices!)
+  // Store old position for spatial grid update
+  state::Waypoint old_pos = robot_pos;
   robot_pos = new_pos;
 
-  // Find the nearest vertex to the robot's new position
-  int nearest_idx = Nearest(robot_pos);
+  // Option 1: Update existing robot vertex position
+  if (v_bot_idx >= 0 && v_bot_idx < Vertices.size() && Vertices[v_bot_idx].alive) {
+    // Update spatial grid
+    spatial_grid->UpdateVertex(v_bot_idx, old_pos, new_pos);
 
-  // Update v_bot_idx to point to nearest vertex (not modify the vertex itself!)
-  v_bot_idx = nearest_idx;
+    // Update vertex position
+    Vertices[v_bot_idx].wp = new_pos;
 
-  // Optional: Debug output to track robot movement
-  std::cout << "Robot moved to: (" << robot_pos.x << ", " << robot_pos.y
-            << "), nearest vertex: " << v_bot_idx << std::endl;
+    // Recalculate LMC and trigger replanning if needed
+    UpdateLMC(v_bot_idx);
+    if (Vertices[v_bot_idx].g - Vertices[v_bot_idx].lmc > epsilon) {
+      VerifyQueue(v_bot_idx);
+    }
+  } else {
+    // Option 2: Find nearest vertex and update v_bot_idx
+    int nearest_idx = Nearest(new_pos);
+    if (nearest_idx != -1) {
+      v_bot_idx = nearest_idx;
+      // The robot position and vertex position will be slightly different
+      // This is acceptable as robot_pos represents actual position
+    }
+  }
 }
 
 bool algos::RRTX::HasObstaclesChanged(const std::vector<state::SoccerObject>& new_obstacles) {
@@ -844,35 +926,9 @@ bool algos::RRTX::HasObstaclesChanged(const std::vector<state::SoccerObject>& ne
 
   const double MOVEMENT_THRESHOLD = 0.05;  // 5cm threshold
 
-  // Use name-based comparison instead of index-based
-  for (const auto& new_obs : new_obstacles) {
-    bool found = false;
-    for (const auto& current_obs : current_obstacles) {  // Changed from previous_obstacles
-      if (new_obs.name == current_obs.name) {
-        double distance = (new_obs.position - current_obs.position).norm();
-        if (distance > MOVEMENT_THRESHOLD) {
-          return true;  // Found movement > threshold
-        }
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      return true;  // New obstacle appeared
-    }
-  }
-
-  // Check for vanished obstacles
-  for (const auto& current_obs : current_obstacles) {
-    bool found = false;
-    for (const auto& new_obs : new_obstacles) {
-      if (current_obs.name == new_obs.name) {
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      return true;  // Obstacle vanished
+  for (unsigned int i = 0; i < new_obstacles.size(); i++) {
+    if ((new_obstacles[i].position - current_obstacles[i].position).norm() > MOVEMENT_THRESHOLD) {
+      return true;  // Found movement > threshold
     }
   }
 
@@ -882,9 +938,14 @@ bool algos::RRTX::HasObstaclesChanged(const std::vector<state::SoccerObject>& ne
 bool algos::RRTX::IsRobotPoseChanged() { return false; }
 
 bool algos::RRTX::IsInVertices(state::Waypoint v_new_wp) {
-  for (int i = static_cast<int>(Vertices.size()) - 1; i >= 0; --i) {
-    if (!Vertices[i].alive) continue;
-    if (Vertices[i].wp == v_new_wp) return true;
+  const double EPSILON = 1e-6;  // Small threshold for position equality
+  std::vector<int> nearby_indices = spatial_grid->FindNear(v_new_wp, EPSILON, Vertices);
+
+  // Check if any nearby vertex has exactly the same waypoint
+  for (int idx : nearby_indices) {
+    if (Vertices[idx].alive && Vertices[idx].wp == v_new_wp) {
+      return true;
+    }
   }
   return false;
 }
@@ -973,7 +1034,6 @@ int algos::RRTX::AddVertex(state::Waypoint& wp) {
     v.C_minus_T.clear();
     v.g = std::numeric_limits<double>::infinity();
     v.lmc = std::numeric_limits<double>::infinity();
-    return idx;
   } else {
     Vertex v;
     v.wp = wp;
@@ -1020,6 +1080,7 @@ void algos::RRTX::RemoveVertex(int idx) {
     Vertices[child].g = std::numeric_limits<double>::infinity();
     Vertices[child].lmc = std::numeric_limits<double>::infinity();
     VerifyQueue(child);
+    VerifyOrphan(child);
   }
   v.N_plus_0.clear();
   v.N_plus_r.clear();

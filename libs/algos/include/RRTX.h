@@ -72,7 +72,7 @@ class RRTX {
   state::Path ReconstructPath();
 
   // Dynamic environment support
-  void UpdateRobotPosition(const state::Waypoint& new_pos);
+  void UpdateRobotPosition(state::Waypoint& new_pos);
 
   // Parameter updates
   double ShrinkingBallRadius();
