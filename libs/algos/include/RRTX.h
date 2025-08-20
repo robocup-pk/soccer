@@ -146,6 +146,8 @@ class RRTX {
   // Optimizations
   int AddVertex(state::Waypoint& wp);
   void RemoveVertex(int v_idx);
+  void LimitTreeSize();
+
 };
 }  // namespace algos
 

@@ -81,6 +81,9 @@ void algos::RRTX::PlanStep() {
     // Reduce inconsistency
     ReduceInconsistency();
   }
+  if (n_samples % 10 == 0) {
+    LimitTreeSize();
+  }
 }
 
 int algos::RRTX::Extend(state::Waypoint v_new_wp, double r) {
@@ -231,34 +234,24 @@ void algos::RRTX::FindParent(Vertex& v_new, const std::vector<int>& U) {
 }
 
 void algos::RRTX::UpdateObstacles(std::vector<state::SoccerObject>& new_obstacles) {
-  // Compute deltas
   std::vector<state::SoccerObject> vanished = FindVanishedObstacles(new_obstacles);
   std::vector<state::SoccerObject> appeared = FindAppearedObstacles(new_obstacles);
-  auto moved_pairs = FindMovedObstacles(new_obstacles);  // pairs of (old,new)
-
-  bool any_change = !vanished.empty() || !appeared.empty() || !moved_pairs.empty();
-
-  // Process moves: first block newly-colliding edges, then free previously-blocked edges
-  for (auto& pair : moved_pairs) {
-    state::SoccerObject& old_obs = pair.first;
-    state::SoccerObject& new_obs = pair.second;
-    AddNewObstacle(new_obs);  // remove edges that now collide
-    RemoveObstacle(old_obs);  // restore edges that are now free
-  }
 
   // Process full removal/additions
   for (auto& obs : vanished) RemoveObstacle(obs);
-  for (auto& obs : appeared) AddNewObstacle(obs);
-
-  // Update state, propagate, reduce inconsistency
-  current_obstacles = new_obstacles;
-
-  if (any_change) {
-    PropogateDescendants();
-    // Drive inconsistency reduction; stop when robot is epsilon-consistent or queue is stable
+  if (!vanished.empty()) {
     ReduceInconsistency();
   }
 
+  for (auto& obs : appeared) AddNewObstacle(obs);
+  if (!appeared.empty()) {
+    PropogateDescendants();
+    VerifyQueue(v_bot_idx);
+    ReduceInconsistency();
+  }
+
+  // Update state, propagate, reduce inconsistency
+  current_obstacles = new_obstacles;
   ValidateRobotPath();
 }
 
@@ -373,30 +366,40 @@ std::set<int> algos::RRTX::GetVerticesWithEdgesInObstacle(std::set<std::pair<int
 
 std::set<std::pair<int, int>> algos::RRTX::GetEdgesIntersectingObstacle(
     state::SoccerObject& obstacle) {
-  std::set<std::pair<int, int>> intersecting_edges;  // This is EO
+  std::set<std::pair<int, int>> intersecting_edges;
 
-  // Check all vertices and their connections
-  for (size_t i = 0; i < Vertices.size(); ++i) {
-    if (!Vertices[i].alive) continue;
-    // Check parent edge (tree edge)
-    if (Vertices[i].parent_idx != -1) {
-      if (IsTrajectoryBlockedByObstacle(Vertices[i].wp, Vertices[Vertices[i].parent_idx].wp,
-                                        obstacle)) {
-        intersecting_edges.insert({static_cast<int>(i), Vertices[i].parent_idx});
+  // Get expanded radius for obstacle
+  double total_radius = 2 * obstacle.radius_m;
+  state::Waypoint obstacle_center(obstacle.position[0], obstacle.position[1], 0.0);
+
+  // Use spatial grid to find only nearby vertices
+  std::vector<int> nearby_vertices =
+      spatial_grid->FindNear(obstacle_center, total_radius * 1.1, Vertices);
+
+  std::unordered_set<int> checked_vertices;
+
+  for (int v_idx : nearby_vertices) {
+    if (!Vertices[v_idx].alive || checked_vertices.count(v_idx)) continue;
+    checked_vertices.insert(v_idx);
+
+    // Only check edges from nearby vertices
+    if (Vertices[v_idx].parent_idx != -1) {
+      if (IsTrajectoryBlockedByObstacle(Vertices[v_idx].wp,
+                                        Vertices[Vertices[v_idx].parent_idx].wp, obstacle)) {
+        intersecting_edges.insert({v_idx, Vertices[v_idx].parent_idx});
       }
     }
 
-    // Check original outgoing neighbors (N₀⁺)
-    for (int neighbor_idx : Vertices[i].N_plus_0) {
-      if (IsTrajectoryBlockedByObstacle(Vertices[i].wp, Vertices[neighbor_idx].wp, obstacle)) {
-        intersecting_edges.insert({static_cast<int>(i), neighbor_idx});
+    // Check outgoing neighbors efficiently
+    for (int neighbor_idx : Vertices[v_idx].N_plus_0) {
+      if (IsTrajectoryBlockedByObstacle(Vertices[v_idx].wp, Vertices[neighbor_idx].wp, obstacle)) {
+        intersecting_edges.insert({v_idx, neighbor_idx});
       }
     }
 
-    // Check running outgoing neighbors (Nᵣ⁺)
-    for (int neighbor_idx : Vertices[i].N_plus_r) {
-      if (IsTrajectoryBlockedByObstacle(Vertices[i].wp, Vertices[neighbor_idx].wp, obstacle)) {
-        intersecting_edges.insert({static_cast<int>(i), neighbor_idx});
+    for (int neighbor_idx : Vertices[v_idx].N_plus_r) {
+      if (IsTrajectoryBlockedByObstacle(Vertices[v_idx].wp, Vertices[neighbor_idx].wp, obstacle)) {
+        intersecting_edges.insert({v_idx, neighbor_idx});
       }
     }
   }
@@ -600,7 +603,7 @@ bool algos::RRTX::KeyLess(const std::pair<double, double>& key1,
 }
 
 void algos::RRTX::VerifyQueue(int v_idx) {
-  if (Q.size() > 200) {
+  if (Q.size() > 10) {
     CleanupQueue();
   }
 
@@ -608,6 +611,30 @@ void algos::RRTX::VerifyQueue(int v_idx) {
   if (!vertices_in_queue.count(v_idx)) {
     vertices_in_queue.insert(v_idx);
     Q.push({getKey(v_idx), v_idx});
+  }
+}
+
+void algos::RRTX::LimitTreeSize() {
+  if (Vertices.size() <= 1000) return;
+
+  // Find vertices to remove (farthest from goal with no children)
+  std::vector<std::pair<double, int>> candidates;
+
+  for (size_t i = 0; i < Vertices.size(); ++i) {
+    if (!Vertices[i].alive || i == v_goal_idx || i == v_start_idx || i == v_bot_idx) continue;
+    if (Vertices[i].C_minus_T.empty()) {  // No children
+      double dist_to_goal = d_pi(Vertices[i].wp, Vertices[v_goal_idx].wp);
+      candidates.push_back({dist_to_goal, static_cast<int>(i)});
+    }
+  }
+
+  // Sort by distance (farthest first)
+  std::sort(candidates.rbegin(), candidates.rend());
+
+  // Remove excess vertices
+  size_t to_remove = std::min(candidates.size(), Vertices.size() - 1000);
+  for (size_t i = 0; i < to_remove; ++i) {
+    RemoveVertex(candidates[i].second);
   }
 }
 
