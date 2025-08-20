@@ -103,24 +103,24 @@ TEST_F(RRTXTest, RandomNodeGeneration) {
 
 TEST_F(RRTXTest, NearestVertexSearch) {
   // Add test vertices far from existing goal/start
-  rrtx->Vertices.emplace_back();
-  rrtx->Vertices.back().wp = state::Waypoint(0.5, 0.0, 0.0);  // Index 2
+  state::Waypoint v1(0.5, 0.0, 0.0);
+  state::Waypoint v2(-0.5, 0.0, 0.0);
 
-  rrtx->Vertices.emplace_back();
-  rrtx->Vertices.back().wp = state::Waypoint(-0.5, 0.0, 0.0);  // Index 3
+  int index2 = rrtx->AddVertex(v1);  // Index 2
+  int index3 = rrtx->AddVertex(v2);  // Index 3
 
   // Query point very close to first added vertex
   state::Waypoint query_point(0.51, 0.01, 0.0);
   int nearest_idx = rrtx->Nearest(query_point);
 
-  EXPECT_EQ(nearest_idx, 2);  // Should find vertex at (0.5, 0)
+  EXPECT_EQ(nearest_idx, index2);  // Should find vertex at (0.5, 0)
 }
 
 TEST_F(RRTXTest, NearVerticesQuery) {
   // Add test vertices
   for (int i = 0; i < 5; ++i) {
-    rrtx->Vertices.emplace_back();
-    rrtx->Vertices.back().wp = state::Waypoint(i * 0.5, 0.0, 0.0);
+    state::Waypoint wp(i * 0.5, 0.0, 0.0);
+    rrtx->AddVertex(wp);
   }
 
   state::Waypoint query_point(1.0, 0.0, 0.0);
@@ -272,5 +272,5 @@ TEST_F(RRTXTest, QueueManagement) {
   }
 
   // Queue size should be reasonable relative to vertex count
-  EXPECT_LT(rrtx->Q.size(), rrtx->Vertices.size() * 2);
+  EXPECT_LT(rrtx->Q.Size(), rrtx->Vertices.size() * 2);
 }

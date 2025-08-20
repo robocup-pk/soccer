@@ -12,7 +12,7 @@ std::mt19937 rng(std::random_device{}());
 // Dynamic distributions based on actual field dimensions
 std::uniform_real_distribution<float> GetXDistribution() {
   double field_width = vis::SoccerField::GetInstance().playing_area_width_mm / 1000.0;
-  const double margin = 0.1;  // 10cm margin from boundaries
+  const double margin = 0.1;  // 10cm margin from boundaries 
   return std::uniform_real_distribution<float>(-field_width / 2 + margin,
                                                field_width / 2 - margin);
 }
@@ -36,7 +36,7 @@ algos::RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal,
   Vertices[0].wp = x_goal;
   Vertices[0].g = 0.0;          // Goal has zero cost-to-goal
   Vertices[0].lmc = 0.0;        // Goal is consistent
-  Vertices[0].parent_idx = -1;  // Root has no parent
+  Vertices[0].parent_idx = -1;  // Root has no parent 
   v_goal_idx = 0;
 
   // Start vertex at index 1 - initially unreachable
@@ -50,7 +50,6 @@ algos::RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal,
 
   // Clear orphan set
   V_c_T.clear();
-  vertices_in_queue.clear();
   robot_pos = x_start;
   spatial_grid = std::make_unique<algos::SpatialGrid>(0.2);
   spatial_grid->AddVertex(v_goal_idx, Vertices[v_goal_idx].wp);
@@ -193,21 +192,32 @@ void algos::RRTX::RewireNeighbors(int v_idx) {
 }
 
 void algos::RRTX::ReduceInconsistency() {
-  while (!Q.empty() && (KeyLess(Q.top().first, getKey(v_bot_idx)) ||
-                        Vertices[v_bot_idx].lmc != Vertices[v_bot_idx].g ||
-                        Vertices[v_bot_idx].g == std::numeric_limits<double>::infinity() ||
-                        vertices_in_queue.count(v_bot_idx))) {
-    auto top = Q.top();
-    Q.pop();
-    int v_idx = top.second;
+  while (!Q.Empty()) {
+    auto bot_key = getKey(v_bot_idx);
+    auto top_entry = Q.Top();
 
-    vertices_in_queue.erase(v_idx);
+    // Check termination conditions
+    bool should_continue =
+        KeyLess(top_entry.first, bot_key) || Vertices[v_bot_idx].lmc != Vertices[v_bot_idx].g ||
+        Vertices[v_bot_idx].g == std::numeric_limits<double>::infinity() || Q.Contains(v_bot_idx);
 
+    if (!should_continue) break;
+
+    // Pop minimum element
+    auto current_entry = Q.PopMin();
+    int v_idx = current_entry.second;
+
+    // Verify the key is still current (no stale entries)
     auto current_key = getKey(v_idx);
-    if (KeyLess(top.first, current_key) || KeyLess(current_key, top.first)) {
-      continue;  // Skip stale entry, process next
+    if (KeyLess(current_entry.first, current_key) || KeyLess(current_key, current_entry.first)) {
+      // Key changed - re-insert with correct key if still inconsistent
+      if (std::abs(Vertices[v_idx].g - Vertices[v_idx].lmc) > epsilon) {
+        Q.InsertOrUpdate(v_idx, current_key);
+      }
+      continue;
     }
 
+    // Process vertex
     if (Vertices[v_idx].g - Vertices[v_idx].lmc > epsilon) {
       UpdateLMC(v_idx);
       RewireNeighbors(v_idx);
@@ -304,7 +314,7 @@ void algos::RRTX::PropogateDescendants() {
 }
 
 void algos::RRTX::VerifyOrphan(int v_idx) {
-  vertices_in_queue.erase(v_idx);
+  Q.Remove(v_idx);
   V_c_T.insert(v_idx);
 }
 
@@ -603,14 +613,14 @@ bool algos::RRTX::KeyLess(const std::pair<double, double>& key1,
 }
 
 void algos::RRTX::VerifyQueue(int v_idx) {
-  if (Q.size() > 10) {
-    CleanupQueue();
-  }
-
   if (v_idx < 0 || v_idx >= static_cast<int>(Vertices.size()) || !Vertices[v_idx].alive) return;
-  if (!vertices_in_queue.count(v_idx)) {
-    vertices_in_queue.insert(v_idx);
-    Q.push({getKey(v_idx), v_idx});
+
+  // Check if vertex needs to be in queue
+  if (std::abs(Vertices[v_idx].g - Vertices[v_idx].lmc) > epsilon) {
+    Q.InsertOrUpdate(v_idx, getKey(v_idx));
+  } else {
+    // Remove if it shouldn't be in queue
+    Q.Remove(v_idx);
   }
 }
 
@@ -638,30 +648,29 @@ void algos::RRTX::LimitTreeSize() {
   }
 }
 
-void algos::RRTX::CleanupQueue() {
-  std::vector<std::pair<std::pair<double, double>, int>> valid_entries;
-  vertices_in_queue.clear();
+// void algos::RRTX::CleanupQueue() {
+//   std::vector<std::pair<std::pair<double, double>, int>> valid_entries;
+//   vertices_in_queue.clear();
 
-  // Extract all entries and check if they're still relevant
-  while (!Q.empty()) {
-    auto entry = Q.top();
-    Q.pop();
-    int v_idx = entry.second;
-    if (v_idx < 0 || v_idx >= static_cast<int>(Vertices.size()) || !Vertices[v_idx].alive) {
-      continue;  // drop dead/stale
-    }
-    auto current_key = getKey(v_idx);
-    if (!KeyLess(entry.first, current_key) && !KeyLess(current_key, entry.first)) {
-      valid_entries.push_back(entry);
-      vertices_in_queue.insert(v_idx);
-    }
-  }
+//   // Extract all entries and check if they're still relevant
+//   while (!Q.empty()) {
+//     auto entry = Q.top();
+//     Q.pop();
+//     int v_idx = entry.second;
+//     if (v_idx < 0 || v_idx >= static_cast<int>(Vertices.size()) || !Vertices[v_idx].alive) {
+//       continue;  // drop dead/stale
+//     }
+//     auto current_key = getKey(v_idx);
+//     if (!KeyLess(entry.first, current_key) && !KeyLess(current_key, entry.first)) {
+//       valid_entries.push_back(entry);
+//     }
+//   }
 
-  // Rebuild queue with only valid entries
-  for (const auto& entry : valid_entries) {
-    Q.push(entry);
-  }
-}
+//   // Rebuild queue with only valid entries
+//   for (const auto& entry : valid_entries) {
+//     Q.push(entry);
+//   }
+// }
 
 std::pair<double, double> algos::RRTX::getKey(int v_idx) {
   return {std::min(Vertices[v_idx].g, Vertices[v_idx].lmc), Vertices[v_idx].g};

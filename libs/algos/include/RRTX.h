@@ -12,6 +12,7 @@
 #include "Waypoint.h"
 #include "SoccerObject.h"
 #include "Grid.h"
+#include "PQueue.h"
 
 namespace algos {
 
@@ -118,9 +119,7 @@ class RRTX {
   std::unordered_set<int> V_c_T;  // orphan nodes V^c_T
 
   // Priority queue Q with keys (min(g(v), lmc(v)), g(v))
-  std::priority_queue<std::pair<std::pair<double, double>, int>,
-                      std::vector<std::pair<std::pair<double, double>, int>>, std::greater<>>
-      Q;
+  algos::PriorityQueue Q;
 
   // Goal and start vertices
   int v_goal_idx;
@@ -141,7 +140,7 @@ class RRTX {
   int current_robot_id;
   state::Waypoint robot_pos;
 
-  std::unordered_set<int> vertices_in_queue;
+//   std::unordered_set<int> vertices_in_queue;
 
   // Optimizations
   int AddVertex(state::Waypoint& wp);
