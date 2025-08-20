@@ -13,10 +13,9 @@ class RRTXTest : public ::testing::Test {
   void SetUp() override {
     start = state::Waypoint(0.0, 0.0, 0.0);
     goal = state::Waypoint(1.0, 1.0, 0.0);
-    epsilon = 0.1;
 
     // Create RRTX instance
-    rrtx = std::make_unique<algos::RRTX>(start, goal, epsilon);
+    rrtx = std::make_unique<algos::RRTX>(start, goal);
 
     // Setup test obstacles
     SetupTestObstacles();

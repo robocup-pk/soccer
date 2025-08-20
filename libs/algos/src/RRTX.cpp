@@ -3,6 +3,7 @@
 #include "SoccerObject.h"
 #include "Kinematics.h"
 #include "Grid.h"
+#include "AlgoConstants.h"
 
 #include <random>
 
@@ -12,7 +13,7 @@ std::mt19937 rng(std::random_device{}());
 // Dynamic distributions based on actual field dimensions
 std::uniform_real_distribution<float> GetXDistribution() {
   double field_width = vis::SoccerField::GetInstance().playing_area_width_mm / 1000.0;
-  const double margin = 0.1;  // 10cm margin from boundaries 
+  const double margin = 0.1;  // 10cm margin from boundaries
   return std::uniform_real_distribution<float>(-field_width / 2 + margin,
                                                field_width / 2 - margin);
 }
@@ -27,8 +28,11 @@ std::uniform_real_distribution<float> GetYDistribution() {
 std::uniform_real_distribution<double> prob_dist(0.0, 1.0);
 }  // namespace
 
-algos::RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal, double eps)
-    : epsilon(eps), delta(0.5), gamma(1.5), n_samples(2) {
+algos::RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal)
+    : epsilon(cfg::RRTXConstants::epsilon),
+      delta(cfg::RRTXConstants::delta),
+      gamma(cfg::RRTXConstants::gamma),
+      n_samples(2) {
   Vertices.clear();
 
   // Goal vertex at index 0 - this is the ROOT of shortest path tree
@@ -36,7 +40,7 @@ algos::RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal,
   Vertices[0].wp = x_goal;
   Vertices[0].g = 0.0;          // Goal has zero cost-to-goal
   Vertices[0].lmc = 0.0;        // Goal is consistent
-  Vertices[0].parent_idx = -1;  // Root has no parent 
+  Vertices[0].parent_idx = -1;  // Root has no parent
   v_goal_idx = 0;
 
   // Start vertex at index 1 - initially unreachable
@@ -51,7 +55,7 @@ algos::RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal,
   // Clear orphan set
   V_c_T.clear();
   robot_pos = x_start;
-  spatial_grid = std::make_unique<algos::SpatialGrid>(0.2);
+  spatial_grid = std::make_unique<algos::SpatialGrid>(cfg::RRTXConstants::grid_cell_size);
   spatial_grid->AddVertex(v_goal_idx, Vertices[v_goal_idx].wp);
   spatial_grid->AddVertex(v_start_idx, Vertices[v_start_idx].wp);
 
@@ -625,7 +629,7 @@ void algos::RRTX::VerifyQueue(int v_idx) {
 }
 
 void algos::RRTX::LimitTreeSize() {
-  if (Vertices.size() <= 1000) return;
+  if (Vertices.size() <= cfg::RRTXConstants::max_vertices_size) return;
 
   // Find vertices to remove (farthest from goal with no children)
   std::vector<std::pair<double, int>> candidates;
@@ -642,35 +646,12 @@ void algos::RRTX::LimitTreeSize() {
   std::sort(candidates.rbegin(), candidates.rend());
 
   // Remove excess vertices
-  size_t to_remove = std::min(candidates.size(), Vertices.size() - 1000);
+  size_t to_remove =
+      std::min(candidates.size(), Vertices.size() - cfg::RRTXConstants::max_vertices_size);
   for (size_t i = 0; i < to_remove; ++i) {
     RemoveVertex(candidates[i].second);
   }
 }
-
-// void algos::RRTX::CleanupQueue() {
-//   std::vector<std::pair<std::pair<double, double>, int>> valid_entries;
-//   vertices_in_queue.clear();
-
-//   // Extract all entries and check if they're still relevant
-//   while (!Q.empty()) {
-//     auto entry = Q.top();
-//     Q.pop();
-//     int v_idx = entry.second;
-//     if (v_idx < 0 || v_idx >= static_cast<int>(Vertices.size()) || !Vertices[v_idx].alive) {
-//       continue;  // drop dead/stale
-//     }
-//     auto current_key = getKey(v_idx);
-//     if (!KeyLess(entry.first, current_key) && !KeyLess(current_key, entry.first)) {
-//       valid_entries.push_back(entry);
-//     }
-//   }
-
-//   // Rebuild queue with only valid entries
-//   for (const auto& entry : valid_entries) {
-//     Q.push(entry);
-//   }
-// }
 
 std::pair<double, double> algos::RRTX::getKey(int v_idx) {
   return {std::min(Vertices[v_idx].g, Vertices[v_idx].lmc), Vertices[v_idx].g};
@@ -690,20 +671,6 @@ void algos::RRTX::MakeParentOf(int parent_idx, int child_idx) {
   // Update parent
   child.parent_idx = parent_idx;
   Vertices[parent_idx].C_minus_T.insert(child_idx);
-}
-
-std::vector<int> algos::RRTX::getInNeighbors(int v_idx) {
-  std::vector<int> neighbors;
-  neighbors.reserve(Vertices[v_idx].N_minus_0.size() + Vertices[v_idx].N_minus_r.size());
-  for (int u : Vertices[v_idx].N_minus_0) {
-    if (u >= 0 && u < static_cast<int>(Vertices.size()) && Vertices[u].alive)
-      neighbors.push_back(u);
-  }
-  for (int u : Vertices[v_idx].N_minus_r) {
-    if (u >= 0 && u < static_cast<int>(Vertices.size()) && Vertices[u].alive)
-      neighbors.push_back(u);
-  }
-  return neighbors;
 }
 
 std::vector<int> algos::RRTX::getOutNeighbors(int v_idx) {
@@ -819,7 +786,7 @@ state::Waypoint algos::RRTX::Saturate(const state::Waypoint& v, const state::Way
 }
 
 state::Waypoint algos::RRTX::RandomNode() {
-  if (prob_dist(rng) < 0.2) {
+  if (prob_dist(rng) < cfg::RRTXConstants::goal_bias) {
     return Vertices[v_goal_idx].wp;
   }
 
@@ -890,12 +857,12 @@ bool algos::RRTX::IsPathValid(state::Path& path) {
   if (path.empty()) return false;  // No path to validate
 
   // Check if path starts from robot pose
-  if ((path[0] - robot_pos).Norm() > 0.05) {
+  if ((path[0] - robot_pos).Norm() > cfg::RRTXConstants::movement_threshold) {
     return false;
   }
 
   // Check if path ends at goal
-  if ((path.back() - Vertices[v_goal_idx].wp).Norm() > 0.05) {
+  if ((path.back() - Vertices[v_goal_idx].wp).Norm() > cfg::RRTXConstants::movement_threshold) {
     return false;
   }
 
@@ -942,9 +909,8 @@ double algos::RRTX::GetSolutionCost() {
 
 void algos::RRTX::UpdateRobotPosition(state::Waypoint& new_pos) {
   double movement = (robot_pos - new_pos).Norm();
-  const double ROBOT_MOVEMENT_THRESHOLD = 0.05;
 
-  if (movement < ROBOT_MOVEMENT_THRESHOLD) {
+  if (movement < cfg::RRTXConstants::movement_threshold) {
     return;
   }
 
@@ -969,7 +935,7 @@ void algos::RRTX::UpdateRobotPosition(state::Waypoint& new_pos) {
       VerifyQueue(v_bot_idx);
     }
   } else {
-    // Option 2: Find nearest vertex and update v_bot_idx
+    // Find nearest vertex and update v_bot_idx
     int nearest_idx = Nearest(new_pos);
     if (nearest_idx != -1) {
       v_bot_idx = nearest_idx;
@@ -985,18 +951,15 @@ bool algos::RRTX::HasObstaclesChanged(const std::vector<state::SoccerObject>& ne
     return true;  // Different number of obstacles
   }
 
-  const double MOVEMENT_THRESHOLD = 0.05;  // 5cm threshold
-
   for (unsigned int i = 0; i < new_obstacles.size(); i++) {
-    if ((new_obstacles[i].position - current_obstacles[i].position).norm() > MOVEMENT_THRESHOLD) {
+    if ((new_obstacles[i].position - current_obstacles[i].position).norm() >
+        cfg::RRTXConstants::movement_threshold) {
       return true;  // Found movement > threshold
     }
   }
 
   return false;  // No significant changes
 }
-
-bool algos::RRTX::IsRobotPoseChanged() { return false; }
 
 bool algos::RRTX::IsInVertices(state::Waypoint v_new_wp) {
   const double EPSILON = 1e-6;  // Small threshold for position equality
@@ -1009,28 +972,6 @@ bool algos::RRTX::IsInVertices(state::Waypoint v_new_wp) {
     }
   }
   return false;
-}
-
-std::vector<std::pair<state::SoccerObject, state::SoccerObject>> algos::RRTX::FindMovedObstacles(
-    std::vector<state::SoccerObject>& new_obstacles) {
-  std::vector<std::pair<state::SoccerObject, state::SoccerObject>> moved;
-
-  const double MOVEMENT_THRESHOLD = 0.05;  // 5cm threshold
-
-  for (auto& new_obs : new_obstacles) {
-    for (auto& current_obs : current_obstacles) {
-      if (new_obs.name == current_obs.name) {
-        double distance = (new_obs.position - current_obs.position).norm();
-        if (distance > MOVEMENT_THRESHOLD) {
-          // Same obstacle, but moved significantly
-          moved.push_back({current_obs, new_obs});
-        }
-        break;  // Found matching obstacle
-      }
-    }
-  }
-
-  return moved;
 }
 
 std::vector<state::SoccerObject> algos::RRTX::FindVanishedObstacles(
@@ -1075,8 +1016,8 @@ std::vector<state::SoccerObject> algos::RRTX::FindAppearedObstacles(
 
 bool algos::RRTX::ObstaclesEqual(state::SoccerObject& obs1, state::SoccerObject& obs2) {
   // Use name comparison or position threshold
-  return (obs1.name == obs2.name) &&
-         ((obs1.position - obs2.position).norm() < 0.01);  // 1cm threshold
+  return (obs1.name == obs2.name) && ((obs1.position - obs2.position).norm() <
+                                      cfg::RRTXConstants::movement_threshold);  // 1cm threshold
 }
 
 int algos::RRTX::AddVertex(state::Waypoint& wp) {

@@ -93,7 +93,7 @@ int main() {
   }
 
   // Create RRT-X planner
-  algos::RRTX rrtx_planner(start, initial_goal, 0.1);
+  algos::RRTX rrtx_planner(start, initial_goal);
 
   // Tracking variables
   Eigen::Vector3d last_ball_pos = soccer_objects[soccer_objects.size() - 1].position;
@@ -129,7 +129,7 @@ int main() {
         (soccer_objects[soccer_objects.size() - 1].position - last_ball_pos).norm();
     if (ball_movement > BALL_MOVEMENT_THRESHOLD) {
       std::cout << "Ball moved! Replanning..." << std::endl;
-      rrtx_planner = algos::RRTX(current_robot_pos, current_ball_pos, 0.1);
+      rrtx_planner = algos::RRTX(current_robot_pos, current_ball_pos);
       while (!rrtx_planner.SolutionExists()) {
         rrtx_planner.PlanStep();
       }

@@ -37,7 +37,7 @@ struct Vertex {
 
 class RRTX {
  public:
-  RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal, double epsilon = 0.1);
+  RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal);
   void PlanStep();  // Main planning step
 
   // Core functions
@@ -89,8 +89,6 @@ class RRTX {
   bool IsPathToGoalValid();
   double GetSolutionCost();
   bool IsInVertices(state::Waypoint v_new);
-  std::vector<std::pair<state::SoccerObject, state::SoccerObject>> FindMovedObstacles(
-      std::vector<state::SoccerObject>& new_obstacles);
   std::vector<state::SoccerObject> FindVanishedObstacles(
       std::vector<state::SoccerObject>& new_obstacles);
   std::vector<state::SoccerObject> FindAppearedObstacles(
@@ -104,13 +102,14 @@ class RRTX {
   bool IsInObstacle(const state::Waypoint& wp);
   bool HasObstaclesChanged(const std::vector<state::SoccerObject>& current_obstacles);
   void ValidateRobotPath();
-  bool IsRobotPoseChanged();
   std::vector<int> getOutNeighbors(int v_idx);  // N⁺(v) = N₀⁺(v) ∪ Nᵣ⁺(v)
-  std::vector<int> getInNeighbors(int v_idx);   // N⁻(v) = N₀⁻(v) ∪ Nᵣ⁻(v)
   void PruneInvalidNeighbors(int v_idx);
-
   bool IsPathValid(state::Path& path);
-  void CleanupQueue();
+
+   // Optimizations
+  int AddVertex(state::Waypoint& wp);
+  void RemoveVertex(int v_idx);
+  void LimitTreeSize();
 
   // Core data structures
   std::vector<Vertex> Vertices;  // vertex set
@@ -133,20 +132,10 @@ class RRTX {
   int n_samples;   // current number of samples
 
   // Environment
-  std::vector<state::Waypoint> obstacles;
-  std::vector<state::SoccerObject> previous_obstacles;
   std::vector<state::SoccerObject> current_obstacles;
 
   int current_robot_id;
   state::Waypoint robot_pos;
-
-//   std::unordered_set<int> vertices_in_queue;
-
-  // Optimizations
-  int AddVertex(state::Waypoint& wp);
-  void RemoveVertex(int v_idx);
-  void LimitTreeSize();
-
 };
 }  // namespace algos
 

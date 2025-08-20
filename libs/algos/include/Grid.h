@@ -19,12 +19,6 @@ class SpatialGrid {
   int FindNearest(state::Waypoint& query_point, std::vector<algos::Vertex>& vertices);
   std::vector<int> FindNear(state::Waypoint& query_point, double radius,
                             std::vector<algos::Vertex>& vertices);
-  std::vector<int> GetCandidatesInRadius(state::Waypoint& center, double radius);
-
-  // Edge management for collision optimization
-  void AddEdge(int edge_id, state::Waypoint& start, state::Waypoint& end);
-  void RemoveEdge(int edge_id, state::Waypoint& start, state::Waypoint& end);
-  std::vector<int> GetEdgesIntersectingRegion(state::Waypoint& center, double radius);
 
   // Utility functions
   void Clear();
