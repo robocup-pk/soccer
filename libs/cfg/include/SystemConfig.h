@@ -16,6 +16,7 @@ struct SystemConfig {
   // Ball
   static const Eigen::Vector3d init_ball_velocity_mps;
   static const Eigen::Vector3d init_ball_acceleration_mpsps;
+  static const Eigen::Vector3d init_ball_position;
   static const float ball_radius_m;
 
   // Robots
@@ -32,6 +33,9 @@ struct SystemConfig {
   // players that are responsible for initiating the free kick
   static const int team_one_kicker = 0;
   static const int team_two_kicker = num_robots / 2;
+
+  static const int team_one_goalie = 5;   // num_robots / 2 - 1;
+  static const int team_two_goalie = 11;  // num_robots - 1;
 };
 }  // namespace cfg
 

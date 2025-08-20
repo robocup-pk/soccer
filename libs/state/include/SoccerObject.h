@@ -19,9 +19,14 @@ class SoccerObject {
   SoccerObject& operator=(rob::RobotManager& robot_manager);
   ~SoccerObject();
 
+  enum Role { Kicker, Keeper, Unassigned };
+
   // Getters
   inline Eigen::Vector3d GetPosition() const { return position; }
   Eigen::Vector3d GetCenterPosition();
+
+  // Setters
+  void SetRobotRole(state::SoccerObject::Role r);
 
   // Kinematics
   bool IsPointInFrontSector(Eigen::Vector2d point);
@@ -40,8 +45,12 @@ class SoccerObject {
 
   // Ball Attachment
   bool is_attached = false;
+  bool was_given_speeding_foul_in_stop = false;
   bool is_selected_player = false;
   SoccerObject* attached_to;
+  // robot role
+
+  Role role = Unassigned;
 };
 
 void InitSoccerObjects(std::vector<SoccerObject>& soccer_objects);

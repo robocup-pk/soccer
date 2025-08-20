@@ -4,6 +4,7 @@
 #include "SystemConfig.h"
 #include "Kinematics.h"
 
+
 void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) {
   // Robots (team one)
   for (int i = 0; i < cfg::SystemConfig::num_robots / 2; ++i) {
@@ -27,7 +28,7 @@ void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) 
 
   // ball
   soccer_objects.push_back(state::SoccerObject(
-      "ball", Eigen::Vector3d(0, 0, 0),
+      "ball", cfg::SystemConfig::init_ball_position,
       Eigen::Vector2d(cfg::SystemConfig::ball_radius_m * 2, cfg::SystemConfig::ball_radius_m * 2),
       0, cfg::SystemConfig::init_ball_velocity_mps,
       cfg::SystemConfig::init_ball_acceleration_mpsps, 1));
@@ -101,5 +102,7 @@ void state::SoccerObject::Move(float dt) {
 }
 
 Eigen::Vector3d state::SoccerObject::GetCenterPosition() { return position; }
+
+void state::SoccerObject::SetRobotRole(state::SoccerObject::Role r) { role = r; }
 
 state::SoccerObject::~SoccerObject() { attached_to = nullptr; }

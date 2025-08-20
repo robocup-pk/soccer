@@ -34,7 +34,7 @@ vis::SpriteRenderer::~SpriteRenderer() {
   }
 }
 
-void vis::SpriteRenderer::DrawSprite(Texture2D& texture, glm::vec2 position, glm::vec2 size,
+void vis::SpriteRenderer::DrawSprite(const Texture2D& texture, glm::vec2 position, glm::vec2 size,
                                      float rotate, glm::vec3 color) {
   position.y = -position.y;
   shader.Use();
