@@ -86,7 +86,6 @@ class RRTX {
                                      state::SoccerObject& obstacle);
   bool SolutionExists();
   bool IsPathToGoalValid();
-  double GetSolutionCost();
   bool IsInVertices(state::Waypoint v_new);
   std::vector<state::SoccerObject> FindVanishedObstacles(
       std::vector<state::SoccerObject>& new_obstacles);
@@ -129,6 +128,7 @@ class RRTX {
   double delta;    // step size for saturate function
   double gamma;    // RRT* shrinking ball parameter
   int n_samples;   // current number of samples
+  double r;        // shrinking ball radius
 
   // Environment
   std::vector<state::SoccerObject> current_obstacles;

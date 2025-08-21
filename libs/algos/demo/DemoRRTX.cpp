@@ -11,6 +11,7 @@
 #include "Kinematics.h"
 #include "Waypoint.h"
 #include "RRTX.h"
+#include "AlgoConstants.h"
 
 // Random number generator for obstacle movement
 namespace {
@@ -87,19 +88,17 @@ int main() {
       Eigen::Vector3d(initial_goal.x, initial_goal.y, 0.0);  // Ball
 
   // Initialize random velocities for obstacles
-  for (size_t i = 1; i < soccer_objects.size() - 1; ++i) {
-    soccer_objects[i].velocity =
-        Eigen::Vector3d(speed_dist(obstacle_rng), speed_dist(obstacle_rng), 0.0);
-  }
+  // for (size_t i = 1; i < soccer_objects.size() - 1; ++i) {
+  //   soccer_objects[i].velocity =
+  //       Eigen::Vector3d(speed_dist(obstacle_rng), speed_dist(obstacle_rng), 0.0);
+  // }
 
   // Create RRT-X planner
   algos::RRTX rrtx_planner(start, initial_goal);
 
   // Tracking variables
   Eigen::Vector3d last_ball_pos = soccer_objects[soccer_objects.size() - 1].position;
-  const double BALL_MOVEMENT_THRESHOLD = 0.05;
   Eigen::Vector3d last_robot_pos = soccer_objects[0].position;
-  const double ROBOT_MOVEMENT_THRESHOLD = 0.05;
 
   auto last_time = std::chrono::high_resolution_clock::now();
   auto last_obstacle_update = std::chrono::high_resolution_clock::now();
@@ -127,8 +126,7 @@ int main() {
     // Check if ball moved significantly
     double ball_movement =
         (soccer_objects[soccer_objects.size() - 1].position - last_ball_pos).norm();
-    if (ball_movement > BALL_MOVEMENT_THRESHOLD) {
-      std::cout << "Ball moved! Replanning..." << std::endl;
+    if (ball_movement > cfg::RRTXConstants::movement_threshold) {
       rrtx_planner = algos::RRTX(current_robot_pos, current_ball_pos);
       while (!rrtx_planner.SolutionExists()) {
         rrtx_planner.PlanStep();
@@ -137,14 +135,14 @@ int main() {
     }
 
     // Check if robot moved significantly
-    if ((last_robot_pos - soccer_objects[0].position).norm() > ROBOT_MOVEMENT_THRESHOLD) {
+    if ((last_robot_pos - soccer_objects[0].position).norm() > cfg::RRTXConstants::movement_threshold) {
       rrtx_planner.UpdateRobotPosition(current_robot_pos);
       last_robot_pos = soccer_objects[0].position;
     }
 
     // Check if obstacles moved significantly (throttled)
     auto obstacle_check_time = std::chrono::high_resolution_clock::now();
-    if (std::chrono::duration<float>(obstacle_check_time - last_obstacle_update).count() > 0.1f) {
+    if (std::chrono::duration<float>(obstacle_check_time - last_obstacle_update).count() > 0.0f) {
       std::vector<state::SoccerObject> obstacles;
       std::copy_if(soccer_objects.begin(), soccer_objects.end(), std::back_inserter(obstacles),
                    [](const state::SoccerObject& obj) {
@@ -152,7 +150,6 @@ int main() {
                    });
 
       if (rrtx_planner.HasObstaclesChanged(obstacles)) {
-        std::cout << "Obstacles moved! Updating planner..." << std::endl;
         rrtx_planner.UpdateObstacles(obstacles);
       }
       last_obstacle_update = obstacle_check_time;
@@ -168,8 +165,6 @@ int main() {
         gl_simulation.SetVisualizationPath(path, glm::vec3(1.0f, 0.0f, 0.0f));
 
         PrintPath(path);
-        std::cout << "Vertices: " << rrtx_planner.Vertices.size() << ", Cost: " << std::fixed
-                  << std::setprecision(2) << rrtx_planner.GetSolutionCost() << std::endl;
 
       } else {
         gl_simulation.ClearVisualizationPath();
@@ -179,7 +174,9 @@ int main() {
     }
 
     // Update physics (this will move obstacles based on their velocities)
+    // kin::CheckAndResolveCollisions(soccer_objects);
     kin::UpdateKinematics(soccer_objects, dt);
+
 
     // Run simulation step
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {

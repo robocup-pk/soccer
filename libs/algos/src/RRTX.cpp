@@ -10,21 +10,20 @@
 namespace {
 std::mt19937 rng(std::random_device{}());
 
-// Dynamic distributions based on actual field dimensions
-std::uniform_real_distribution<float> GetXDistribution() {
-  double field_width = vis::SoccerField::GetInstance().playing_area_width_mm / 1000.0;
-  const double margin = 0.1;  // 10cm margin from boundaries
-  return std::uniform_real_distribution<float>(-field_width / 2 + margin,
-                                               field_width / 2 - margin);
-}
+// Fixed field extents + distributions (initialized once)
+struct FieldCache {
+  double w, h;
+  std::uniform_real_distribution<float> x;
+  std::uniform_real_distribution<float> y;
 
-std::uniform_real_distribution<float> GetYDistribution() {
-  double field_height = vis::SoccerField::GetInstance().playing_area_height_mm / 1000.0;
-  const double margin = 0.1;  // 10cm margin from boundaries
-  return std::uniform_real_distribution<float>(-field_height / 2 + margin,
-                                               field_height / 2 - margin);
-}
+  FieldCache()
+      : w(vis::SoccerField::GetInstance().playing_area_width_mm / 1000.0),
+        h(vis::SoccerField::GetInstance().playing_area_height_mm / 1000.0),
+        x(-w / 2 + 0.1, w / 2 - 0.1),
+        y(-h / 2 + 0.1, h / 2 - 0.1) {}
+};
 
+static FieldCache g_field;  // constructed once, never changes
 std::uniform_real_distribution<double> prob_dist(0.0, 1.0);
 }  // namespace
 
@@ -34,6 +33,7 @@ algos::RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal)
       gamma(cfg::RRTXConstants::gamma),
       n_samples(2) {
   Vertices.clear();
+  Vertices.reserve(cfg::RRTXConstants::max_vertices_size);
 
   // Goal vertex at index 0 - this is the ROOT of shortest path tree
   Vertices.emplace_back();
@@ -60,10 +60,11 @@ algos::RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal)
   spatial_grid->AddVertex(v_start_idx, Vertices[v_start_idx].wp);
 
   free_list.clear();
+  this->r = ShrinkingBallRadius();
 }
 
 void algos::RRTX::PlanStep() {
-  double r = ShrinkingBallRadius();
+  this->r = ShrinkingBallRadius();
 
   // Sample random node
   state::Waypoint v_rand = RandomNode();
@@ -149,7 +150,6 @@ void algos::RRTX::RewireNeighbors(int v_idx) {
   if (v.g - v.lmc <= epsilon) return;
 
   // Line 2: Cull neighbors outside shrinking ball radius
-  const double r = ShrinkingBallRadius();
   CullNeighbors(v_idx, r);
 
   // Lines 3-7: Process all in-neighbors except parent
@@ -232,8 +232,6 @@ void algos::RRTX::ReduceInconsistency() {
 }
 
 void algos::RRTX::FindParent(Vertex& v_new, const std::vector<int>& U) {
-  double r = ShrinkingBallRadius();
-
   for (int u_idx : U) {
     double dist = d_pi(v_new.wp, Vertices[u_idx].wp);
 
@@ -550,9 +548,7 @@ void algos::RRTX::UpdateLMC(int v_idx) {
 
   // Remove any neighbors that have become invalid due to obstacle changes
   PruneInvalidNeighbors(v_idx);
-
-  const double r = ShrinkingBallRadius();
-  CullNeighbors(v_idx, r);
+  CullNeighbors(v_idx, this->r);
 
   v.lmc = std::numeric_limits<double>::infinity();
   int best_parent_idx = -1;
@@ -713,13 +709,14 @@ bool algos::RRTX::TrajectoryValid(state::Waypoint& a, state::Waypoint& b) {
     return false;
   }
 
-  // Check for collisions with all current obstacles along the path
-  for (auto& obstacle : current_obstacles) {
-    if (IsTrajectoryBlockedByObstacle(a, b, obstacle)) {
+  auto nearbyObstacles = spatial_grid->FindObstaclesInRadius(a, (a - b).Norm());
+
+  for (int i = 0; i < nearbyObstacles.size(); i++) {
+    if (nearbyObstacles[i] >= current_obstacles.size()) continue;
+    if (IsTrajectoryBlockedByObstacle(a, b, current_obstacles[nearbyObstacles[i]])) {
       return false;
     }
   }
-
   return true;
 }
 
@@ -731,6 +728,7 @@ bool algos::RRTX::IsInObstacle(state::Waypoint& wp) {
   auto nearbyObstacles =
       spatial_grid->FindObstaclesInRadius(wp, cfg::SystemConfig::robot_size_m[0] * 2);
   for (int i = 0; i < nearbyObstacles.size(); i++) {
+    if (nearbyObstacles[i] >= current_obstacles.size()) continue;
     if (kin::CheckCircularCollision(temp_robot, current_obstacles[nearbyObstacles[i]])) {
       return true;
     }
@@ -740,8 +738,8 @@ bool algos::RRTX::IsInObstacle(state::Waypoint& wp) {
 }
 
 double algos::RRTX::ShrinkingBallRadius() {
-  double x_range = 2.03784f * 2;    // 4.07568
-  double y_range = 1.45f * 2;       // 2.9
+  double x_range = vis::SoccerField::GetInstance().playing_area_width_mm / 1000.0 * 2;    // 4.07568
+  double y_range = vis::SoccerField::GetInstance().playing_area_height_mm / 1000.0 * 2;       // 2.9
   double area = x_range * y_range;  // state space volume
   return gamma * std::pow(std::log(n_samples + 1) / (n_samples + 1), 1.0 / 2.0) * std::sqrt(area);
 }
@@ -773,22 +771,15 @@ state::Waypoint algos::RRTX::RandomNode() {
     return Vertices[v_goal_idx].wp;
   }
 
-  auto x_dist = GetXDistribution();
-  auto y_dist = GetYDistribution();
-
   state::Waypoint random_node;
-  int max_attempts = 100;
-
-  for (int attempt = 0; attempt < max_attempts; ++attempt) {
-    random_node.x = x_dist(rng);
-    random_node.y = y_dist(rng);
+  for (int attempt = 0; attempt < 10; ++attempt) {
+    random_node.x = g_field.x(rng);
+    random_node.y = g_field.y(rng);
     random_node.angle = 0.0;
-
-    if (!IsInObstacle(random_node)) {
-      return random_node;
-    }
+    if (!IsInObstacle(random_node)) return random_node;
   }
 
+  // fallback
   return Vertices[v_goal_idx].wp;
 }
 
@@ -885,11 +876,6 @@ bool algos::RRTX::IsPathToGoalValid() {
   return current_idx == v_goal_idx;  // Reached goal successfully
 }
 
-double algos::RRTX::GetSolutionCost() {
-  // Return cost from current robot position to goal
-  return Vertices[v_bot_idx].g;
-}
-
 void algos::RRTX::UpdateRobotPosition(state::Waypoint& new_pos) {
   double movement = (robot_pos - new_pos).Norm();
 
@@ -935,6 +921,9 @@ bool algos::RRTX::HasObstaclesChanged(const std::vector<state::SoccerObject>& ne
   }
 
   for (unsigned int i = 0; i < new_obstacles.size(); i++) {
+    if (new_obstacles[i].name != current_obstacles[i].name) {
+      return true;
+    }
     if ((new_obstacles[i].position - current_obstacles[i].position).norm() >
         cfg::RRTXConstants::movement_threshold) {
       return true;  // Found movement > threshold
@@ -945,7 +934,7 @@ bool algos::RRTX::HasObstaclesChanged(const std::vector<state::SoccerObject>& ne
 }
 
 bool algos::RRTX::IsInVertices(state::Waypoint v_new_wp) {
-  const double EPSILON = 1e-6;  // Small threshold for position equality
+  const double EPSILON = 1e-2;  // Small threshold for position equality
   std::vector<int> nearby_indices = spatial_grid->FindNear(v_new_wp, EPSILON, Vertices);
 
   // Check if any nearby vertex has exactly the same waypoint
