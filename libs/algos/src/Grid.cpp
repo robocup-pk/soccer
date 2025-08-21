@@ -160,3 +160,32 @@ void algos::SpatialGrid::Clear() {
 bool algos::SpatialGrid::IsValidGridPos(int x, int y) {
   return x >= 0 && x < grid_width && y >= 0 && y < grid_height;
 }
+
+void algos::SpatialGrid::AddObstacle(int obstacle_idx, state::Waypoint& wp) {
+  auto [x, y] = WorldToGrid(wp);
+
+  if (IsValidGridPos(x, y)) {
+    grid[x][y].addObstacle(obstacle_idx);
+  }
+}
+
+void algos::SpatialGrid::RemoveObstacle(int obstacle_idx, state::Waypoint& wp) {
+  auto [x, y] = WorldToGrid(wp);
+
+  if (IsValidGridPos(x, y)) {
+    grid[x][y].removeObstacle(obstacle_idx);
+  }
+}
+
+std::vector<int> algos::SpatialGrid::FindObstaclesInRadius(state::Waypoint& center, double radius) {
+  std::vector<int> result;
+
+  std::vector<std::pair<int, int>> cells = GetCellsInRadius(center, radius);
+
+  for (auto [x, y] : cells) {
+    for (int obstacle_idx : grid[x][y].obstacle_indices) {
+      result.push_back(obstacle_idx);
+    }
+  }
+  return result;
+}

@@ -4,6 +4,7 @@
 #include "Waypoint.h"
 
 #include <vector>
+#include <unordered_set>
 
 namespace algos {
 struct Vertex;  // Forward declaration
@@ -14,11 +15,14 @@ class SpatialGrid {
   void AddVertex(int vertex_idx, state::Waypoint& wp);
   void RemoveVertex(int vertex_idx, state::Waypoint& wp);
   void UpdateVertex(int vertex_idx, state::Waypoint& old_wp, state::Waypoint& new_wp);
+  void AddObstacle(int obstacle_idx, state::Waypoint& wp);
+  void RemoveObstacle(int obstacle_idx, state::Waypoint& wp);
 
   // Query operations
   int FindNearest(state::Waypoint& query_point, std::vector<algos::Vertex>& vertices);
   std::vector<int> FindNear(state::Waypoint& query_point, double radius,
                             std::vector<algos::Vertex>& vertices);
+  std::vector<int> FindObstaclesInRadius(state::Waypoint& center, double radius);
 
   // Utility functions
   void Clear();
@@ -29,11 +33,11 @@ class SpatialGrid {
  private:
   struct GridCell {
     std::vector<int> vertex_indices;
-    std::vector<int> edge_indices;  // For edge-obstacle collision optimization
+    std::unordered_set<int> obstacle_indices;
 
     void clear() {
       vertex_indices.clear();
-      edge_indices.clear();
+      obstacle_indices.clear();
     }
 
     void addVertex(int idx) { vertex_indices.push_back(idx); }
@@ -45,6 +49,10 @@ class SpatialGrid {
         vertex_indices.pop_back();
       }
     }
+
+    void addObstacle(int idx) { obstacle_indices.insert(idx); }
+
+    void removeObstacle(int idx) { obstacle_indices.erase(idx); }
   };
 
   double cell_size;

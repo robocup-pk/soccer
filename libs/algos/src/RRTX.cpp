@@ -369,15 +369,6 @@ void algos::RRTX::RemoveObstacle(state::SoccerObject& obstacle) {
   }
 }
 
-std::set<int> algos::RRTX::GetVerticesWithEdgesInObstacle(std::set<std::pair<int, int>>& edges) {
-  std::set<int> vertices;  // This is VO
-  for (const auto& edge : edges) {
-    vertices.insert(edge.first);   // Add source vertex
-    vertices.insert(edge.second);  // Add destination vertex (both endpoints affected)
-  }
-  return vertices;
-}
-
 std::set<std::pair<int, int>> algos::RRTX::GetEdgesIntersectingObstacle(
     state::SoccerObject& obstacle) {
   std::set<std::pair<int, int>> intersecting_edges;
@@ -732,23 +723,15 @@ bool algos::RRTX::TrajectoryValid(state::Waypoint& a, state::Waypoint& b) {
   return true;
 }
 
-bool algos::RRTX::IsInObstacle(const state::Waypoint& wp) {
-  double field_width = vis::SoccerField::GetInstance().playing_area_width_mm / 1000.0;
-  double field_height = vis::SoccerField::GetInstance().playing_area_height_mm / 1000.0;
-  const double boundary_margin = 0.05;
-
-  bool out_of_bounds =
-      (wp.x < (-field_width / 2 + boundary_margin) || wp.x > (field_width / 2 - boundary_margin) ||
-       wp.y < (-field_height / 2 + boundary_margin) ||
-       wp.y > (field_height / 2 - boundary_margin));
-
-  if (out_of_bounds) return true;
-
+bool algos::RRTX::IsInObstacle(state::Waypoint& wp) {
   state::SoccerObject temp_robot("temp_check", Eigen::Vector3d(wp.x, wp.y, wp.angle),
                                  cfg::SystemConfig::robot_size_m,  // Use robot size
                                  Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), 1.0);
-  for (auto& obstacle : current_obstacles) {
-    if (kin::CheckCircularCollision(temp_robot, obstacle)) {
+
+  auto nearbyObstacles =
+      spatial_grid->FindObstaclesInRadius(wp, cfg::SystemConfig::robot_size_m[0] * 2);
+  for (int i = 0; i < nearbyObstacles.size(); i++) {
+    if (kin::CheckCircularCollision(temp_robot, current_obstacles[nearbyObstacles[i]])) {
       return true;
     }
   }
@@ -978,19 +961,25 @@ std::vector<state::SoccerObject> algos::RRTX::FindVanishedObstacles(
     std::vector<state::SoccerObject>& new_obstacles) {
   std::vector<state::SoccerObject> vanished;
 
-  // Check each current obstacle to see if it's missing in new_obstacles
-  for (auto& current_obs : current_obstacles) {
+  for (int i = 0; i < current_obstacles.size(); ++i) {
+    auto& current_obs = current_obstacles[i];
+
     bool found = false;
-    for (auto& new_obs : new_obstacles) {
+    for (int j = 0; j < new_obstacles.size(); ++j) {
+      auto& new_obs = new_obstacles[j];
       if (ObstaclesEqual(current_obs, new_obs)) {
         found = true;
         break;
       }
     }
+
     if (!found) {
       vanished.push_back(current_obs);
+      state::Waypoint wp = current_obs.position;
+      spatial_grid->RemoveObstacle(i, wp);
     }
   }
+
   return vanished;
 }
 
@@ -998,8 +987,9 @@ std::vector<state::SoccerObject> algos::RRTX::FindAppearedObstacles(
     std::vector<state::SoccerObject>& new_obstacles) {
   std::vector<state::SoccerObject> appeared;
 
-  // Check each new obstacle to see if it's missing in current_obstacles
-  for (auto& new_obs : new_obstacles) {
+  for (int i = 0; i < new_obstacles.size(); ++i) {
+    auto& new_obs = new_obstacles[i];
+
     bool found = false;
     for (auto& current_obs : current_obstacles) {
       if (ObstaclesEqual(current_obs, new_obs)) {
@@ -1007,8 +997,11 @@ std::vector<state::SoccerObject> algos::RRTX::FindAppearedObstacles(
         break;
       }
     }
+
     if (!found) {
       appeared.push_back(new_obs);
+      state::Waypoint wp = new_obs.position;
+      spatial_grid->AddObstacle(i, wp);
     }
   }
   return appeared;

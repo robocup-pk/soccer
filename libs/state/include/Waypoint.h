@@ -13,6 +13,7 @@ namespace state {
 class Waypoint {
  public:
   Waypoint(double x = 0, double y = 0, double angle = 0) : x(x), y(y), angle(angle) {}
+  Waypoint(Eigen::Vector3d vec) : x(vec.x()), y(vec.y()), angle(vec.z()) {}
 
   inline state::Waypoint operator-(const Waypoint& wp) const {
     return state::Waypoint(x - wp.x, y - wp.y, angle - wp.angle);

@@ -84,7 +84,6 @@ class RRTX {
   std::set<std::pair<int, int>> GetEdgesIntersectingObstacle(state::SoccerObject& obstacle);
   bool IsTrajectoryBlockedByObstacle(state::Waypoint& from, state::Waypoint& to,
                                      state::SoccerObject& obstacle);
-  std::set<int> GetVerticesWithEdgesInObstacle(std::set<std::pair<int, int>>& edges);
   bool SolutionExists();
   bool IsPathToGoalValid();
   double GetSolutionCost();
@@ -99,7 +98,7 @@ class RRTX {
   bool IsRobotOnEdge(int v_idx, int u_idx);
   void ClearRobotPath();
   bool ObstaclesEqual(state::SoccerObject& obs1, state::SoccerObject& obs2);
-  bool IsInObstacle(const state::Waypoint& wp);
+  bool IsInObstacle(state::Waypoint &wp);
   bool HasObstaclesChanged(const std::vector<state::SoccerObject>& current_obstacles);
   void ValidateRobotPath();
   std::vector<int> getOutNeighbors(int v_idx);  // N⁺(v) = N₀⁺(v) ∪ Nᵣ⁺(v)
