@@ -2,7 +2,7 @@
 
 namespace cfg {
 
-const int RRTXConstants::max_vertices_size = 1000;
+const int RRTXConstants::max_vertices_size = 100;
 const double RRTXConstants::movement_threshold = 0.05;
 const double RRTXConstants::goal_bias = 0.2;
 const double RRTXConstants::epsilon = 0.1;

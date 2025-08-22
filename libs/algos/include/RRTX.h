@@ -97,17 +97,18 @@ class RRTX {
   bool IsRobotOnEdge(int v_idx, int u_idx);
   void ClearRobotPath();
   bool ObstaclesEqual(state::SoccerObject& obs1, state::SoccerObject& obs2);
-  bool IsInObstacle(state::Waypoint &wp);
+  bool IsInObstacle(state::Waypoint& wp);
   bool HasObstaclesChanged(const std::vector<state::SoccerObject>& current_obstacles);
   void ValidateRobotPath();
   std::vector<int> getOutNeighbors(int v_idx);  // N⁺(v) = N₀⁺(v) ∪ Nᵣ⁺(v)
   void PruneInvalidNeighbors(int v_idx);
   bool IsPathValid(state::Path& path);
 
-   // Optimizations
+  // Optimizations
   int AddVertex(state::Waypoint& wp);
   void RemoveVertex(int v_idx);
   void LimitTreeSize();
+  size_t ComputeObstacleHash(state::SoccerObject obstacle);
 
   // Core data structures
   std::vector<Vertex> Vertices;  // vertex set
@@ -132,6 +133,7 @@ class RRTX {
 
   // Environment
   std::vector<state::SoccerObject> current_obstacles;
+  std::vector<size_t> obstacle_hash_values;
 
   int current_robot_id;
   state::Waypoint robot_pos;

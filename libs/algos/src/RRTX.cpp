@@ -371,13 +371,11 @@ std::set<std::pair<int, int>> algos::RRTX::GetEdgesIntersectingObstacle(
     state::SoccerObject& obstacle) {
   std::set<std::pair<int, int>> intersecting_edges;
 
-  // Get expanded radius for obstacle
-  double total_radius = 2 * obstacle.radius_m;
   state::Waypoint obstacle_center(obstacle.position[0], obstacle.position[1], 0.0);
 
   // Use spatial grid to find only nearby vertices
   std::vector<int> nearby_vertices =
-      spatial_grid->FindNear(obstacle_center, total_radius * 1.1, Vertices);
+      spatial_grid->FindNear(obstacle_center, obstacle.radius_m, Vertices);
 
   std::unordered_set<int> checked_vertices;
 
@@ -738,8 +736,8 @@ bool algos::RRTX::IsInObstacle(state::Waypoint& wp) {
 }
 
 double algos::RRTX::ShrinkingBallRadius() {
-  double x_range = vis::SoccerField::GetInstance().playing_area_width_mm / 1000.0 * 2;    // 4.07568
-  double y_range = vis::SoccerField::GetInstance().playing_area_height_mm / 1000.0 * 2;       // 2.9
+  double x_range = vis::SoccerField::GetInstance().playing_area_width_mm / 1000.0 * 2;   // 4.07568
+  double y_range = vis::SoccerField::GetInstance().playing_area_height_mm / 1000.0 * 2;  // 2.9
   double area = x_range * y_range;  // state space volume
   return gamma * std::pow(std::log(n_samples + 1) / (n_samples + 1), 1.0 / 2.0) * std::sqrt(area);
 }
@@ -915,22 +913,35 @@ void algos::RRTX::UpdateRobotPosition(state::Waypoint& new_pos) {
 }
 
 bool algos::RRTX::HasObstaclesChanged(const std::vector<state::SoccerObject>& new_obstacles) {
-  // Compare new obstacles with current obstacles (not previous!)
   if (new_obstacles.size() != current_obstacles.size()) {
-    return true;  // Different number of obstacles
+    // Update hashes if sizes differ
+    obstacle_hash_values.clear();
+    for (auto obs : new_obstacles) {
+      obstacle_hash_values.push_back(ComputeObstacleHash(obs));
+    }
+    return true;
   }
 
-  for (unsigned int i = 0; i < new_obstacles.size(); i++) {
-    if (new_obstacles[i].name != current_obstacles[i].name) {
-      return true;
-    }
-    if ((new_obstacles[i].position - current_obstacles[i].position).norm() >
-        cfg::RRTXConstants::movement_threshold) {
-      return true;  // Found movement > threshold
+  bool has_changed = false;
+
+  // Compare with stored hashes
+  for (size_t i = 0; i < new_obstacles.size(); ++i) {
+    size_t new_hash = ComputeObstacleHash(new_obstacles[i]);
+    if (new_hash != obstacle_hash_values[i]) {
+      has_changed = true;
+      break;  // No need to check further if one has changed
     }
   }
 
-  return false;  // No significant changes
+  // Update the stored hashes if anything changed
+  if (has_changed) {
+    obstacle_hash_values.clear();
+    for (const auto& obs : new_obstacles) {
+      obstacle_hash_values.push_back(ComputeObstacleHash(obs));
+    }
+  }
+
+  return has_changed;
 }
 
 bool algos::RRTX::IsInVertices(state::Waypoint v_new_wp) {
@@ -1073,4 +1084,20 @@ void algos::RRTX::RemoveVertex(int idx) {
   v.C_minus_T.clear();
 
   free_list.push_back(idx);
+}
+
+size_t algos::RRTX::ComputeObstacleHash(state::SoccerObject obstacle) {
+  size_t seed = 0;
+  auto hasher = std::hash<std::string>();
+  seed ^= hasher(obstacle.name) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+  // Hash position (convert to mm for integer hashing)
+  int x = static_cast<int>(obstacle.position.x() * 1000);
+  int y = static_cast<int>(obstacle.position.y() * 1000);
+  int z = static_cast<int>(obstacle.position.z() * 1000);
+  seed ^= std::hash<int>()(x) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+  seed ^= std::hash<int>()(y) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+  seed ^= std::hash<int>()(z) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+  return seed;
 }

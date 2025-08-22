@@ -87,12 +87,6 @@ int main() {
   soccer_objects[soccer_objects.size() - 1].position =
       Eigen::Vector3d(initial_goal.x, initial_goal.y, 0.0);  // Ball
 
-  // Initialize random velocities for obstacles
-  // for (size_t i = 1; i < soccer_objects.size() - 1; ++i) {
-  //   soccer_objects[i].velocity =
-  //       Eigen::Vector3d(speed_dist(obstacle_rng), speed_dist(obstacle_rng), 0.0);
-  // }
-
   // Create RRT-X planner
   algos::RRTX rrtx_planner(start, initial_goal);
 
@@ -102,7 +96,7 @@ int main() {
 
   auto last_time = std::chrono::high_resolution_clock::now();
   auto last_obstacle_update = std::chrono::high_resolution_clock::now();
-
+  int plan_iterations = 5;
   // Main simulation loop
   while (true) {
     // Calculate dt
@@ -135,7 +129,8 @@ int main() {
     }
 
     // Check if robot moved significantly
-    if ((last_robot_pos - soccer_objects[0].position).norm() > cfg::RRTXConstants::movement_threshold) {
+    if ((last_robot_pos - soccer_objects[0].position).norm() >
+        cfg::RRTXConstants::movement_threshold) {
       rrtx_planner.UpdateRobotPosition(current_robot_pos);
       last_robot_pos = soccer_objects[0].position;
     }
@@ -153,10 +148,13 @@ int main() {
         rrtx_planner.UpdateObstacles(obstacles);
       }
       last_obstacle_update = obstacle_check_time;
+      plan_iterations++;
     }
 
     // Run planning steps
-    rrtx_planner.PlanStep();
+    for (int i = 0; i < plan_iterations; i++) {
+      rrtx_planner.PlanStep();
+    }
 
     // Update path visualization
     if (rrtx_planner.SolutionExists()) {
@@ -169,14 +167,16 @@ int main() {
       } else {
         gl_simulation.ClearVisualizationPath();
       }
+      plan_iterations--;
+      plan_iterations = std::max(plan_iterations, 1);
     } else {
       gl_simulation.ClearVisualizationPath();
+      plan_iterations++;
     }
 
     // Update physics (this will move obstacles based on their velocities)
     // kin::CheckAndResolveCollisions(soccer_objects);
     kin::UpdateKinematics(soccer_objects, dt);
-
 
     // Run simulation step
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
