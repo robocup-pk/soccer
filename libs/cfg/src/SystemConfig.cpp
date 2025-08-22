@@ -13,6 +13,7 @@ const float cfg::SystemConfig::wall_velocity_damping_factor = 0.3;
 const float cfg::SystemConfig::ball_radius_m = 0.05;  // actual radius of golf ball 0.021335 m
 const Eigen::Vector3d cfg::SystemConfig::init_ball_velocity_mps = Eigen::Vector3d(0, 0, 0);
 const Eigen::Vector3d cfg::SystemConfig::init_ball_acceleration_mpsps = Eigen::Vector3d(0.0, 0, 0);
+const Eigen::Vector3d cfg::SystemConfig::init_ball_position = Eigen::Vector3d(-0.051, 0.0, 0.0);
 
 // Robot config
 const float cfg::SystemConfig::init_robot_speed_mps = 0;
@@ -22,7 +23,7 @@ const Eigen::Vector3d cfg::SystemConfig::init_robot_velocity_mps = Eigen::Vector
 const Eigen::Vector3d cfg::SystemConfig::init_robot_acceleration_mpsps = Eigen::Vector3d(0, 0, 0);
 
 // team 1 initial formation
-const std::vector<Eigen::Vector3d> cfg::SystemConfig::team_one_start_formation = []() {
+std::vector<Eigen::Vector3d> cfg::SystemConfig::team_one_start_formation = []() {
   std::vector<Eigen::Vector3d> v(SystemConfig::num_robots);
   if (SystemConfig::num_robots >= 1) v[0] = Eigen::Vector3d(-0.5f, -0.0f, 0);
   if (SystemConfig::num_robots >= 2) v[1] = Eigen::Vector3d(-0.3f, 0.3f, 0);
@@ -34,7 +35,7 @@ const std::vector<Eigen::Vector3d> cfg::SystemConfig::team_one_start_formation =
 }();
 
 // team 2 initial formation
-const std::vector<Eigen::Vector3d> cfg::SystemConfig::team_two_start_formation = []() {
+std::vector<Eigen::Vector3d> cfg::SystemConfig::team_two_start_formation = []() {
   std::vector<Eigen::Vector3d> v(SystemConfig::num_robots);
 
   if (SystemConfig::num_robots >= 1) v[0] = Eigen::Vector3d(0.5f, 0.0f, M_PI);

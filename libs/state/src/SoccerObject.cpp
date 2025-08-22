@@ -4,23 +4,34 @@
 #include "SystemConfig.h"
 #include "Kinematics.h"
 
+
 void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) {
-  // Robots
-  for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
+  // Robots (team one)
+  for (int i = 0; i < cfg::SystemConfig::num_robots / 2; ++i) {
     std::string name = "robot" + std::to_string(i);
     Eigen::Vector3d robot_position_m(0, i * 1, 0);
     soccer_objects.push_back(
-        state::SoccerObject(name, robot_position_m, cfg::SystemConfig::robot_size_m,
+        state::SoccerObject(name, robot_position_m, cfg::SystemConfig::robot_size_m, 1,
                             cfg::SystemConfig::init_robot_velocity_mps,
                             cfg::SystemConfig::init_robot_acceleration_mpsps, 10));
   }
 
+  // Robots (team two)
+  for (int i = cfg::SystemConfig::num_robots / 2; i < cfg::SystemConfig::num_robots; ++i) {
+    std::string name = "robot" + std::to_string(i);
+    Eigen::Vector3d robot_position_m(0, i * 1, 0);
+    soccer_objects.push_back(
+        state::SoccerObject(name, robot_position_m, cfg::SystemConfig::robot_size_m, 2,
+                            cfg::SystemConfig::init_robot_velocity_mps,
+                            cfg::SystemConfig::init_robot_acceleration_mpsps, 10));
+  }
+
+  // ball
   soccer_objects.push_back(state::SoccerObject(
-      "ball",
-      Eigen::Vector3d(-cfg::SystemConfig::ball_radius_m + 1, cfg::SystemConfig::ball_radius_m, 0),
+      "ball", cfg::SystemConfig::init_ball_position,
       Eigen::Vector2d(cfg::SystemConfig::ball_radius_m * 2, cfg::SystemConfig::ball_radius_m * 2),
-      cfg::SystemConfig::init_ball_velocity_mps, cfg::SystemConfig::init_ball_acceleration_mpsps,
-      1));
+      0, cfg::SystemConfig::init_ball_velocity_mps,
+      cfg::SystemConfig::init_ball_acceleration_mpsps, 1));
 }
 
 bool state::SoccerObject::IsPointInFrontSector(Eigen::Vector2d point) {
@@ -45,11 +56,12 @@ bool state::SoccerObject::IsPointInFrontSector(Eigen::Vector2d point) {
 }
 
 state::SoccerObject::SoccerObject(std::string name_, Eigen::Vector3d position_,
-                                  Eigen::Vector2d size_, Eigen::Vector3d velocity_,
+                                  Eigen::Vector2d size_, int team_id, Eigen::Vector3d velocity_,
                                   Eigen::Vector3d acceleration_, float mass_kg_)
     : name(name_),
       position(position_),
       size(size_),
+      team_id(team_id),
       velocity(velocity_),
       acceleration(acceleration_),
       mass_kg(mass_kg_) {}
@@ -91,6 +103,6 @@ void state::SoccerObject::Move(float dt) {
 
 Eigen::Vector3d state::SoccerObject::GetCenterPosition() { return position; }
 
-state::SoccerObject::~SoccerObject() {
-    attached_to = nullptr;  
-}
+void state::SoccerObject::SetRobotRole(state::SoccerObject::Role r) { role = r; }
+
+state::SoccerObject::~SoccerObject() { attached_to = nullptr; }

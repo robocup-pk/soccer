@@ -15,8 +15,13 @@
 
 namespace vis {
 int team_one_selected_player = 0;
-int team_two_selected_player = (cfg::SystemConfig::num_robots > 1) ? 
-    cfg::SystemConfig::num_robots / 2 : 0;
+int team_two_selected_player =
+    (cfg::SystemConfig::num_robots > 1) ? cfg::SystemConfig::num_robots / 2 : 0;
+Eigen::Vector3d last_ball_kick_pos = Eigen::Vector3d::Zero();
+bool last_kick_valid = false;
+int button_pressed = 0;
+
+// not for external use
 inline Eigen::Vector2d g_mouse_click_position;
 inline bool g_mouse_clicked = false;
 }  // namespace vis
@@ -32,8 +37,6 @@ bool vis::GLSimulation::RunSimulationStep(std::vector<state::SoccerObject>& socc
     }
     UpdateGameObject(soccer_object);
   }
-
-  // ProcessInput(dt);
 
   Render(dt);
   return Update();
@@ -54,6 +57,40 @@ void vis::GLSimulation::Render(float dt) {
   for (auto& [name, game_object] : game_objects) {
     game_object.Draw(renderer);
   }
+
+  glm::vec3 position_one = ConvertEigenVecToGlm(static_cast<Eigen::Vector3d>(
+                               button_one_pos_m.cwiseProduct(cfg::Coordinates::m_px_coords))) *
+                           cfg::Coordinates::px_per_m;
+
+  glm::vec3 position_two = ConvertEigenVecToGlm(static_cast<Eigen::Vector3d>(
+                               button_two_pos_m.cwiseProduct(cfg::Coordinates::m_px_coords))) *
+                           cfg::Coordinates::px_per_m;
+
+  glm::vec3 position_three = ConvertEigenVecToGlm(static_cast<Eigen::Vector3d>(
+                                 button_three_pos_m.cwiseProduct(cfg::Coordinates::m_px_coords))) *
+                             cfg::Coordinates::px_per_m;
+
+  glm::vec3 position_four = ConvertEigenVecToGlm(static_cast<Eigen::Vector3d>(
+                                button_four_pos_m.cwiseProduct(cfg::Coordinates::m_px_coords))) *
+                            cfg::Coordinates::px_per_m;
+
+  const float PPM = cfg::Coordinates::px_per_m;
+
+  renderer.DrawSprite(ResourceManager::GetTexture("stop"), position_one,
+                      glm::vec2(button_size_m[0] * PPM, button_size_m[1] * PPM), 0.0f,
+                      glm::vec3(1.0f, 1.0f, 1.0f));
+
+  renderer.DrawSprite(ResourceManager::GetTexture("halt"), position_two,
+                      glm::vec2(button_size_m[0] * PPM, button_size_m[1] * PPM), 0.0f,
+                      glm::vec3(1.0f, 1.0f, 1.0f));
+
+  renderer.DrawSprite(ResourceManager::GetTexture("normalstart"), position_three,
+                      glm::vec2(button_size_m[0] * PPM, button_size_m[1] * PPM), 0.0f,
+                      glm::vec3(1.0f, 1.0f, 1.0f));
+
+  renderer.DrawSprite(ResourceManager::GetTexture("forcestart"), position_four,
+                      glm::vec2(button_size_m[0] * PPM, button_size_m[1] * PPM), 0.0f,
+                      glm::vec3(1.0f, 1.0f, 1.0f));
 }
 
 bool vis::GLSimulation::Update() {
@@ -219,6 +256,22 @@ void vis::GLSimulation::InitGameObjectsTwoTeams(std::vector<state::SoccerObject>
   ResourceManager::LoadTexture(robot2_texture_path.c_str(), false, "face2");
   ResourceManager::LoadTexture(ball_texture_path.c_str(), false, "ball");
   ResourceManager::LoadTexture(arrow_texture_path.c_str(), false, "arrow");
+
+  // textures for buttons
+  std::string stop_texture_path =
+      util::GetExecutableDir() + "/libs/vis/resources/textures/stop.png";
+  std::string halt_texture_path =
+      util::GetExecutableDir() + "/libs/vis/resources/textures/halt.png";
+  std::string normalstart_texture_path =
+      util::GetExecutableDir() + "/libs/vis/resources/textures/normalstart.png";
+  std::string forcestart_texture_path =
+      util::GetExecutableDir() + "/libs/vis/resources/textures/forcestart.png";
+
+  ResourceManager::LoadTexture(stop_texture_path.c_str(), false, "stop");
+  ResourceManager::LoadTexture(halt_texture_path.c_str(), false, "halt");
+  ResourceManager::LoadTexture(normalstart_texture_path.c_str(), false, "normalstart");
+  ResourceManager::LoadTexture(forcestart_texture_path.c_str(), false, "forcestart");
+
   // Window
   Eigen::Vector3d window_position(-util::MmToPixels(SoccerField::GetInstance().width_mm) / 2,
                                   -util::MmToPixels(SoccerField::GetInstance().height_mm) / 2, 0);
@@ -268,42 +321,50 @@ vis::GLSimulation::~GLSimulation() {
   glfwTerminate();
 }
 
-void vis::ProcessInput(GLFWwindow* gl_window, std::vector<rob::RobotManager>& robot_managers) {
-  Eigen::Vector3d velocity_fBody_rob1(0, 0, 0);
-  Eigen::Vector3d velocity_fBody_rob2(0, 0, 0);
+int vis::GLSimulation::ButtonAreaPressed(double x, double y) {
+  // x and y are in m and button area is in pixels
 
-  // Robot 1 (WSAD)
-  if (glfwGetKey(gl_window, GLFW_KEY_W) == GLFW_PRESS) velocity_fBody_rob1.y() += 1;
-  if (glfwGetKey(gl_window, GLFW_KEY_S) == GLFW_PRESS) velocity_fBody_rob1.y() -= 1;
-  if (glfwGetKey(gl_window, GLFW_KEY_A) == GLFW_PRESS) velocity_fBody_rob1.x() -= 1;
-  if (glfwGetKey(gl_window, GLFW_KEY_D) == GLFW_PRESS) velocity_fBody_rob1.x() += 1;
-  if (glfwGetKey(gl_window, GLFW_KEY_C) == GLFW_PRESS) velocity_fBody_rob1.z() += 1;
-  if (glfwGetKey(gl_window, GLFW_KEY_X) == GLFW_PRESS) velocity_fBody_rob1.z() -= 1;
-  if (glfwGetKey(gl_window, GLFW_KEY_K) == GLFW_PRESS) {
-    robot_managers[0].KickBall();
-  }
-  if (glfwGetKey(gl_window, GLFW_KEY_J) == GLFW_PRESS) {
-    robot_managers[0].PassBall();
-  }
+  double top = button_one_pos_m[1] + button_size_m[1] / 2;
+  double bottom = button_one_pos_m[1] - button_size_m[1] / 2;
 
-  // Robot 2 (Arrow keys)
-  if (robot_managers.size() > 1) {
-    if (glfwGetKey(gl_window, GLFW_KEY_UP) == GLFW_PRESS) velocity_fBody_rob2.y() += 1;
-    if (glfwGetKey(gl_window, GLFW_KEY_DOWN) == GLFW_PRESS) velocity_fBody_rob2.y() -= 1;
-    if (glfwGetKey(gl_window, GLFW_KEY_LEFT) == GLFW_PRESS) velocity_fBody_rob2.x() -= 1;
-    if (glfwGetKey(gl_window, GLFW_KEY_RIGHT) == GLFW_PRESS) velocity_fBody_rob2.x() += 1;
-    if (glfwGetKey(gl_window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) velocity_fBody_rob2.z() += 1;
-    if (glfwGetKey(gl_window, GLFW_KEY_SLASH) == GLFW_PRESS) velocity_fBody_rob2.z() -= 1;
-    if (glfwGetKey(gl_window, GLFW_KEY_L) == GLFW_PRESS) {
-      robot_managers[1].KickBall();
+  double one_right = button_one_pos_m[0] + button_size_m[0] / 2;
+  double one_left = button_one_pos_m[0] - button_size_m[0] / 2;
+
+  double two_right = button_two_pos_m[0] + button_size_m[0] / 2;
+  double two_left = button_two_pos_m[0] - button_size_m[0] / 2;
+
+  double three_right = button_three_pos_m[0] + button_size_m[0] / 2;
+  double three_left = button_three_pos_m[0] - button_size_m[0] / 2;
+
+  double four_right = button_four_pos_m[0] + button_size_m[0] / 2;
+  double four_left = button_four_pos_m[0] - button_size_m[0] / 2;
+
+  if (y < top && y > bottom) {
+    if (x < one_right && x > one_left) {
+      std::cout << "[vis::GLSimulation::ButtonAreaPressed] stop button pressed " << std::endl;
+      std::cout << "[ref::Game::UpdateGameState] GAME STATE IS STOP" << std::endl;
+      return 1;
+    } else if (x < two_right && x > two_left) {
+      std::cout << "[vis::GLSimulation::ButtonAreaPressed] halt button pressed " << std::endl;
+      std::cout << "[ref::Game::UpdateGameState] GAME STATE IS HALT" << std::endl;
+
+      return 2;
+    } else if (x < three_right && x > three_left) {
+      std::cout << "[vis::GLSimulation::ButtonAreaPressed] normal start button pressed "
+                << std::endl;
+      return 3;
+    } else if (x < four_right && x > four_left) {
+      std::cout << "[vis::GLSimulation::ButtonAreaPressed] force start button pressed "
+                << std::endl;
+      return 4;
     }
-
-    velocity_fBody_rob2.normalize();
-    robot_managers[1].SetBodyVelocity(velocity_fBody_rob2);
   }
+  return 0;
+}
 
-  velocity_fBody_rob1.normalize();
-  robot_managers[team_two_selected_player].SetBodyVelocity(velocity_fBody_rob1);
+bool vis::GLSimulation::inRectCenter(double x, double y, double cx, double cy, double w,
+                                     double h) {
+  return (x >= cx - w * 0.5 && x <= cx + w * 0.5) && (y >= cy - h * 0.5 && y <= cy + h * 0.5);
 }
 
 bool vis::GLSimulation::RobotAreaPressed(double center_x, double center_y,
@@ -372,12 +433,12 @@ void vis::ProcessInputTwoTeams(GLFWwindow* gl_window,
     double mouse_click_left_pos_y = vis::g_mouse_click_position[1];
     double robot_width = (cfg::SystemConfig::robot_size_m)[0];
 
-    std::cout << "[DEBUG] mouse click x: " << mouse_click_left_pos_x
-              << " y: " << mouse_click_left_pos_y << std::endl;
-
     double robot_center_x;
     double robot_center_y;
     Eigen::Vector3d v = Eigen::Vector3d::Zero();
+
+    button_pressed =
+        vis::GLSimulation::ButtonAreaPressed(mouse_click_left_pos_x, mouse_click_left_pos_y);
 
     for (int i = 0; i < soccer_objects.size() / 2; i++) {
       robot_center_x = soccer_objects[i].position[0];
@@ -427,18 +488,33 @@ void vis::ProcessInputTwoTeams(GLFWwindow* gl_window,
   if (glfwGetKey(gl_window, GLFW_KEY_C) == GLFW_PRESS) velocity_fBody_rob1.z() += 1;
   if (glfwGetKey(gl_window, GLFW_KEY_X) == GLFW_PRESS) velocity_fBody_rob1.z() -= 1;
   if (glfwGetKey(gl_window, GLFW_KEY_K) == GLFW_PRESS) {
+    if (!vis::k_key_prev_was_pressed) {
+      last_ball_kick_pos = soccer_objects[soccer_objects.size() - 1].position;
+    }
+
+    last_kick_valid = true;
     auto& obj = soccer_objects[team_one_selected_player];
     if (obj.is_attached) {
       auto& ball = obj.attached_to;
       kin::DetachBall(*ball, 5.0f);
     }
+    vis::k_key_prev_was_pressed = true;
+  } else {
+    vis::k_key_prev_was_pressed = false;
   }
   if (glfwGetKey(gl_window, GLFW_KEY_J) == GLFW_PRESS) {
+    if (!vis::j_key_prev_was_pressed) {
+      last_ball_kick_pos = soccer_objects[soccer_objects.size() - 1].position;
+    }
+    last_kick_valid = true;
     auto& obj = soccer_objects[team_one_selected_player];
     if (obj.is_attached) {
       auto& ball = obj.attached_to;
-      kin::DetachBall(*ball, 2.0f);
+      kin::DetachBall(*ball, 0.01f);
     }
+    vis::j_key_prev_was_pressed = true;
+  } else {
+    vis::j_key_prev_was_pressed = false;
   }
 
   // Robot 2 (Arrow keys)
@@ -450,18 +526,32 @@ void vis::ProcessInputTwoTeams(GLFWwindow* gl_window,
     if (glfwGetKey(gl_window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) velocity_fBody_rob2.z() += 1;
     if (glfwGetKey(gl_window, GLFW_KEY_SLASH) == GLFW_PRESS) velocity_fBody_rob2.z() -= 1;
     if (glfwGetKey(gl_window, GLFW_KEY_L) == GLFW_PRESS) {
+      if (!vis::l_key_prev_was_pressed) {
+        last_ball_kick_pos = soccer_objects[soccer_objects.size() - 1].position;
+      }
+      last_kick_valid = true;
       auto& obj = soccer_objects[team_two_selected_player];
       if (obj.is_attached) {
         auto& ball = obj.attached_to;
         kin::DetachBall(*ball, 5.0f);
       }
+      vis::l_key_prev_was_pressed = true;
+    } else {
+      vis::l_key_prev_was_pressed = false;
     }
     if (glfwGetKey(gl_window, GLFW_KEY_I) == GLFW_PRESS) {
+      if (!vis::i_key_prev_was_pressed) {
+        last_ball_kick_pos = soccer_objects[soccer_objects.size() - 1].position;
+      }
+      last_kick_valid = true;
       auto& obj = soccer_objects[team_two_selected_player];
       if (obj.is_attached) {
         auto& ball = obj.attached_to;
         kin::DetachBall(*ball, 2.0f);
       }
+      vis::i_key_prev_was_pressed = true;
+    } else {
+      vis::i_key_prev_was_pressed = false;
     }
 
     // velocity_fBody_rob2.normalize();
@@ -518,9 +608,7 @@ void vis::ProcessInput(GLFWwindow* gl_window, std::vector<state::SoccerObject>& 
         kin::DetachBall(soccer_objects[soccer_objects.size() - 1], 6.5);
       }
     }
-    // if (glfwGetKey(gl_window, GLFW_KEY_SEMICOLON) == GLFW_PRESS) soccer_objects[1].PassBall();
-    // if (glfwGetKey(gl_window, GLFW_KEY_M) == GLFW_PRESS) soccer_objects[1].GoHome();
-    // velocity_fBody_rob2.normalize();
+
     soccer_objects[1].velocity = velocity_fBody_rob2;
   }
 
@@ -558,4 +646,42 @@ void vis::MouseButtonCallback(GLFWwindow* window, int button, int action, int mo
     vis::g_mouse_click_position = Eigen::Vector2d(world_x, world_y);
     vis::g_mouse_clicked = true;
   }
+}
+
+void vis::ProcessInput(GLFWwindow* gl_window, std::vector<rob::RobotManager>& robot_managers) {
+  Eigen::Vector3d velocity_fBody_rob1(0, 0, 0);
+  Eigen::Vector3d velocity_fBody_rob2(0, 0, 0);
+
+  // Robot 1 (WSAD)
+  if (glfwGetKey(gl_window, GLFW_KEY_W) == GLFW_PRESS) velocity_fBody_rob1.y() += 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_S) == GLFW_PRESS) velocity_fBody_rob1.y() -= 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_A) == GLFW_PRESS) velocity_fBody_rob1.x() -= 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_D) == GLFW_PRESS) velocity_fBody_rob1.x() += 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_C) == GLFW_PRESS) velocity_fBody_rob1.z() += 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_X) == GLFW_PRESS) velocity_fBody_rob1.z() -= 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_K) == GLFW_PRESS) {
+    robot_managers[0].KickBall();
+  }
+  if (glfwGetKey(gl_window, GLFW_KEY_J) == GLFW_PRESS) {
+    robot_managers[0].PassBall();
+  }
+
+  // Robot 2 (Arrow keys)
+  if (robot_managers.size() > 1) {
+    if (glfwGetKey(gl_window, GLFW_KEY_UP) == GLFW_PRESS) velocity_fBody_rob2.y() += 1;
+    if (glfwGetKey(gl_window, GLFW_KEY_DOWN) == GLFW_PRESS) velocity_fBody_rob2.y() -= 1;
+    if (glfwGetKey(gl_window, GLFW_KEY_LEFT) == GLFW_PRESS) velocity_fBody_rob2.x() -= 1;
+    if (glfwGetKey(gl_window, GLFW_KEY_RIGHT) == GLFW_PRESS) velocity_fBody_rob2.x() += 1;
+    if (glfwGetKey(gl_window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) velocity_fBody_rob2.z() += 1;
+    if (glfwGetKey(gl_window, GLFW_KEY_SLASH) == GLFW_PRESS) velocity_fBody_rob2.z() -= 1;
+    if (glfwGetKey(gl_window, GLFW_KEY_L) == GLFW_PRESS) {
+      robot_managers[1].KickBall();
+    }
+
+    velocity_fBody_rob2.normalize();
+    robot_managers[1].SetBodyVelocity(velocity_fBody_rob2);
+  }
+
+  velocity_fBody_rob1.normalize();
+  robot_managers[team_two_selected_player].SetBodyVelocity(velocity_fBody_rob1);
 }

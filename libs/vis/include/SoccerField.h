@@ -57,10 +57,13 @@ class SoccerField {
   void DrawOuterRectangle();
   void DrawPenaltyAreas();
   void DrawGoalAreas();
-
+  
   GLFWwindow* window;
   SpriteRenderer renderer;
 
+  double offset = 0.2;
+  double button_width = 0.5;
+  double button_height = 0.1;
   unsigned int shaderProgram;
   unsigned int VAO, VBO;
   int projectionLoc;
