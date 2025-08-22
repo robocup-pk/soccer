@@ -53,9 +53,10 @@ class GLSimulation {
   GLFWwindow* GetRawGLFW() const;
 
   // Logic used in simulation
-  bool RunSimulationStep(std::vector<state::SoccerObject>& soccer_objects, float dt);
+  bool RunSimulationStep(std::vector<state::SoccerObject>& soccer_objects, float dt, bool referee_tags = false);
 
   void Render(float dt);
+  void RenderRefereeTags();
   bool Update();
   void UpdateGameObject(const state::SoccerObject& soccer_object);
   void SetVisualizationPath(state::Path& path, glm::vec3 color);

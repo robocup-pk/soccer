@@ -5,7 +5,7 @@
 
 namespace cfg {
 struct SystemConfig {
-  static constexpr int num_robots = 4;
+  static constexpr int num_robots = 1;
   static const Eigen::Vector3d max_velocity_fBody_mps;
   static const Eigen::Vector3d max_acc_m_radpsps;
   static const double avg_velocity_fBody_mps;

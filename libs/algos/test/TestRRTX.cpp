@@ -273,3 +273,53 @@ TEST_F(RRTXTest, QueueManagement) {
   // Queue size should be reasonable relative to vertex count
   EXPECT_LT(rrtx->Q.Size(), rrtx->Vertices.size() * 2);
 }
+
+// ============= HASH FUNCTION TESTS =============
+
+TEST_F(RRTXTest, ObstacleHashConsistency) {
+  // Same obstacle should always produce the same hash
+  size_t h1 = rrtx->ComputeObstacleHash(static_obstacle);
+  size_t h2 = rrtx->ComputeObstacleHash(static_obstacle);
+
+  EXPECT_EQ(h1, h2);
+}
+
+TEST_F(RRTXTest, ObstacleHashNameChange) {
+  auto modified = static_obstacle;
+  modified.name = "different_name";
+
+  size_t h1 = rrtx->ComputeObstacleHash(static_obstacle);
+  size_t h2 = rrtx->ComputeObstacleHash(modified);
+
+  EXPECT_NE(h1, h2);  // Name change should affect hash
+}
+
+TEST_F(RRTXTest, ObstacleHashPositionChange) {
+  auto modified = static_obstacle;
+  modified.position.x() += 0.1;  // 1 cm change
+
+  size_t h1 = rrtx->ComputeObstacleHash(static_obstacle);
+  size_t h2 = rrtx->ComputeObstacleHash(modified);
+
+  EXPECT_NE(h1, h2);  // Position change should affect hash
+}
+
+TEST_F(RRTXTest, ObstacleHashZChange) {
+  auto modified = static_obstacle;
+  modified.position.z() += 0.002;  // 2 mm change in z
+
+  size_t h1 = rrtx->ComputeObstacleHash(static_obstacle);
+  size_t h2 = rrtx->ComputeObstacleHash(modified);
+
+  EXPECT_NE(h1, h2);  // Z axis included in hash
+}
+
+TEST_F(RRTXTest, ObstacleHashPrecisionThreshold) {
+  auto modified = static_obstacle;
+  modified.position.x() += 1e-5;  // Less than 0.01 mm change
+
+  size_t h1 = rrtx->ComputeObstacleHash(static_obstacle);
+  size_t h2 = rrtx->ComputeObstacleHash(modified);
+
+  EXPECT_EQ(h1, h2);  // Change too small to affect mm precision
+}

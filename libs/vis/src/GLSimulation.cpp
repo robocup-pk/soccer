@@ -27,7 +27,7 @@ inline bool g_mouse_clicked = false;
 }  // namespace vis
 
 bool vis::GLSimulation::RunSimulationStep(std::vector<state::SoccerObject>& soccer_objects,
-                                          float dt) {
+                                          float dt, bool referee_tags) {
   // Convert SoccerObjects to GameObjects
   for (auto& soccer_object : soccer_objects) {
     if (game_objects.find(soccer_object.name) == game_objects.end()) {
@@ -39,6 +39,7 @@ bool vis::GLSimulation::RunSimulationStep(std::vector<state::SoccerObject>& socc
   }
 
   Render(dt);
+  if (referee_tags) RenderRefereeTags();
   return Update();
 }
 
@@ -60,7 +61,9 @@ void vis::GLSimulation::Render(float dt) {
   for (auto& [name, game_object] : game_objects) {
     game_object.Draw(renderer);
   }
+}
 
+void vis::GLSimulation::RenderRefereeTags() {
   glm::vec3 position_one = ConvertEigenVecToGlm(static_cast<Eigen::Vector3d>(
                                button_one_pos_m.cwiseProduct(cfg::Coordinates::m_px_coords))) *
                            cfg::Coordinates::px_per_m;

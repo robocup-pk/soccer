@@ -4,7 +4,6 @@
 #include "SystemConfig.h"
 #include "Kinematics.h"
 
-
 void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) {
   // Robots (team one)
   for (int i = 0; i < cfg::SystemConfig::num_robots / 2; ++i) {
@@ -62,6 +61,20 @@ state::SoccerObject::SoccerObject(std::string name_, Eigen::Vector3d position_,
       position(position_),
       size(size_),
       team_id(team_id),
+      velocity(velocity_),
+      acceleration(acceleration_),
+      mass_kg(mass_kg_),
+      radius_m(cfg::SystemConfig::robot_size_m[0] / 2) {
+  if (name == "ball") radius_m = cfg::SystemConfig::ball_radius_m;
+}
+
+state::SoccerObject::SoccerObject(std::string name_, Eigen::Vector3d position_,
+                                  Eigen::Vector2d size_, Eigen::Vector3d velocity_,
+                                  Eigen::Vector3d acceleration_, float mass_kg_)
+    : name(name_),
+      position(position_),
+      size(size_),
+      team_id(0),
       velocity(velocity_),
       acceleration(acceleration_),
       mass_kg(mass_kg_),
