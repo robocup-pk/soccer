@@ -19,6 +19,12 @@
 
 int main(int argc, char* argv[]) {
   // TODO: Game State
+
+  if (cfg::SystemConfig::num_robots < 12) {
+    std::cerr << "[main] Error: num_robots must be 12 for two teams." << std::endl;
+    return -1;
+  }
+
   std::vector<state::SoccerObject> soccer_objects;
   state::InitSoccerObjects(soccer_objects);
   ref::Game game(soccer_objects);
@@ -52,7 +58,7 @@ int main(int argc, char* argv[]) {
     vis::ProcessInputTwoTeams(gl_window, soccer_objects);
     kin::UpdateKinematics(soccer_objects, dt);
 
-    if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {
+    if (!gl_simulation.RunSimulationStep(soccer_objects, dt, true)) {
       std::cout << "[main] Simulation finished" << std::endl;
       break;
     }

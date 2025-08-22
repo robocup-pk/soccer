@@ -27,7 +27,7 @@ inline bool g_mouse_clicked = false;
 }  // namespace vis
 
 bool vis::GLSimulation::RunSimulationStep(std::vector<state::SoccerObject>& soccer_objects,
-                                          float dt) {
+                                          float dt, bool referee_tags) {
   // Convert SoccerObjects to GameObjects
   for (auto& soccer_object : soccer_objects) {
     if (game_objects.find(soccer_object.name) == game_objects.end()) {
@@ -39,6 +39,7 @@ bool vis::GLSimulation::RunSimulationStep(std::vector<state::SoccerObject>& socc
   }
 
   Render(dt);
+  if (referee_tags) RenderRefereeTags();
   return Update();
 }
 
@@ -54,10 +55,15 @@ void vis::GLSimulation::Render(float dt) {
   // Render SoccerField::GetInstance() first (background)
   SoccerField::GetInstance().RenderField(this->window);
 
+  // Render Path if visible
+  path_renderer.Render();
+
   for (auto& [name, game_object] : game_objects) {
     game_object.Draw(renderer);
   }
+}
 
+void vis::GLSimulation::RenderRefereeTags() {
   glm::vec3 position_one = ConvertEigenVecToGlm(static_cast<Eigen::Vector3d>(
                                button_one_pos_m.cwiseProduct(cfg::Coordinates::m_px_coords))) *
                            cfg::Coordinates::px_per_m;
@@ -92,6 +98,13 @@ void vis::GLSimulation::Render(float dt) {
                       glm::vec2(button_size_m[0] * PPM, button_size_m[1] * PPM), 0.0f,
                       glm::vec3(1.0f, 1.0f, 1.0f));
 }
+
+void vis::GLSimulation::SetVisualizationPath(state::Path& path,
+                                             glm::vec3 color = glm::vec3(1.0f, 0.0f, 0.0f)) {
+  path_renderer.SetPath(path, color);
+}
+
+void vis::GLSimulation::ClearVisualizationPath() { path_renderer.ClearPath(); }
 
 bool vis::GLSimulation::Update() {
   if (glfwWindowShouldClose(window)) return false;
@@ -171,6 +184,7 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
   ResourceManager::GetShader("field").Use().SetInteger("field", 0);
 
   SoccerField::GetInstance().SoccerFieldInit();
+  path_renderer.Init();
 
   // sprite Renderer
   Shader shader = ResourceManager::GetShader("sprite");
@@ -684,4 +698,54 @@ void vis::ProcessInput(GLFWwindow* gl_window, std::vector<rob::RobotManager>& ro
 
   velocity_fBody_rob1.normalize();
   robot_managers[team_two_selected_player].SetBodyVelocity(velocity_fBody_rob1);
+}
+
+void vis::ProcessInputMultipleObjects(GLFWwindow* gl_window,
+                                      std::vector<state::SoccerObject>& soccer_objects) {
+  if (vis::g_mouse_clicked) {
+    vis::g_mouse_clicked = false;
+
+    double mouse_click_left_pos_x = vis::g_mouse_click_position[0];
+    double mouse_click_left_pos_y = vis::g_mouse_click_position[1];
+    double robot_width = (cfg::SystemConfig::robot_size_m)[0];
+
+    double robot_center_x;
+    double robot_center_y;
+    Eigen::Vector3d v = Eigen::Vector3d::Zero();
+
+    for (int i = 0; i < soccer_objects.size(); i++) {
+      robot_center_x = soccer_objects[i].position[0];
+      robot_center_y = soccer_objects[i].position[1];
+
+      if (vis::GLSimulation::RobotAreaPressed(robot_center_x, robot_center_y,
+                                              mouse_click_left_pos_x, mouse_click_left_pos_y)) {
+        soccer_objects[i].is_selected_player = true;
+        // now we need to deselect all other robots
+        for (int j = 0; j < soccer_objects.size(); j++) {
+          if (j != i) {
+            soccer_objects[j].is_selected_player = false;
+            soccer_objects[j].velocity = v;
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  Eigen::Vector3d velocity_fBody_rob = Eigen::Vector3d::Zero();
+
+  // move player
+  if (glfwGetKey(gl_window, GLFW_KEY_W) == GLFW_PRESS) velocity_fBody_rob.y() += 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_S) == GLFW_PRESS) velocity_fBody_rob.y() -= 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_A) == GLFW_PRESS) velocity_fBody_rob.x() -= 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_D) == GLFW_PRESS) velocity_fBody_rob.x() += 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_C) == GLFW_PRESS) velocity_fBody_rob.z() += 1;
+  if (glfwGetKey(gl_window, GLFW_KEY_X) == GLFW_PRESS) velocity_fBody_rob.z() -= 1;
+
+  // Apply velocity to selected player
+  for (auto& obj : soccer_objects) {
+    if (obj.is_selected_player) {
+      obj.velocity = velocity_fBody_rob;
+    }
+  }
 }

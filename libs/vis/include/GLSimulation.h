@@ -13,12 +13,15 @@
 #include "GLConfig.h"
 #include "SoccerField.h"
 #include "RobotManager.h"
+#include "PathRenderer.h"
 
 namespace vis {
 
 void ProcessInput(GLFWwindow* gl_window, std::vector<state::SoccerObject>& soccer_objects);
 void ProcessInput(GLFWwindow* gl_window, std::vector<rob::RobotManager>& robot_managers);
 void ProcessInputTwoTeams(GLFWwindow* gl_window, std::vector<state::SoccerObject>& soccer_objects);
+void ProcessInputMultipleObjects(GLFWwindow* gl_window,
+                                 std::vector<state::SoccerObject>& soccer_objects);
 
 /* Process Input Helpers*/
 void FindAndUpdateSelectedPlayer(std::vector<state::SoccerObject>& soccer_objects);
@@ -50,11 +53,14 @@ class GLSimulation {
   GLFWwindow* GetRawGLFW() const;
 
   // Logic used in simulation
-  bool RunSimulationStep(std::vector<state::SoccerObject>& soccer_objects, float dt);
+  bool RunSimulationStep(std::vector<state::SoccerObject>& soccer_objects, float dt, bool referee_tags = false);
 
   void Render(float dt);
+  void RenderRefereeTags();
   bool Update();
   void UpdateGameObject(const state::SoccerObject& soccer_object);
+  void SetVisualizationPath(state::Path& path, glm::vec3 color);
+  void ClearVisualizationPath();
 
   // Outside Access
   std::map<std::string, GameObject>& GetGameObjects();
@@ -76,6 +82,7 @@ class GLSimulation {
 
   glm::vec2 size = glm::vec2(0.54f, 0.2f);
   glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f);
+  PathRenderer path_renderer;
 };
 
 }  // namespace vis
