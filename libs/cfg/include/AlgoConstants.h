@@ -13,6 +13,12 @@ struct RRTXConstants {
   static const double grid_cell_size;
 };
 
+struct AStarConstants {
+  static const double grid_resolution;
+  static const double obstacle_safety_margin;
+  static const double movement_threshold;
+}
+
 }  // namespace cfg
 
 #endif  // ALGO_CONSTANTS_H
