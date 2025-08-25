@@ -81,9 +81,6 @@ int main() {
   state::Waypoint initial_goal(1.0, 0.0, 0.0);
 
   soccer_objects[0].position = Eigen::Vector3d(start.x, start.y, 0.0);  // Robot
-  soccer_objects[1].position = Eigen::Vector3d(0.5, 0.5, 0.0);          // Robot 1
-  soccer_objects[2].position = Eigen::Vector3d(-0.5, 0.5, 0.0);         // Robot 2
-  soccer_objects[3].position = Eigen::Vector3d(0.0, -0.5, 0.0);         // Robot 3
   soccer_objects[soccer_objects.size() - 1].position =
       Eigen::Vector3d(initial_goal.x, initial_goal.y, 0.0);  // Ball
 
@@ -166,6 +163,7 @@ int main() {
     plan_counter++;
 
     // Update physics (this will move obstacles based on their velocities)
+    kin::CheckAndResolveCollisions(soccer_objects);
     kin::UpdateKinematics(soccer_objects, dt);
 
     // Run simulation step

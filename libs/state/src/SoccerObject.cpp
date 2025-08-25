@@ -5,10 +5,13 @@
 #include "Kinematics.h"
 
 void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) {
-  // Robots (team one)
   for (int i = 0; i < cfg::SystemConfig::num_robots / 2; ++i) {
+    // Robots (team one)
     std::string name = "robot" + std::to_string(i);
-    Eigen::Vector3d robot_position_m(0, i * 1, 0);
+    Eigen::Vector3d robot_position_m =
+        i < cfg::RightRobotHomeCoordinates.size()
+            ? cfg::RightRobotHomeCoordinates.at(static_cast<cfg::RobotHomePosition>(i))
+            : Eigen::Vector3d(0.3, 0, 0);
     soccer_objects.push_back(
         state::SoccerObject(name, robot_position_m, cfg::SystemConfig::robot_size_m, 1,
                             cfg::SystemConfig::init_robot_velocity_mps,
@@ -18,7 +21,11 @@ void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) 
   // Robots (team two)
   for (int i = cfg::SystemConfig::num_robots / 2; i < cfg::SystemConfig::num_robots; ++i) {
     std::string name = "robot" + std::to_string(i);
-    Eigen::Vector3d robot_position_m(0, i * 1, 0);
+    int index = i - cfg::SystemConfig::num_robots / 2;
+    Eigen::Vector3d robot_position_m =
+        index < cfg::LeftRobotHomeCoordinates.size()
+            ? cfg::LeftRobotHomeCoordinates.at(static_cast<cfg::RobotHomePosition>(index))
+            : Eigen::Vector3d(-0.3, 0, 0);
     soccer_objects.push_back(
         state::SoccerObject(name, robot_position_m, cfg::SystemConfig::robot_size_m, 2,
                             cfg::SystemConfig::init_robot_velocity_mps,
