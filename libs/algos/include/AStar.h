@@ -45,7 +45,6 @@ class AStar {
   // Update the obstacle grid
   void updateObstacles(const std::vector<state::SoccerObject>& obstacles);
 
- private:
   // Grid properties
   float gridResolution;
   int gridWidth, gridHeight;
