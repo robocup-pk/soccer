@@ -329,10 +329,14 @@ void algos::RRTX::RemoveObstacle(state::SoccerObject& obstacle) {
     int v_idx = edge.first;
     int u_idx = edge.second;
 
+    auto nearbyObstacles = spatial_grid->FindObstaclesInRadius(
+        Vertices[v_idx].wp, (Vertices[v_idx].wp - Vertices[u_idx].wp).Norm());
+
+    if(nearbyObstacles.empty()) continue;
     bool still_blocked = false;
-    for (auto& other_obstacle : current_obstacles) {
-      if (other_obstacle.name == obstacle.name &&
-          (other_obstacle.position - obstacle.position).norm() < 0.05) {
+    for (int i = 0; i < nearbyObstacles.size(); i++) {
+      auto& other_obstacle = current_obstacles[nearbyObstacles[i]];
+      if (other_obstacle.name == obstacle.name) {
         continue;
       }
       if (IsTrajectoryBlockedByObstacle(Vertices[v_idx].wp, Vertices[u_idx].wp, other_obstacle)) {
@@ -724,7 +728,7 @@ bool algos::RRTX::IsInObstacle(state::Waypoint& wp) {
                                  Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), 1.0);
 
   auto nearbyObstacles =
-      spatial_grid->FindObstaclesInRadius(wp, cfg::SystemConfig::robot_size_m[0] * 2);
+      spatial_grid->FindObstaclesInRadius(wp, cfg::SystemConfig::robot_size_m[0] / 2);
   for (int i = 0; i < nearbyObstacles.size(); i++) {
     if (nearbyObstacles[i] >= current_obstacles.size()) continue;
     if (kin::CheckCircularCollision(temp_robot, current_obstacles[nearbyObstacles[i]])) {

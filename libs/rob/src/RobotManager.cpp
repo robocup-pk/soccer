@@ -16,7 +16,7 @@ rob::RobotManager::RobotManager() {
   start_time_idle_s = util::GetCurrentTime();
   velocity_fBody << 0, 0, 0;
   home_position = cfg::RobotHomePosition::CENTER_FORWARD;
-  InitializeHome(cfg::RobotHomeCoordinates.at(home_position));
+  InitializeHome(cfg::RightRobotHomeCoordinates.at(home_position));
   start_from_home = false;
   finished_motion = true;
   num_sensor_readings_failed = 0;
