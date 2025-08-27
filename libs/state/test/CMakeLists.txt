@@ -10,7 +10,6 @@ foreach(test_src ${TEST_SOURCES})
   target_link_libraries(${test_name}
     gtest
     gtest_main
-    cfg_lib
     state_lib
   )
 

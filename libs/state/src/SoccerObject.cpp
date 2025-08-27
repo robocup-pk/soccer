@@ -15,7 +15,7 @@ void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) 
     soccer_objects.push_back(
         state::SoccerObject(name, robot_position_m, cfg::SystemConfig::robot_size_m, 1,
                             cfg::SystemConfig::init_robot_velocity_mps,
-                            cfg::SystemConfig::init_robot_acceleration_mpsps, 10));
+                            cfg::SystemConfig::init_robot_acceleration_mpsps, cfg::SystemConfig::robot_mass_kg));
   }
 
   // Robots (team two)
@@ -29,7 +29,7 @@ void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) 
     soccer_objects.push_back(
         state::SoccerObject(name, robot_position_m, cfg::SystemConfig::robot_size_m, 2,
                             cfg::SystemConfig::init_robot_velocity_mps,
-                            cfg::SystemConfig::init_robot_acceleration_mpsps, 10));
+                            cfg::SystemConfig::init_robot_acceleration_mpsps, cfg::SystemConfig::robot_mass_kg));
   }
 
   // ball
@@ -37,7 +37,7 @@ void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) 
       "ball", cfg::SystemConfig::init_ball_position,
       Eigen::Vector2d(cfg::SystemConfig::ball_radius_m * 2, cfg::SystemConfig::ball_radius_m * 2),
       0, cfg::SystemConfig::init_ball_velocity_mps,
-      cfg::SystemConfig::init_ball_acceleration_mpsps, 1));
+      cfg::SystemConfig::init_ball_acceleration_mpsps, cfg::SystemConfig::ball_mass_kg));
 }
 
 bool state::SoccerObject::IsPointInFrontSector(Eigen::Vector2d point) {
@@ -90,7 +90,7 @@ state::SoccerObject::SoccerObject(std::string name_, Eigen::Vector3d position_,
 }
 
 state::SoccerObject::SoccerObject(const rob::RobotManager& robot_manager) {
-  position = robot_manager.GetPoseInWorldFrame();  // TODO: Center position
+  position = robot_manager.GetPoseInWorldFrame(); 
   velocity = robot_manager.GetVelocityInWorldFrame();
 }
 

@@ -18,6 +18,7 @@ struct SystemConfig {
   static const Eigen::Vector3d init_ball_acceleration_mpsps;
   static const Eigen::Vector3d init_ball_position;
   static const float ball_radius_m;
+  static const double ball_mass_kg;
 
   // Robots
   static const Eigen::Vector2d robot_size_m;
@@ -25,6 +26,7 @@ struct SystemConfig {
   static const float max_robot_speed_mps;
   static const Eigen::Vector3d init_robot_velocity_mps;
   static const Eigen::Vector3d init_robot_acceleration_mpsps;
+  static const double robot_mass_kg;
 
   // Robot Team
   static std::vector<Eigen::Vector3d> team_one_start_formation;
