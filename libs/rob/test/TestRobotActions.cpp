@@ -8,17 +8,17 @@ class RobotManagerActionsTest : public ::testing::Test {
   std::unique_ptr<rob::RobotManager> robot_manager;
 };
 
-TEST_F(RobotManagerActionsTest, KickBallSetsAction) {
+TEST_F(RobotManagerActionsTest, TestKickBallSetsAction) {
   robot_manager->KickBall();
   EXPECT_EQ(robot_manager->GetRobotAction(), rob::RobotAction::KICK_BALL);
 }
 
-TEST_F(RobotManagerActionsTest, PassBallSetsAction) {
+TEST_F(RobotManagerActionsTest, TestPassBallSetsAction) {
   robot_manager->PassBall();
   EXPECT_EQ(robot_manager->GetRobotAction(), rob::RobotAction::PASS_BALL);
 }
 
-TEST_F(RobotManagerActionsTest, SetRobotAction) {
+TEST_F(RobotManagerActionsTest, TestSetRobotAction) {
   robot_manager->SetRobotAction(rob::RobotAction::MOVE);
   EXPECT_EQ(robot_manager->GetRobotAction(), rob::RobotAction::MOVE);
 }
