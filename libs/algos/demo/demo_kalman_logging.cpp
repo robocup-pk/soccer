@@ -34,6 +34,14 @@ int main(int argc, char* argv[]) {
     // Initialize Hardware Manager for wheel speeds
     hw::HardwareManager hardware_manager;
     
+    // Ground truth tracking (actual robot position, simulated perfectly)
+    // We'll create a separate trajectory planner instance for ground truth
+    ctrl::UniformBSplineTrajectoryPlanner ground_truth_planner;
+    ground_truth_planner.SetLimits(0.8, 0.5, 0.8, 0.5);
+    ground_truth_planner.SetFeedbackGains(0.1, 0.05);
+    Eigen::Vector3d ground_truth_pose = Eigen::Vector3d::Zero();
+    Eigen::Vector3d ground_truth_velocity = Eigen::Vector3d::Zero();
+    
     // Set initial robot pose
     Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0);
     robot_manager.InitializePose(robot_start_pose);
@@ -188,32 +196,53 @@ int main(int argc, char* argv[]) {
         // Sense logic for RobotManager
         robot_manager.SenseLogic();
         
-        // Get current ACTUAL robot state
-        Eigen::Vector3d actual_pose = robot_manager.GetPoseInWorldFrame();
+        // Get current estimated pose from robot manager (this is what the Kalman filter thinks)
+        Eigen::Vector3d estimated_pose = robot_manager.GetPoseInWorldFrame();
         
-        // Calculate velocity from position change (finite difference)
-        static Eigen::Vector3d prev_pose = actual_pose;
-        static double prev_time = util::GetCurrentTime();
-        double current_time_vel = util::GetCurrentTime();
-        double dt_vel = current_time_vel - prev_time;
+        // For ground truth, we'll track the ideal robot position
+        // We simulate perfect motion based on the control commands
+        static double last_gt_update_time = util::GetCurrentTime();
+        static bool first_update = true;
+        double current_time_gt = util::GetCurrentTime();
+        double dt_gt = current_time_gt - last_gt_update_time;
         
-        Eigen::Vector3d robot_velocity_world;
-        if (dt_vel > 0.001) {  // Avoid division by very small dt
-            robot_velocity_world[0] = (actual_pose[0] - prev_pose[0]) / dt_vel;
-            robot_velocity_world[1] = (actual_pose[1] - prev_pose[1]) / dt_vel;
-            robot_velocity_world[2] = util::WrapAngle(actual_pose[2] - prev_pose[2]) / dt_vel;
-            prev_pose = actual_pose;
-            prev_time = current_time_vel;
-        } else {
-            robot_velocity_world = Eigen::Vector3d::Zero();
+        // Calculate the velocity that the trajectory planner wants
+        // We'll derive this from the change in estimated position (before noise)
+        static Eigen::Vector3d prev_est_pose = estimated_pose;
+        Eigen::Vector3d velocity_command_world = Eigen::Vector3d::Zero();
+        
+        if (!first_update && dt_gt > 0.001 && dt_gt < 0.1) {
+            // Calculate velocity from estimated pose change
+            velocity_command_world[0] = (estimated_pose[0] - prev_est_pose[0]) / dt_gt;
+            velocity_command_world[1] = (estimated_pose[1] - prev_est_pose[1]) / dt_gt;
+            velocity_command_world[2] = util::WrapAngle(estimated_pose[2] - prev_est_pose[2]) / dt_gt;
+            
+            // Update ground truth by perfect integration
+            ground_truth_pose[0] += velocity_command_world[0] * dt_gt;
+            ground_truth_pose[1] += velocity_command_world[1] * dt_gt;
+            ground_truth_pose[2] = util::WrapAngle(ground_truth_pose[2] + velocity_command_world[2] * dt_gt);
+            ground_truth_velocity = velocity_command_world;
+            
+            last_gt_update_time = current_time_gt;
         }
         
-        // Convert world frame velocity to body frame
+        prev_est_pose = estimated_pose;
+        first_update = false;
+        
+        // Get IDEAL position from trajectory planner (ground truth)
+        double ideal_time = util::GetCurrentTime();
+        Eigen::Vector3d ideal_pose = robot_manager.GetUniformBSplinePlanner().GetIdealPosition(ideal_time);
+        
+        // Use ideal pose as ground truth
+        Eigen::Vector3d actual_pose = ideal_pose;
+        Eigen::Vector3d robot_velocity_world = ground_truth_velocity;
+        
+        // Convert world frame velocity to body frame for encoder simulation
         double theta = actual_pose[2];
         Eigen::Vector3d robot_velocity_body;
         robot_velocity_body[0] = robot_velocity_world[0] * cos(theta) + robot_velocity_world[1] * sin(theta);
         robot_velocity_body[1] = -robot_velocity_world[0] * sin(theta) + robot_velocity_world[1] * cos(theta);
-        robot_velocity_body[2] = robot_velocity_world[2];  // Angular velocity is the same
+        robot_velocity_body[2] = robot_velocity_world[2];
         
         // Debug velocity - commented out for cleaner output
         // static int vel_debug_count = 0;
@@ -289,7 +318,8 @@ int main(int argc, char* argv[]) {
             double gaussian_theta = sqrt(-2 * log(u1)) * cos(2 * M_PI * u2);
             
             // Add noise and bias to simulate real camera measurements
-            Eigen::Vector3d camera_measurement = actual_pose;
+            // Use the ideal pose from the trajectory planner as the "true" position that camera sees
+            Eigen::Vector3d camera_measurement = ideal_pose;
             camera_measurement[0] += camera_bias_x + camera_noise_std_m * gaussian_x;
             camera_measurement[1] += camera_bias_y + camera_noise_std_m * gaussian_y;
             camera_measurement[2] += camera_bias_theta + camera_noise_std_rad * gaussian_theta;
@@ -337,7 +367,7 @@ int main(int argc, char* argv[]) {
         }
         
         // Get ESTIMATED pose from Kalman filter
-        Eigen::Vector3d estimated_pose = state_estimator.GetPose();
+        //Eigen::Vector3d estimated_pose = state_estimator.GetPose();
         
         // Get DEAD RECKONING pose (encoder-only, no camera)
         Eigen::Vector3d dead_reckoning_pose = dead_reckoning_estimator.GetPose();

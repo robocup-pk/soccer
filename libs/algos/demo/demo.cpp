@@ -39,19 +39,19 @@ int main(int argc, char* argv[]) {
             std::cout << "Test 1: Straight line trajectory" << std::endl;
             waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
             waypoints.push_back(Eigen::Vector3d(0.0, 1.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(0.5, 0.5, 0.0));
+            //waypoints.push_back(Eigen::Vector3d(0.5, 0.5, 0.0));
             // waypoints.push_back(Eigen::Vector3d(1.5, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+            //waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
             break;
         }
         case 2: {
-            // Test 2: L-shaped path (90-degree turn)
-            std::cout << "Test 2: L-shaped path (90-degree turn)" << std::endl;
-            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(1.0, 0.5, M_PI/2));
-            waypoints.push_back(Eigen::Vector3d(1.0, 1.0, M_PI/2));
+            // Test 2: Rectangular path with sharp corners for BangBang visualization
+            std::cout << "Test 2: Rectangular path with sharp corners (ideal for BangBang)" << std::endl;
+            waypoints.push_back(Eigen::Vector3d(-1.0, -0.5, 0.0));      // Start bottom-left
+            waypoints.push_back(Eigen::Vector3d(1.0, -0.5, 0.0));       // Move right
+            waypoints.push_back(Eigen::Vector3d(1.0, 0.5, M_PI/2));     // Sharp turn up
+            waypoints.push_back(Eigen::Vector3d(-1.0, 0.5, M_PI));      // Move left
+            waypoints.push_back(Eigen::Vector3d(-1.0, -0.5, -M_PI/2));  // Back to start
             break;
         }
         case 3: {
@@ -185,6 +185,7 @@ int main(int argc, char* argv[]) {
     std::cout << "  2: Uniform B-spline (EWOK-based)" << std::endl;
     std::cout << "  3: Bezier trajectory (RoboJackets-style)" << std::endl;
     std::cout << "  4: DB-RRT (Dynamically feasible B-spline based RRT)" << std::endl;
+    std::cout << "  5: Bang-Bang trajectory (Sumatra-style time-optimal)" << std::endl;
 
     // Choose trajectory type based on second argument
     int traj_type = 1;
@@ -233,6 +234,56 @@ int main(int argc, char* argv[]) {
                 Eigen::Vector3d goal = waypoints[2];
                 robot_manager.SetDBRRTGoal(goal);
             }
+            break;
+        case 5:
+            std::cout << "Using Bang-Bang trajectory (Sumatra-style) for time-optimal motion" << std::endl;
+            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BangBang);
+            
+            // Configure Bang-Bang planner
+            robot_manager.GetBangBangPlanner().SetLimits(0.6, 1.5);  // max_vel, max_acc (conservative for safety)
+            robot_manager.GetBangBangPlanner().SetFeedbackGains(2.0, 0.5);  // kp, kd (reduced for stability)
+            robot_manager.GetBangBangPlanner().SetRobotRadius(0.09);  // 90mm robot radius
+            robot_manager.GetBangBangPlanner().SetFieldBoundaries(-4.5, 4.5, -3.0, 3.0);  // SSL field size
+            
+            // Add some test obstacles for avoidance demonstration
+            if (test_case == 1) {  // Triangle path - add obstacle in the middle
+                ctrl::Obstacle obstacle;
+                obstacle.position = Eigen::Vector2d(0.25, 0.5);
+                obstacle.radius = 0.15;
+                obstacle.velocity = Eigen::Vector2d::Zero();
+                obstacle.is_static = true;
+                robot_manager.GetBangBangPlanner().AddObstacle(obstacle);
+                std::cout << "Added obstacle at (0.25, 0.5) with radius 0.15m" << std::endl;
+            } else if (test_case == 2) {  // Rectangular path - add obstacles to force avoidance
+                // Obstacle 1: Block the straight path on the bottom
+                ctrl::Obstacle obstacle1;
+                obstacle1.position = Eigen::Vector2d(0.0, -0.5);
+                obstacle1.radius = 0.2;
+                obstacle1.velocity = Eigen::Vector2d::Zero();
+                obstacle1.is_static = true;
+                robot_manager.GetBangBangPlanner().AddObstacle(obstacle1);
+                std::cout << "Added obstacle at (0.0, -0.5) with radius 0.2m" << std::endl;
+                
+                // Obstacle 2: Block the corner
+                ctrl::Obstacle obstacle2;
+                obstacle2.position = Eigen::Vector2d(1.0, 0.0);
+                obstacle2.radius = 0.15;
+                obstacle2.velocity = Eigen::Vector2d::Zero();
+                obstacle2.is_static = true;
+                robot_manager.GetBangBangPlanner().AddObstacle(obstacle2);
+                std::cout << "Added obstacle at (1.0, 0.0) with radius 0.15m" << std::endl;
+                
+                // Obstacle 3: Moving obstacle on top path
+                ctrl::Obstacle obstacle3;
+                obstacle3.position = Eigen::Vector2d(-0.5, 0.5);
+                obstacle3.radius = 0.1;
+                obstacle3.velocity = Eigen::Vector2d(0.1, 0.0);  // Moving slowly to the right
+                obstacle3.is_static = false;
+                robot_manager.GetBangBangPlanner().AddObstacle(obstacle3);
+                std::cout << "Added MOVING obstacle at (-0.5, 0.5) with velocity (0.1, 0.0) m/s" << std::endl;
+            }
+            
+            robot_manager.SetBangBangPath(waypoints, util::GetCurrentTime());
             break;
         default:
             std::cout << "Using B-spline trajectory (default)" << std::endl;
