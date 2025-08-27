@@ -271,6 +271,9 @@ public:
     // Reset trajectory
     void ResetTrajectory();
     
+    // Get ideal position at current time (for ground truth tracking)
+    Eigen::Vector3d GetIdealPosition(double current_time) const;
+    
     // Replanning functionality - EWOK-style partial replanning
     bool CheckAndReplan(const Eigen::Vector3d& state_estimation_pose, 
                        const Eigen::Vector3d& current_commanded_pose,

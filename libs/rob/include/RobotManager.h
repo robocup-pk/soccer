@@ -14,6 +14,7 @@
 #include "UniformBSplineTrajectoryPlanner.h"
 #include "BezierTrajectoryPlanner.h"
 #include "DBRRTTrajectoryPlanner.h"
+#include "BangBangTrajectoryPlanner.h"
 
 // Forward declarations
 namespace state {
@@ -33,14 +34,16 @@ enum class RobotState {
   BSPLINE_DRIVING,       // B-spline trajectory following
   UNIFORM_BSPLINE_DRIVING, // Uniform B-spline trajectory following
   BEZIER_TRAJECTORY_DRIVING, // Bezier trajectory following (RoboJackets-style)
-  DBRRT_DRIVING          // DB-RRT trajectory following
+  DBRRT_DRIVING,         // DB-RRT trajectory following
+  BANGBANG_DRIVING       // Bang-bang trajectory following (Sumatra-style)
 };
 
 enum class TrajectoryManagerType {
   BSpline,       // Use B-spline for trajectories
   UniformBSpline, // Use uniform B-spline (EWOK-based) for robust trajectories
   BezierTrajectory, // Use Bezier trajectory (RoboJackets-style)
-  DBRRT          // Use DB-RRT (Dynamically feasible B-spline based RRT)
+  DBRRT,         // Use DB-RRT (Dynamically feasible B-spline based RRT)
+  BangBang       // Use Bang-bang trajectory (Sumatra-style)
 };
 
 enum class RobotAction {
@@ -70,6 +73,7 @@ class RobotManager {
   void SetBSplinePath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // B-spline path
   void SetUniformBSplinePath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Uniform B-spline path
   void SetBezierTrajectoryPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Bezier trajectory path
+  void SetBangBangPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Bang-bang trajectory path
   void SetDBRRTGoal(const Eigen::Vector3d& goal); // DB-RRT goal-based planning
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
@@ -82,6 +86,7 @@ class RobotManager {
   ctrl::UniformBSplineTrajectoryPlanner& GetUniformBSplinePlanner() { return uniform_bspline_planner; }
   ctrl::BezierTrajectoryPlanner& GetBezierTrajectoryPlanner() { return bezier_trajectory_planner; }
   ctrl::DBRRTTrajectoryPlanner& GetDBRRTPlanner() { return dbrrt_planner; }
+  ctrl::BangBangTrajectoryPlanner& GetBangBangPlanner() { return bangbang_planner; }
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
 
@@ -123,6 +128,7 @@ class RobotManager {
   ctrl::UniformBSplineTrajectoryPlanner uniform_bspline_planner;  // Uniform B-spline trajectory planner
   ctrl::BezierTrajectoryPlanner bezier_trajectory_planner;  // Bezier trajectory planner
   ctrl::DBRRTTrajectoryPlanner dbrrt_planner;  // DB-RRT trajectory planner
+  ctrl::BangBangTrajectoryPlanner bangbang_planner;  // Bang-bang trajectory planner
   
   TrajectoryManagerType trajectory_manager_type_;
 

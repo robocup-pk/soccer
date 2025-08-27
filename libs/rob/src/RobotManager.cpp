@@ -90,6 +90,10 @@ void rob::RobotManager::ControlLogic() {
       velocity_fBody_ = dbrrt_planner.Update(pose_fWorld, util::GetCurrentTime());
       finished_motion = !dbrrt_planner.IsTrajectoryValid();
       break;
+    case RobotState::BANGBANG_DRIVING:
+      velocity_fBody_ = bangbang_planner.Update(pose_fWorld, util::GetCurrentTime());
+      finished_motion = bangbang_planner.IsFinished();
+      break;
   }
 
   if (finished_motion) robot_state = RobotState::IDLE;
@@ -227,6 +231,40 @@ void rob::RobotManager::SetBezierTrajectoryPath(std::vector<Eigen::Vector3d> pat
                  "Bezier trajectories\nPath: ";
   }
 }
+
+void rob::RobotManager::SetBangBangPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
+  bool is_path_valid;
+  {
+    // Print the path
+    std::cout << "[rob::RobotManager::SetBangBangPath] Bang-bang trajectory for time-optimal motion: ";
+    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
+      std::cout << path_fWorld[i].transpose() << " -> ";
+    }
+    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
+    
+    // Initialize trajectory planner with current robot state
+    pose_fWorld = state_estimator.GetPose();
+    
+    // Set robot parameters
+    bangbang_planner.SetRobotRadius(0.09);  // 90mm robot radius
+    bangbang_planner.SetLimits(0.8, 2.0);   // 0.8 m/s max vel, 2.0 m/s^2 max acc (more reasonable)
+    bangbang_planner.SetFeedbackGains(2.0, 0.5);  // Reduced gains for stability
+    bangbang_planner.SetFieldBoundaries(-4.5, 4.5, -3.0, 3.0);  // SSL field size
+    
+    // Create trajectory using Bang-bang planner
+    is_path_valid = bangbang_planner.SetPath(path_fWorld, t_start_s);
+    std::cout << "[rob::RobotManager::SetBangBangPath] Finish creating Bang-bang trajectory" << std::endl;
+  }
+  
+  if (is_path_valid) {
+    std::unique_lock<std::mutex> lock(robot_state_mutex);
+    robot_state = RobotState::BANGBANG_DRIVING;
+    trajectory_manager_type_ = TrajectoryManagerType::BangBang;
+  } else {
+    std::cout << "[rob::RobotManager::SetBangBangPath] Failed to create Bang-bang trajectory" << std::endl;
+  }
+}
+
 void rob::RobotManager::GoHome(){
   
 }

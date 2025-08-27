@@ -5,6 +5,7 @@ set(SOURCES
     src/UniformBSplineTrajectoryPlanner.cpp
     src/BezierTrajectoryPlanner.cpp
     src/DBRRTTrajectoryPlanner.cpp
+    src/BangBangTrajectoryPlanner.cpp
 )
 
 file(GLOB_RECURSE HEADERS "include/*.h")

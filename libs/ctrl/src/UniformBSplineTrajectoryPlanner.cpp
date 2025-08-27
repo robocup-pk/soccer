@@ -848,6 +848,31 @@ double UniformBSplineTrajectoryPlanner::ParameterToTime(double u) const {
     return u * trajectory_duration_;
 }
 
+Eigen::Vector3d UniformBSplineTrajectoryPlanner::GetIdealPosition(double current_time) const {
+    if (!is_trajectory_active_) {
+        return Eigen::Vector3d::Zero();
+    }
+    
+    double elapsed_time = current_time - trajectory_start_time_;
+    
+    // If before trajectory start, return start position
+    if (elapsed_time <= 0) {
+        return EvaluateBSpline(0.0);
+    }
+    
+    // If past trajectory duration, return end position
+    if (elapsed_time >= trajectory_duration_) {
+        return EvaluateBSpline(1.0);
+    }
+    
+    // Calculate the ideal position along the trajectory
+    double desired_arc_length = ComputeDesiredArcLength(elapsed_time);
+    double u = ArcLengthToParameter(desired_arc_length);
+    
+    // Return the ideal pose at this point on the spline
+    return EvaluateBSpline(u);
+}
+
 void UniformBSplineTrajectoryPlanner::ResetTrajectory() {
     is_trajectory_active_ = false;
     is_trajectory_finished_ = true;
