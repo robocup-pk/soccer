@@ -12,6 +12,7 @@ vis::GameObject::GameObject(std::string name_, Eigen::Vector3d position_, Eigen:
   // GameObject works on millimeters (later converted to pixels for display)
   // SoccerObject works on meters
   position = glm::vec3(1000) * ConvertEigenVecToGlm(position_);
+  position[2] = position_[2]; // Angle should stay as it is.
   velocity = glm::vec3(1000) * ConvertEigenVecToGlm(velocity_);
   acceleration = glm::vec3(1000) * ConvertEigenVecToGlm(acceleration_);
   size = glm::vec2(1000) * ConvertEigenVecToGlm(size_);
