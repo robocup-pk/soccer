@@ -1,12 +1,5 @@
 project(kin_tests)
 
-# - to run tests navigate to build/ and type ctest on terminal
-# - to run a specific test type ctest -R MySpecificTest, which is ${TEST_NAME} below
-# - to see details on what happened: ctest -R TestWaypoint --output-on-failure
-
-# - to build with tests:
-# cmake .. -DENABLE_TESTS=ON 
-
 # add your unit tests here
 file(GLOB_RECURSE TEST_SOURCES "*.cpp")
 

@@ -105,12 +105,19 @@ bool kin::IsInsideBoundary(const state::SoccerObject& obj) {
 }
 
 void kin::ClampInsideBoundary(state::SoccerObject& obj) {
-  // x direction
   double half_width = (vis::SoccerField::GetInstance().width_mm / 2) / 1000.0f;
   double half_height = (vis::SoccerField::GetInstance().height_mm / 2) / 1000.0f;
 
-  obj.position[0] = std::clamp(obj.position[0], -half_width, half_width - obj.size[0]);
-  obj.position[1] = std::clamp(obj.position[1], -half_height, half_height - obj.size[1]);
+  double half_obj_w = obj.size[0] / 2.0;
+  double half_obj_h = obj.size[1] / 2.0;
+
+  double min_x = -half_width + half_obj_w;
+  double max_x = half_width - half_obj_w;
+  double min_y = -half_height + half_obj_h;
+  double max_y = half_height - half_obj_h;
+
+  obj.position[0] = std::clamp(obj.position[0], min_x, max_x);
+  obj.position[1] = std::clamp(obj.position[1], min_y, max_y);
 }
 
 bool kin::CheckCircularCollision(state::SoccerObject& obj1, state::SoccerObject& obj2) {

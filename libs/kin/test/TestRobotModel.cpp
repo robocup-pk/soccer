@@ -46,7 +46,7 @@ class RobotModelTest : public ::testing::Test {
 };
 
 // Test 1: Robot goes straight forward (positive X direction)
-TEST_F(RobotModelTest, StraightForward) {
+TEST_F(RobotModelTest, TestStraightForward) {
   // For this wheel configuration, equal wheel speeds should create rotation
   // To go straight forward, we need to solve for the required wheel speeds
   Eigen::Vector3d desired_velocity(0.1, 0.0, 0.0);  // 0.1 m/s forward, no lateral, no rotation
@@ -70,7 +70,7 @@ TEST_F(RobotModelTest, StraightForward) {
 }
 
 // Test 2: Robot goes left (positive Y direction)
-TEST_F(RobotModelTest, StraightLeft) {
+TEST_F(RobotModelTest, TestStraightLeft) {
   Eigen::Vector3d desired_velocity(0.0, 0.1, 0.0);  // 0.1 m/s left, no forward, no rotation
 
   Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
@@ -90,7 +90,7 @@ TEST_F(RobotModelTest, StraightLeft) {
 }
 
 // Test 3: Robot goes right (negative Y direction)
-TEST_F(RobotModelTest, StraightRight) {
+TEST_F(RobotModelTest, TestStraightRight) {
   Eigen::Vector3d desired_velocity(0.0, -0.1, 0.0);  // 0.1 m/s right, no forward, no rotation
 
   Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
@@ -105,7 +105,7 @@ TEST_F(RobotModelTest, StraightRight) {
 }
 
 // Test 4: Robot goes backward (negative X direction)
-TEST_F(RobotModelTest, StraightBackward) {
+TEST_F(RobotModelTest, TestStraightBackward) {
   Eigen::Vector3d desired_velocity(-0.1, 0.0, 0.0);  // 0.1 m/s backward, no lateral, no
                                                      // rotation
 
@@ -121,7 +121,7 @@ TEST_F(RobotModelTest, StraightBackward) {
 }
 
 // Test 5: Robot turns counter-clockwise (positive angular velocity)
-TEST_F(RobotModelTest, TurnCounterClockwise) {
+TEST_F(RobotModelTest, TestTurnCounterClockwise) {
   Eigen::Vector3d desired_velocity(0.0, 0.0, 0.5);  // No translation, 0.5 rad/s CCW rotation
 
   Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
@@ -136,7 +136,7 @@ TEST_F(RobotModelTest, TurnCounterClockwise) {
 }
 
 // Test 6: Robot turns clockwise (negative angular velocity)
-TEST_F(RobotModelTest, TurnClockwise) {
+TEST_F(RobotModelTest, TestTurnClockwise) {
   Eigen::Vector3d desired_velocity(0.0, 0.0, -0.5);  // No translation, 0.5 rad/s CW rotation
 
   Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
@@ -151,7 +151,7 @@ TEST_F(RobotModelTest, TurnClockwise) {
 }
 
 // Test 7: Combined motion - diagonal movement
-TEST_F(RobotModelTest, DiagonalMotion) {
+TEST_F(RobotModelTest, TestDiagonalMotion) {
   Eigen::Vector3d desired_velocity(0.1, 0.1, 0.0);  // Forward + left, no rotation
 
   Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
@@ -166,7 +166,7 @@ TEST_F(RobotModelTest, DiagonalMotion) {
 }
 
 // Test 8: Combined motion - forward while turning
-TEST_F(RobotModelTest, ForwardWhileTurning) {
+TEST_F(RobotModelTest, TestForwardWhileTurning) {
   Eigen::Vector3d desired_velocity(0.1, 0.0, 0.3);  // Forward + CCW rotation
 
   Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
@@ -181,7 +181,7 @@ TEST_F(RobotModelTest, ForwardWhileTurning) {
 }
 
 // Test 9: Zero motion
-TEST_F(RobotModelTest, ZeroMotion) {
+TEST_F(RobotModelTest, TestZeroMotion) {
   Eigen::Vector3d desired_velocity(0.0, 0.0, 0.0);  // No motion
 
   Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(desired_velocity);
@@ -201,7 +201,7 @@ TEST_F(RobotModelTest, ZeroMotion) {
 }
 
 // Test 10: Jacobian properties
-TEST_F(RobotModelTest, JacobianProperties) {
+TEST_F(RobotModelTest, TestJacobianProperties) {
   Eigen::MatrixXd J = robot_model->InverseMapping();
   Eigen::MatrixXd J_plus = robot_model->ForwardMapping();
 
@@ -224,7 +224,7 @@ TEST_F(RobotModelTest, JacobianProperties) {
 }
 
 // Test 11: Consistency check - round trip
-TEST_F(RobotModelTest, RoundTripConsistency) {
+TEST_F(RobotModelTest, TestRoundTripConsistency) {
   // Start with robot velocity, convert to wheel speeds, then back to robot velocity
   Eigen::Vector3d original_velocity(0.05, 0.03, 0.2);
 
@@ -239,7 +239,7 @@ TEST_F(RobotModelTest, RoundTripConsistency) {
 }
 
 // Test 12: Units consistency
-TEST_F(RobotModelTest, UnitsConsistency) {
+TEST_F(RobotModelTest, TestUnitsConsistency) {
   // Test that wheel radius is properly embedded in Jacobians
   Eigen::Vector3d robot_vel(1.0, 0.0, 0.0);  // 1 m/s forward
   Eigen::VectorXd wheel_speeds = robot_model->RobotVelocityToWheelSpeedsRps(robot_vel);
@@ -262,7 +262,7 @@ TEST_F(RobotModelTest, UnitsConsistency) {
 }
 
 // Test 13: Specific wheel speed patterns
-TEST_F(RobotModelTest, SpecificWheelSpeedPatterns) {
+TEST_F(RobotModelTest, TestSpecificWheelSpeedPatterns) {
   // Test with equal wheel speeds (should produce rotation for this configuration)
   std::vector<double> equal_speeds = {1.0, 1.0, 1.0, 1.0};
   Eigen::Vector3d velocity = robot_model->WheelSpeedsRadpsToRobotVelocity(equal_speeds);

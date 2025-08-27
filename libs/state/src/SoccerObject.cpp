@@ -94,6 +94,15 @@ state::SoccerObject::SoccerObject(const rob::RobotManager& robot_manager) {
   velocity = robot_manager.GetVelocityInWorldFrame();
 }
 
+state::SoccerObject::SoccerObject(std::string name)
+{
+  this->name = name;
+  this->position = Eigen::Vector3d::Zero();
+  this->velocity = Eigen::Vector3d::Zero();
+  this->acceleration = Eigen::Vector3d::Zero();
+  this->mass_kg = 1.0f;
+}
+
 state::SoccerObject& state::SoccerObject::operator=(rob::RobotManager& robot_manager) {
   // Center position
   position = robot_manager.GetPoseInWorldFrame();

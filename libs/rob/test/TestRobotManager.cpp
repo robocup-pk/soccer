@@ -28,7 +28,7 @@ class RobotManagerTest : public ::testing::Test {
   void TearDown() override {
     if (robot_manager) {
       robot_manager.reset();
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
   }
 
@@ -62,7 +62,7 @@ TEST_F(RobotManagerTest, TestSetBodyVelocity) {
   robot_manager->SetBodyVelocity(test_velocity);
   EXPECT_EQ(robot_manager->GetVelocityInWorldFrame(), test_velocity);
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
   EXPECT_EQ(robot_manager->GetRobotState(), "IDLE");
 }
@@ -91,7 +91,7 @@ TEST_F(RobotManagerTest, TestHomePositionBasic) {
 }
 
 TEST_F(RobotManagerTest, TestStateRetrieval) {
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(std::chrono::milliseconds(20));
   std::string state = robot_manager->GetRobotState();
   EXPECT_EQ(state, "IDLE");
 
@@ -112,6 +112,6 @@ TEST_F(RobotManagerTest, TestGoHome) {
   robot_manager->InitializeHome(new_home);
 
   robot_manager->GoHome();
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
   EXPECT_EQ(robot_manager->GetRobotState(), "GOING_HOME");
 }
