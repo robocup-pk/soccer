@@ -6,4 +6,4 @@ target_link_libraries(rob_lib PUBLIC cfg_lib utils_lib kin_lib hw_lib est_lib ct
 target_include_directories(rob_lib PUBLIC include)
 
 add_subdirectory(demo)
-# add_subdirectory(test)
+add_subdirectory(test)
