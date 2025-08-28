@@ -114,7 +114,9 @@ TEST(SoccerObjectStaticTest, TestInitSoccerObjects) {
   EXPECT_EQ(ball.radius_m, cfg::SystemConfig::ball_radius_m);
 
   EXPECT_EQ(obj.position,
-            cfg::LeftRobotHomeCoordinates.at(static_cast<cfg::RobotHomePosition>(0)));
+            cfg::SystemConfig::num_robots == 1
+                ? cfg::LeftRobotHomeCoordinates.at(static_cast<cfg::RobotHomePosition>(0))
+                : cfg::RightRobotHomeCoordinates.at(static_cast<cfg::RobotHomePosition>(0)));
   EXPECT_EQ(ball.position, cfg::SystemConfig::init_ball_position);
 
   EXPECT_EQ(obj.velocity, cfg::SystemConfig::init_robot_velocity_mps);
