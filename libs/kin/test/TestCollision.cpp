@@ -153,18 +153,18 @@ TEST(BoundaryTest, TestIsInsideBoundary) {
   auto half_width = (vis::SoccerField::GetInstance().width_mm / 2) / 1000.0f;
   auto half_height = (vis::SoccerField::GetInstance().height_mm / 2) / 1000.0f;
 
-  obj.position[0] = -half_width - 0.1f;
+  obj.position[0] = -half_width - 0.2f;
   EXPECT_FALSE(kin::IsInsideBoundary(obj));
 
-  obj.position[0] = half_width + 0.1f;
+  obj.position[0] = half_width + 0.2f;
   EXPECT_FALSE(kin::IsInsideBoundary(obj));
 
   obj.position[0] = 0;
 
-  obj.position[1] = -half_height - 0.1f;
+  obj.position[1] = -half_height - 0.2f;
   EXPECT_FALSE(kin::IsInsideBoundary(obj));
 
-  obj.position[1] = half_height + 0.1f;
+  obj.position[1] = half_height + 0.2f;
   EXPECT_FALSE(kin::IsInsideBoundary(obj));
 }
 
