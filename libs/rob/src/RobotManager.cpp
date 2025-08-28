@@ -243,6 +243,8 @@ std::string rob::RobotManager::GetRobotState() {
   switch (robot_state) {
     case RobotState::IDLE:
       return "IDLE";
+    case RobotState::CALIBRATING:
+      return "CALIBRATING";
     case RobotState::DRIVING_TO_POINT:
       return "DRIVING_TO_POINT";
     case RobotState::MANUAL_DRIVING:

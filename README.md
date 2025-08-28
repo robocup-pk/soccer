@@ -1,2 +1,2 @@
-# simulator
+# Simulator
 Visualization for our RoboCup Soccer

@@ -52,11 +52,3 @@ add_subdirectory(libs)
 
 # Applications
 add_subdirectory(apps)
-
-# SSL Software - Remote Control
-# docker pull robocupssl/ssl-remote-control
-# docker run -p 8084:8084 robocupssl/ssl-remote-control
-#
-# 
-#
-#

@@ -20,13 +20,15 @@ class TrajectoryManager {
   void MergeNewTrajectories(Trajectories&& new_trajectories);
   Eigen::Vector3d GetVelocityAtT(double time_s);
   std::pair<bool, Eigen::Vector3d> Update(Eigen::Vector3d pose_est);
-
+  Eigen::Vector3d GetPositionAtT(double time_s);
   // Merge Logic
 
   Eigen::Vector3d FindV0AtT(double t);
   void MergeNewTrajectoriesFirstCall(Trajectories&& new_trajectories);
   void MergeNewTrajectoriesInFuture(Trajectories&& new_trajectories);
   void MergeNewTrajectoriesAtT(Trajectories&& new_trajectories);
+  void MergeNewTrajectoriesAtCurrentTime(Trajectories&& new_trajectories);
+  void UpdateCurrentTrajectory();
 
   // Helpers
   void Print();
@@ -36,6 +38,7 @@ class TrajectoryManager {
   double active_traj_t_finish_s;
 
  private:
+  Eigen::Vector3d p_fworld;
   std::unique_ptr<ctrl::Trajectory3D> current_trajectory;
   std::mutex active_traj_mutex;
 };

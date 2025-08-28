@@ -21,20 +21,6 @@ std::uniform_real_distribution<double> change_vel_dist(0.0,
                                                        1.0);  // Probability to change velocity
 }  // namespace
 
-void PrintPath(const state::Path& path) {
-  if (path.empty()) {
-    std::cout << "No path available" << std::endl;
-    return;
-  }
-
-  std::cout << "Path (" << path.size() << " waypoints): ";
-  for (size_t i = 0; i < path.size(); ++i) {
-    std::cout << "(" << std::fixed << std::setprecision(2) << path[i].x << "," << path[i].y << ")";
-    if (i < path.size() - 1) std::cout << " -> ";
-  }
-  std::cout << std::endl;
-}
-
 // Update obstacle velocities with random movement
 void UpdateObstacleVelocities(std::vector<state::SoccerObject>& soccer_objects, float dt) {
   double field_width = vis::SoccerField::GetInstance().playing_area_width_mm / 1000.0;
@@ -147,7 +133,7 @@ int main() {
       // Update path visualization
       if (!path.empty()) {
         gl_simulation.SetVisualizationPath(path, glm::vec3(1.0f, 0.0f, 0.0f));
-        PrintPath(path);
+        std::cout << path << std::endl;
       } else {
         gl_simulation.ClearVisualizationPath();
         std::cout << "No path found!" << std::endl;

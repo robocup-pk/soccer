@@ -44,21 +44,6 @@ int main(int argc, char* argv[]) {
       soccer_objects[i] = robot_managers[i];
     }
 
-    // Step 1: Use SoccerObjects to Compute Plan
-    // std::vector<std::vector<Eigen::Vector3d>> plan = algos::ComputePlan(soccer_objects);
-
-    // Step 2: Send plan to robot managers
-    // for (int i = 0; i < cfg::SystemConfig::num_robots; ++i) {
-    //   robot_managers[i].SetPath(plan[i]);
-    // }
-
-    // Referee
-    // Step: Rule checking on current soccer objects
-    // 1. Kinematics (Collisions, Max speeds)
-    // kin::CheckAndResolveCollisions(soccer_objects);
-    // 2.
-    // 3.
-
     soccer_objects[soccer_objects.size() - 1].Move(dt);  // Move the ball
     // Step: Simulation
     if (!gl_simulation.RunSimulationStep(soccer_objects, dt)) {

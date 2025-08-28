@@ -15,6 +15,7 @@ class TrapezoidalTrajectoryVi3D : public Trajectory3D {
                             double t_end_s, Eigen::Vector3d v0 = Eigen::Vector3d(0, 0, 0));
 
   Eigen::Vector3d VelocityAtT(double t) override;
+  Eigen::Vector3d PositionAtT(double t) override;
 
   // Helpers
   void Print() override;
