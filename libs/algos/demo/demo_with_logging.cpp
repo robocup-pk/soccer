@@ -83,6 +83,8 @@ int main(int argc, char* argv[]) {
             std::cout << "Test 4: Circular path" << std::endl;
             int N = 16;
             double radius = 0.5;
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
             for (int i = 0; i <= N; ++i) {
                 double angle = 2.0 * M_PI * i / N;
                 waypoints.push_back(Eigen::Vector3d(

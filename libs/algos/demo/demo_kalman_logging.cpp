@@ -47,6 +47,8 @@ int main(int argc, char* argv[]) {
     robot_manager.InitializePose(robot_start_pose);
     state_estimator.InitializePose(robot_start_pose);
     dead_reckoning_estimator.InitializePose(robot_start_pose);
+    // Pre-initialize dead reckoning encoder timing to prevent first update from being ignored
+    dead_reckoning_estimator.NewMotorsData(Eigen::Vector4d::Zero());
     
     vector<Eigen::Vector3d> waypoints;
     robot_manager.GetUniformBSplinePlanner().SetLimits(0.8, 0.5, 0.8, 0.5);
@@ -262,9 +264,26 @@ int main(int argc, char* argv[]) {
         total_reads++;
         if (motors_rpms.has_value()) {
             has_value_count++;
-            // Feed encoder data to both state estimators
+            
+            // Feed clean encoder data to Kalman filter
             state_estimator.NewMotorsData(motors_rpms.value());
-            dead_reckoning_estimator.NewMotorsData(motors_rpms.value());
+            
+            // Add noise and drift to encoder data for dead reckoning
+            // This simulates real encoder issues: noise, slip, calibration errors
+            Eigen::Vector4d noisy_rpms = motors_rpms.value();
+            
+            // Add Gaussian noise to each wheel (±5% of RPM value)
+            for (int i = 0; i < 4; ++i) {
+                double noise = (rand() / (double)RAND_MAX - 0.5) * 0.1; // ±5% noise
+                noisy_rpms[i] *= (1.0 + noise);
+            }
+            
+            // Add systematic drift (simulates wheel slip or calibration error)
+            static double drift_factor = 0.98; // Dead reckoning will underestimate by 2%
+            noisy_rpms *= drift_factor;
+            
+            // Feed noisy encoder data to dead reckoning
+            dead_reckoning_estimator.NewMotorsData(noisy_rpms);
             
             // Print prediction step details (after encoder update)
             static int prediction_count = 0;
@@ -348,19 +367,8 @@ int main(int argc, char* argv[]) {
             std::cout << "P-Matrix after update:" << std::endl;
             std::cout << state_estimator.GetStateCovariance() << std::endl;
             
-            // Initialize dead reckoning ONLY on the first camera update
-            static bool dead_reckoning_initialized = false;
-            if (!dead_reckoning_initialized) {
-                // Initialize dead reckoning with the ACTUAL pose (not noisy camera measurement)
-                // This simulates perfect initial calibration
-                dead_reckoning_estimator.InitializePose(actual_pose);
-                // IMPORTANT: Pre-initialize the encoder timing by sending a dummy encoder update
-                // This prevents the first real encoder update from being ignored
-                dead_reckoning_estimator.NewMotorsData(Eigen::Vector4d::Zero());
-                dead_reckoning_initialized = true;
-                std::cout << "[Demo] Dead reckoning initialized at pose: " 
-                          << actual_pose[0] << ", " << actual_pose[1] << ", " << actual_pose[2] << std::endl;
-            }
+            // Dead reckoning should NOT be re-initialized here!
+            // It only uses encoders, no camera corrections
             
             camera_update = 1;
             last_camera_time = current_time;

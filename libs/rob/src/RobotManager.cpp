@@ -19,6 +19,10 @@ rob::RobotManager::RobotManager() {
   rob_manager_running.store(true);
   trajectory_manager_type_ = TrajectoryManagerType::UniformBSpline;  // Default to uniform B-spline
 
+  // Configure uniform B-spline planner defaults: enable safe replanning, keep logs quiet
+  uniform_bspline_planner.SetReplanningEnabled(true);
+  uniform_bspline_planner.SetVerbose(false);
+
 #ifdef BUILD_ON_PI
   state_estimator.initialized_pose = false;
 #else
@@ -78,10 +82,21 @@ void rob::RobotManager::ControlLogic() {
     case RobotState::BSPLINE_DRIVING:
       std::tie(finished_motion, velocity_fBody_) = bspline_manager.Update(pose_fWorld);
       break;
-    case RobotState::UNIFORM_BSPLINE_DRIVING:
+    case RobotState::UNIFORM_BSPLINE_DRIVING: {
       velocity_fBody_ = uniform_bspline_planner.Update(pose_fWorld, util::GetCurrentTime());
       finished_motion = uniform_bspline_planner.IsFinished();
+      
+      // EWOK-style soft trajectory correction
+      // This only makes small adjustments to control points, avoiding discontinuities
+      if (uniform_bspline_planner.IsReplanningEnabled() && state_estimator.initialized_pose) {
+        const double now = util::GetCurrentTime();
+        const Eigen::Vector3d est_pose = state_estimator.GetPose();
+        // TryAutoReplan now uses UpdatePartialTrajectory for soft corrections
+        (void)uniform_bspline_planner.TryAutoReplan(est_pose, now, 0.05, 0.1);  // 5cm, 0.1rad thresholds
+      }
+      
       break;
+    }
     case RobotState::BEZIER_TRAJECTORY_DRIVING:
       velocity_fBody_ = bezier_trajectory_planner.Update(pose_fWorld, util::GetCurrentTime());
       finished_motion = bezier_trajectory_planner.IsFinished();

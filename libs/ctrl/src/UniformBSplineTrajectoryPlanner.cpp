@@ -15,8 +15,9 @@ UniformBSplineTrajectoryPlanner::UniformBSplineTrajectoryPlanner()
       trajectory_duration_(0.0),
       is_trajectory_active_(false),
       is_trajectory_finished_(true) {
-    
-    std::cout << "[UniformBSplineTrajectoryPlanner] Initialized with uniform B-spline approach" << std::endl;
+    if (verbose_) {
+        std::cout << "[UniformBSplineTrajectoryPlanner] Initialized with uniform B-spline approach" << std::endl;
+    }
 }
 
 bool UniformBSplineTrajectoryPlanner::SetPath(const std::vector<Eigen::Vector3d>& path_fWorld, double t_start_s) {
@@ -25,8 +26,10 @@ bool UniformBSplineTrajectoryPlanner::SetPath(const std::vector<Eigen::Vector3d>
         return false;
     }
     
-    std::cout << "[UniformBSplineTrajectoryPlanner::SetPath] Setting path with " 
-              << path_fWorld.size() << " waypoints" << std::endl;
+    if (verbose_) {
+        std::cout << "[UniformBSplineTrajectoryPlanner::SetPath] Setting path with " 
+                  << path_fWorld.size() << " waypoints" << std::endl;
+    }
     
     try {
         // Store original waypoints
@@ -41,10 +44,14 @@ bool UniformBSplineTrajectoryPlanner::SetPath(const std::vector<Eigen::Vector3d>
         field_min_y_ = -3.0;
         field_max_y_ = 3.0;
         
-        std::cout << "[UniformBSplineTrajectoryPlanner::SetPath] Field boundaries: ["
-                  << field_min_x_ << ", " << field_max_x_ << "] x ["
-                  << field_min_y_ << ", " << field_max_y_ << "]" << std::endl;
-        
+        if (verbose_) {
+            std::cout << "[UniformBSplineTrajectoryPlanner::SetPath] Field boundaries: ["
+                      << field_min_x_ << ", " << field_max_x_ << "] x ["
+                      << field_min_y_ << ", " << field_max_y_ << "]" << std::endl;
+        }
+        // Reset progress guard
+        min_waypoint_index_ = 0;
+
         // Generate control points from waypoints
         GenerateControlPointsFromWaypoints();
         
@@ -90,25 +97,27 @@ bool UniformBSplineTrajectoryPlanner::SetPath(const std::vector<Eigen::Vector3d>
         t_error_integral_ = 0.0;
         t_error_prev_ = 0.0;
         
-        std::cout << "[UniformBSplineTrajectoryPlanner::SetPath] Trajectory generated successfully. "
-                  << "Control points: " << control_points_.size() 
-                  << ", Arc length: " << total_arc_length_ << "m"
-                  << ", Duration: " << trajectory_duration_ << "s" << std::endl;
-        
-        // Debug: check endpoint interpolation
-        Eigen::Vector3d start_point = EvaluateBSpline(0.0);
-        Eigen::Vector3d end_point = EvaluateBSpline(1.0);
-        std::cout << "[DEBUG] Spline start: (" << start_point[0] << ", " << start_point[1] << ", " << start_point[2] << ")" << std::endl;
-        std::cout << "[DEBUG] Spline end: (" << end_point[0] << ", " << end_point[1] << ", " << end_point[2] << ")" << std::endl;
-        std::cout << "[DEBUG] Expected end: (" << waypoints_.back()[0] << ", " << waypoints_.back()[1] << ", " << waypoints_.back()[2] << ")" << std::endl;
-        
-        // Debug control points
-        std::cout << "[DEBUG] Control points:" << std::endl;
-        for (size_t i = 0; i < control_points_.size(); ++i) {
-            std::cout << "  CP[" << i << "]: (" << control_points_[i][0] << ", " 
-                      << control_points_[i][1] << ", " << control_points_[i][2] << ")" << std::endl;
+        if (verbose_) {
+            std::cout << "[UniformBSplineTrajectoryPlanner::SetPath] Trajectory generated successfully. "
+                      << "Control points: " << control_points_.size() 
+                      << ", Arc length: " << total_arc_length_ << "m"
+                      << ", Duration: " << trajectory_duration_ << "s" << std::endl;
+
+            // Debug: check endpoint interpolation
+            Eigen::Vector3d start_point = EvaluateBSpline(0.0);
+            Eigen::Vector3d end_point = EvaluateBSpline(1.0);
+            std::cout << "[DEBUG] Spline start: (" << start_point[0] << ", " << start_point[1] << ", " << start_point[2] << ")" << std::endl;
+            std::cout << "[DEBUG] Spline end: (" << end_point[0] << ", " << end_point[1] << ", " << end_point[2] << ")" << std::endl;
+            std::cout << "[DEBUG] Expected end: (" << waypoints_.back()[0] << ", " << waypoints_.back()[1] << ", " << waypoints_.back()[2] << ")" << std::endl;
+
+            // Debug control points
+            std::cout << "[DEBUG] Control points:" << std::endl;
+            for (size_t i = 0; i < control_points_.size(); ++i) {
+                std::cout << "  CP[" << i << "]: (" << control_points_[i][0] << ", "
+                          << control_points_[i][1] << ", " << control_points_[i][2] << ")" << std::endl;
+            }
         }
-        
+
         return true;
         
     } catch (const std::exception& e) {
@@ -243,6 +252,14 @@ void UniformBSplineTrajectoryPlanner::GenerateCentripetalKnotVector()
         total       += std::sqrt(chord);        // centripetal → √-distance
         u[i]         = total;
     }
+
+    // Guard against degenerate paths where all control points coincide
+    if (total <= 1e-12) {
+        // Fall back to uniform open (clamped) knot vector
+        GenerateUniformKnotVector();
+        return;
+    }
+
     for (double &val : u) val /= total;         // normalise to [0,1]
 
     // 2.  Build open (clamped) knot vector
@@ -577,10 +594,14 @@ void UniformBSplineTrajectoryPlanner::ApplyBoundaryConstraints() {
         }
         
         if (near_corner) {
-            // Pull control point toward center
-            Eigen::Vector2d to_center = Eigen::Vector2d(0.5, 0.5) - curr.head<2>();
-            to_center.normalize();
-            control_points_[i].head<2>() += to_center * PlannerConstants::BOUNDARY_CORNER_PULL_M; // Pull 2cm toward center
+            // Pull control point toward field center (use actual field center)
+            Eigen::Vector2d field_center((field_min_x_ + field_max_x_) * 0.5,
+                                         (field_min_y_ + field_max_y_) * 0.5);
+            Eigen::Vector2d to_center = field_center - curr.head<2>();
+            if (to_center.norm() > 1e-9) {
+                to_center.normalize();
+                control_points_[i].head<2>() += to_center * PlannerConstants::BOUNDARY_CORNER_PULL_M; // Pull toward center
+            }
         }
     }
 }
@@ -599,7 +620,7 @@ Eigen::Vector3d UniformBSplineTrajectoryPlanner::Update(const Eigen::Vector3d& c
     double dt = has_previous_update_ ? (current_time - previous_update_time_) : 0.01;
     dt = std::max(dt, PlannerConstants::MIN_DT_S);
 
-    DesiredState desired_state = CalculateDesiredState(elapsed_time);
+    DesiredState desired_state = CalculateDesiredState(elapsed_time, current_pose);
 
     Eigen::Vector3d velocity_command = CalculateVelocityCommand(current_pose, desired_state, dt, elapsed_time);
 
@@ -608,6 +629,19 @@ Eigen::Vector3d UniformBSplineTrajectoryPlanner::Update(const Eigen::Vector3d& c
     previous_pose_error_ = desired_state.pose - current_pose;
     previous_update_time_ = current_time;
     has_previous_update_ = true;
+    
+    // CRITICAL FIX: Convert from world frame to body frame
+    // The trajectory planner computes velocities in the world frame,
+    // but the hardware expects body frame velocities
+    double theta = current_pose[2];  // Current robot orientation
+    double world_vx = velocity_command[0];
+    double world_vy = velocity_command[1];
+    
+    // Transform to body frame
+    velocity_command[0] = world_vx * std::cos(theta) + world_vy * std::sin(theta);   // body vx
+    velocity_command[1] = -world_vx * std::sin(theta) + world_vy * std::cos(theta);  // body vy
+    // omega (velocity_command[2]) remains unchanged
+    
     previous_velocity_command_ = velocity_command;
     has_previous_command_ = true;
 
@@ -637,6 +671,7 @@ Eigen::Vector3d UniformBSplineTrajectoryPlanner::HandleFinishedTrajectory(const 
         return Eigen::Vector3d::Zero();
     }
 
+    // Compute world-frame velocity command for final approach
     Eigen::Vector3d velocity_command;
     velocity_command.head<2>() = kp_ * 10.0 * position_error.head<2>();
     velocity_command[2] = kp_ * 10.0 * NormalizeAngle(position_error[2]);
@@ -645,10 +680,19 @@ Eigen::Vector3d UniformBSplineTrajectoryPlanner::HandleFinishedTrajectory(const 
     velocity_command[1] = std::clamp(velocity_command[1], -PlannerConstants::FINAL_APPROACH_MAX_VEL_MS, PlannerConstants::FINAL_APPROACH_MAX_VEL_MS);
     velocity_command[2] = std::clamp(velocity_command[2], -PlannerConstants::FINAL_APPROACH_MAX_OMEGA_RADS, PlannerConstants::FINAL_APPROACH_MAX_OMEGA_RADS);
 
+    // Convert from world frame to body frame
+    double theta = current_pose[2];
+    double world_vx = velocity_command[0];
+    double world_vy = velocity_command[1];
+    
+    velocity_command[0] = world_vx * std::cos(theta) + world_vy * std::sin(theta);   // body vx
+    velocity_command[1] = -world_vx * std::sin(theta) + world_vy * std::cos(theta);  // body vy
+    // omega remains unchanged
+
     return velocity_command;
 }
 
-UniformBSplineTrajectoryPlanner::DesiredState UniformBSplineTrajectoryPlanner::CalculateDesiredState(double elapsed_time) {
+UniformBSplineTrajectoryPlanner::DesiredState UniformBSplineTrajectoryPlanner::CalculateDesiredState(double elapsed_time, const Eigen::Vector3d& current_pose) {
     DesiredState desired_state;
     double desired_arc_length = ComputeDesiredArcLength(elapsed_time);
     double u_desired = ArcLengthToParameter(desired_arc_length);
@@ -681,7 +725,9 @@ Eigen::Vector3d UniformBSplineTrajectoryPlanner::CalculateVelocityCommand(const 
         double along_track_error = pose_error.head<2>().dot(tangent_2d);
 
         double lookahead_time = PlannerConstants::LOOKAHEAD_TIME_S;
-        double future_u = std::clamp(ArcLengthToParameter(ComputeDesiredArcLength(ParameterToTime(ArcLengthToParameter(total_arc_length_)) + lookahead_time)), 0.0, 1.0);
+        // Look ahead based on current elapsed time, not total duration
+        double future_elapsed = elapsed_time + lookahead_time;
+        double future_u = std::clamp(ArcLengthToParameter(ComputeDesiredArcLength(future_elapsed)), 0.0, 1.0);
         Eigen::Vector3d future_tangent = EvaluateBSplineDerivative(future_u, 1);
 
         if (future_tangent.head<2>().norm() > 1e-6) {
@@ -702,7 +748,9 @@ Eigen::Vector3d UniformBSplineTrajectoryPlanner::CalculateVelocityCommand(const 
 
     double desired_heading = 0.0;
     double heading_lookahead = PlannerConstants::HEADING_LOOKAHEAD_S;
-    double heading_u = std::clamp(ArcLengthToParameter(ComputeDesiredArcLength(ParameterToTime(ArcLengthToParameter(total_arc_length_)) + heading_lookahead)), 0.0, 1.0);
+    // Use elapsed_time to compute heading lookahead parameter
+    double heading_elapsed = elapsed_time + heading_lookahead;
+    double heading_u = std::clamp(ArcLengthToParameter(ComputeDesiredArcLength(heading_elapsed)), 0.0, 1.0);
     Eigen::Vector3d heading_tangent = EvaluateBSplineDerivative(heading_u, 1);
 
     if (heading_tangent.head<2>().norm() > 0.1) {
@@ -905,16 +953,20 @@ bool UniformBSplineTrajectoryPlanner::CheckAndReplan(const Eigen::Vector3d& stat
     
     // Check if error exceeds threshold
     if (position_error > position_error_threshold || angle_error > angle_error_threshold) {
-        std::cout << "[UniformBSplineTrajectoryPlanner] Replanning triggered! "
-                  << "Position error: " << position_error << "m (threshold: " << position_error_threshold << "m), "
-                  << "Angle error: " << angle_error << " rad (threshold: " << angle_error_threshold << " rad)"
-                  << std::endl;
+        if (verbose_) {
+            std::cout << "[UniformBSplineTrajectoryPlanner] Replanning triggered! "
+                      << "Position error: " << position_error << "m (threshold: " << position_error_threshold << "m), "
+                      << "Angle error: " << angle_error << " rad (threshold: " << angle_error_threshold << " rad)" \
+                      << std::endl;
+        }
         
         // Get remaining path from state estimation position
         std::vector<Eigen::Vector3d> remaining_path = GetRemainingPath(state_estimation_pose);
         
         if (remaining_path.size() < 2) {
-            std::cout << "[UniformBSplineTrajectoryPlanner] Not enough waypoints remaining for replanning" << std::endl;
+            if (verbose_) {
+                std::cout << "[UniformBSplineTrajectoryPlanner] Not enough waypoints remaining for replanning" << std::endl;
+            }
             return false;
         }
         
@@ -924,9 +976,13 @@ bool UniformBSplineTrajectoryPlanner::CheckAndReplan(const Eigen::Vector3d& stat
         if (success) {
             replan_count_++;
             last_replan_time_ = current_time;
-            std::cout << "[UniformBSplineTrajectoryPlanner] Replanning successful. Total replans: " << replan_count_ << std::endl;
+            if (verbose_) {
+                std::cout << "[UniformBSplineTrajectoryPlanner] Replanning successful. Total replans: " << replan_count_ << std::endl;
+            }
         } else {
-            std::cout << "[UniformBSplineTrajectoryPlanner] Replanning failed!" << std::endl;
+            if (verbose_) {
+                std::cout << "[UniformBSplineTrajectoryPlanner] Replanning failed!" << std::endl;
+            }
         }
         
         return success;
@@ -935,7 +991,98 @@ bool UniformBSplineTrajectoryPlanner::CheckAndReplan(const Eigen::Vector3d& stat
     return false;
 }
 
-std::vector<Eigen::Vector3d> UniformBSplineTrajectoryPlanner::GetRemainingPath(const Eigen::Vector3d& current_pose) const {
+bool UniformBSplineTrajectoryPlanner::TryAutoReplan(const Eigen::Vector3d& state_estimation_pose,
+                                                   double current_time,
+                                                   double position_error_threshold,
+                                                   double angle_error_threshold) {
+    if (!replanning_enabled_ || !is_trajectory_active_ || is_trajectory_finished_) {
+        return false;
+    }
+    if (current_time - last_replan_time_ < min_replan_interval_) {
+        return false;
+    }
+    
+    // Try soft trajectory correction first (EWOK-style)
+    bool corrected = UpdatePartialTrajectory(state_estimation_pose, 3);
+    if (corrected) {
+        last_replan_time_ = current_time;
+        return true;
+    }
+    
+    // If soft correction isn't enough, do full replanning
+    const Eigen::Vector3d commanded_pose = GetDesiredPositionAtTime(current_time);
+    return CheckAndReplan(state_estimation_pose, commanded_pose, current_time,
+                          position_error_threshold, angle_error_threshold);
+}
+
+// EWOK-style sliding window trajectory correction
+// Only adjusts a small window of control points to correct for drift
+bool UniformBSplineTrajectoryPlanner::UpdatePartialTrajectory(const Eigen::Vector3d& current_pose,
+                                                             int num_control_points_to_update) {
+    std::lock_guard<std::mutex> guard(planner_mutex_);
+    if (!is_trajectory_active_ || control_points_.size() < 4) {
+        return false;
+    }
+    
+    // Don't update if we're too close to the end
+    double elapsed = util::GetCurrentTime() - trajectory_start_time_;
+    double progress = elapsed / trajectory_duration_;
+    if (progress > 0.9) {  // Don't replan in last 10% of trajectory
+        return false;
+    }
+    
+    // Get current desired position
+    double desired_arc_length = ComputeDesiredArcLength(elapsed);
+    double u_current = ArcLengthToParameter(desired_arc_length);
+    Eigen::Vector3d desired_pos = EvaluateBSpline(u_current);
+    
+    // Calculate position error
+    Eigen::Vector3d error = current_pose - desired_pos;
+    double position_error = error.head<2>().norm();
+    
+    // Only update if error is significant but not too large
+    if (position_error < 0.02 || position_error > 0.2) {  // Between 2cm and 20cm
+        return false;
+    }
+    
+    // Find which control points to update based on current parameter
+    int n = control_points_.size();
+    int p = 3;  // cubic B-spline degree
+    
+    // Find the knot span index
+    int span_idx = static_cast<int>(u_current * (n - p));
+    span_idx = std::max(p, std::min(span_idx, n - p - 1));
+    
+    // Update control points in a local window
+    int start_idx = std::max(0, span_idx - 1);
+    int end_idx = std::min(n, start_idx + num_control_points_to_update);
+    
+    // Apply gentle correction with decay
+    for (int i = start_idx; i < end_idx; ++i) {
+        // Decay factor based on distance from current position
+        double decay = std::exp(-3.0 * std::abs(i - span_idx) / static_cast<double>(num_control_points_to_update));
+        
+        // Apply 20% correction with decay
+        Eigen::Vector3d correction = error * 0.2 * decay;
+        
+        // Only correct position, not orientation
+        correction[2] = 0.0;
+        
+        control_points_[i] += correction;
+    }
+    
+    // Apply boundary constraints
+    ApplyBoundaryConstraints();
+    
+    // Clear derivative cache
+    derivative_control_points_.clear();
+    
+    // Skip expensive arc length recalculation for small corrections
+    
+    return true;
+}
+
+std::vector<Eigen::Vector3d> UniformBSplineTrajectoryPlanner::GetRemainingPath(const Eigen::Vector3d& current_pose) {
     std::vector<Eigen::Vector3d> remaining_path;
     
     // Always start from current position
@@ -957,22 +1104,31 @@ std::vector<Eigen::Vector3d> UniformBSplineTrajectoryPlanner::GetRemainingPath(c
     size_t expected_idx = static_cast<size_t>(progress * (waypoints_.size() - 1));
     
     // Search for closest waypoint starting from expected position
-    for (size_t i = std::max(size_t(0), expected_idx); i < waypoints_.size(); ++i) {
+    // Important: always consider the final waypoint as a valid candidate, otherwise
+    // we can inadvertently pick index 0 and replan back to the start.
+    for (size_t i = std::min(expected_idx, waypoints_.size() - 1); i < waypoints_.size(); ++i) {
         double dist = (waypoints_[i].head<2>() - current_pose.head<2>()).norm();
-        
-        // Check if this waypoint is ahead of us (not behind)
+
+        bool ahead = true;
         if (i < waypoints_.size() - 1) {
             Eigen::Vector2d to_waypoint = waypoints_[i].head<2>() - current_pose.head<2>();
             Eigen::Vector2d to_next = waypoints_[i+1].head<2>() - waypoints_[i].head<2>();
-            
-            // If dot product is positive, waypoint is generally in forward direction
-            if (to_waypoint.dot(to_next) >= 0 || dist < PlannerConstants::REMAINING_PATH_WAYPOINT_DOT_THRESHOLD) {  // Within 10cm or ahead
-                if (dist < min_distance) {
-                    min_distance = dist;
-                    closest_idx = i;
-                }
-            }
+            ahead = (to_waypoint.dot(to_next) >= 0) ||
+                    (dist < PlannerConstants::REMAINING_PATH_WAYPOINT_DOT_THRESHOLD);
+        } else {
+            // Always allow the last waypoint
+            ahead = true;
         }
+
+        if (ahead && dist < min_distance) {
+            min_distance = dist;
+            closest_idx = i;
+        }
+    }
+
+    // Enforce monotonic progress: do not go back to earlier waypoints
+    if (closest_idx < min_waypoint_index_) {
+        closest_idx = min_waypoint_index_;
     }
     
     // Add remaining waypoints
@@ -989,6 +1145,9 @@ std::vector<Eigen::Vector3d> UniformBSplineTrajectoryPlanner::GetRemainingPath(c
         remaining_path.push_back(waypoints_.back());
     }
     
+    // Update guard
+    min_waypoint_index_ = std::min(closest_idx, waypoints_.size() - 1);
+
     return remaining_path;
 }
 

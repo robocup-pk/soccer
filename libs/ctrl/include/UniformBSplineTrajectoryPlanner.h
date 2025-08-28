@@ -4,6 +4,7 @@
 #include <memory>
 #include <tuple>
 #include <Eigen/Dense>
+#include <mutex>
 #include "RobotDescription.h"
 #include "Utils.h"
 
@@ -108,10 +109,10 @@ struct PlannerConstants {
     static constexpr double MODERATE_CORNER_GAIN_FACTOR = 1.2;
 
     // The factor by which to reduce the speed for a sharp corner.
-    static constexpr double SHARP_CORNER_SPEED_FACTOR = 0.7;
+    static constexpr double SHARP_CORNER_SPEED_FACTOR = 0.5;
 
     // The factor by which to reduce the speed for a moderate corner.
-    static constexpr double MODERATE_CORNER_SPEED_FACTOR = 0.7;
+    static constexpr double MODERATE_CORNER_SPEED_FACTOR = 0.6;
 
     // The curvature threshold for detecting a very sharp corner.
     static constexpr double VERY_SHARP_CORNER_CURVATURE = 2.5;
@@ -125,7 +126,7 @@ struct PlannerConstants {
 
     // The alpha value for the low-pass filter on the velocity command.
     // A value of 1.0 means no filtering, while a value of 0.0 means full filtering.
-    static constexpr double VELOCITY_FILTER_ALPHA = 0.6;
+    static constexpr double VELOCITY_FILTER_ALPHA = 0.8;
 
 
     // =====================================================================================
@@ -141,7 +142,7 @@ struct PlannerConstants {
 
     // The base gain for cross-track error.
     // This is the gain used when the error is small.
-    static constexpr double BASE_CROSS_TRACK_GAIN = 10.0;
+    static constexpr double BASE_CROSS_TRACK_GAIN = 12.0;
 
     // The gain for cross-track error when the error is large.
     static constexpr double LARGE_ERROR_CROSS_TRACK_GAIN = 15.0;
@@ -261,6 +262,9 @@ public:
     
     // Initialize from RobotManager
     void InitializeFromRobotManager(rob::RobotManager* robot_manager);
+
+    // Toggle verbose logging (disable for runtime replanning)
+    void SetVerbose(bool verbose) { verbose_ = verbose; }
     
     // Check if trajectory is active
     bool IsActive() const { return is_trajectory_active_; }
@@ -280,13 +284,20 @@ public:
                        double current_time,
                        double position_error_threshold = 0.05,  // 5cm default
                        double angle_error_threshold = 0.1);     // 0.1 rad default
+
+    // Lightweight, rate-limited replanning using internal desired pose
+    bool TryAutoReplan(const Eigen::Vector3d& state_estimation_pose,
+                       double current_time,
+                       double position_error_threshold = 0.05,
+                       double angle_error_threshold = 0.1);
     
     // Partial trajectory update (EWOK-style)
     bool UpdatePartialTrajectory(const Eigen::Vector3d& current_pose, 
                                int num_control_points_to_update = 4);
     
     // Get remaining waypoints from current position
-    std::vector<Eigen::Vector3d> GetRemainingPath(const Eigen::Vector3d& current_pose) const;
+    // Monotonic: never returns waypoints earlier than the last chosen index
+    std::vector<Eigen::Vector3d> GetRemainingPath(const Eigen::Vector3d& current_pose);
     
     // Enable/disable automatic replanning
     void SetReplanningEnabled(bool enabled) { replanning_enabled_ = enabled; }
@@ -351,7 +362,7 @@ private:
         Eigen::Vector3d pose;
         Eigen::Vector3d velocity;
     };
-    DesiredState CalculateDesiredState(double elapsed_time);
+    DesiredState CalculateDesiredState(double elapsed_time, const Eigen::Vector3d& current_pose);
 
     Eigen::Vector3d CalculateVelocityCommand(const Eigen::Vector3d& current_pose,
                                              const DesiredState& desired_state,
@@ -372,6 +383,9 @@ private:
                                        double& min_dist_sq) const;
     
 private:
+    // Guard planner internal state for thread-safety
+    mutable std::mutex planner_mutex_;
+
     // Robot description
     kin::RobotDescription robot_description_;
     
@@ -422,7 +436,7 @@ private:
     static constexpr int COLLISION_CHECKS_PER_SEGMENT = 10;
     
     // Replanning parameters
-    bool replanning_enabled_ = true;
+    bool replanning_enabled_ = false;  // Disabled by default to avoid performance issues
     int replan_count_ = 0;
     double last_replan_time_ = 0.0;
     double min_replan_interval_ = 0.5;  // Don't replan more than once per 0.5 seconds
@@ -488,6 +502,16 @@ public:
     double GetLastReplanTime() const {
         return last_replan_time_;
     }
+
+    // Utility: desired pose at now (world frame)
+    Eigen::Vector3d GetDesiredPoseAt(double current_time) const { return GetDesiredPositionAtTime(current_time); }
+
+private:
+    // Logging verbosity
+    bool verbose_ = false;  // keep quiet by default to avoid UI stalls
+
+    // Progress guard to prevent replanning from jumping back to earlier waypoints
+    size_t min_waypoint_index_ = 0;
 };
 
 } // namespace ctrl
