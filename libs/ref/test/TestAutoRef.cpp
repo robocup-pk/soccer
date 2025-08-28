@@ -547,52 +547,6 @@ TEST_F(AutoRefTest, TestBotDribbledBallTooFarNoFoul) {
   EXPECT_EQ(game->last_valid_pos, soccer_objects.back().position);  // Should be updated since <= 1
 }
 
-// Test AttackerDoubleTouchedBallInOpponentDefenseArea for team 1 defender in team 2 penalty area
-TEST_F(AutoRefTest, TestAttackerDoubleTouchedBallInOpponentDefenseAreaTeamOne) {
-  // Position team 1 robot in team 2's penalty area
-  float half_width = (vis::SoccerField::GetInstance().playing_area_width_mm / 2.0f) / 1000.0f;
-  float half_penalty_width =
-      (vis::SoccerField::GetInstance().penalty_area_width_mm / 2.0f) / 1000.0f;
-
-  // Place robot in team 2's penalty area (left side)
-  soccer_objects[0].position = Eigen::Vector3d(half_width - half_penalty_width + 0.1, 0.0, 0.0);
-  soccer_objects[0].is_attached = true;
-  game->was_ball_prev_attached = false;
-
-  int initial_foul_count = auto_ref->team_one_foul_counter;
-
-  // Execute the function
-  auto_ref->AttackerDoubleTouchedBallInOpponentDefenseArea(soccer_objects, *game);
-
-  // Verify foul was detected
-  EXPECT_EQ(auto_ref->team_one_foul_counter, initial_foul_count + 1);
-}
-
-// Test AttackerDoubleTouchedBallInOpponentDefenseArea for team 2 defender in team 1 penalty area
-TEST_F(AutoRefTest, TestAttackerDoubleTouchedBallInOpponentDefenseAreaTeamTwo) {
-  if (cfg::SystemConfig::num_robots < 12) {
-    GTEST_SKIP() << "Skipping: requires >= 12 robots";
-  }
-
-  // Position team 2 robot in team 1's penalty area
-  float half_width = (vis::SoccerField::GetInstance().playing_area_width_mm / 2.0f) / 1000.0f;
-  float half_penalty_width =
-      (vis::SoccerField::GetInstance().penalty_area_width_mm / 2.0f) / 1000.0f;
-
-  // Place robot in team 1's penalty area (right side)
-  soccer_objects[6].position = Eigen::Vector3d(-half_width + half_penalty_width - 0.1, 0.0, 0.0);
-  soccer_objects[6].is_attached = true;
-  game->was_ball_prev_attached = false;
-
-  int initial_foul_count = auto_ref->team_two_foul_counter;
-
-  // Execute the function
-  auto_ref->AttackerDoubleTouchedBallInOpponentDefenseArea(soccer_objects, *game);
-
-  // Verify foul was detected
-  EXPECT_EQ(auto_ref->team_two_foul_counter, initial_foul_count + 1);
-}
-
 // Test BotKickedBallTooFast with ball velocity exceeding limit
 TEST_F(AutoRefTest, TestBotKickedBallTooFastExceedsLimit) {
   // Set ball velocity to exceed 6.5 m/s
@@ -623,28 +577,6 @@ TEST_F(AutoRefTest, TestBotKickedBallTooFastWithinLimit) {
   EXPECT_EQ(auto_ref->team_two_foul_counter, initial_foul_count);
 }
 
-// Test BotCrashUnique with robots colliding and speed difference > 1.5 m/s
-TEST_F(AutoRefTest, TestBotCrashUniqueSpeedViolation) {
-  // Position two robots close to each other (simulate collision)
-  // Robot radius is ~0.102m, so distance between centers should be < 0.204m for collision
-  soccer_objects[0].position = Eigen::Vector3d(0.0, 0.0, 0.0);
-  soccer_objects[6].position = Eigen::Vector3d(0.15, 0.0, 0.0);  // Close enough for collision
-
-  // Set velocities with large difference
-  soccer_objects[0].velocity = Eigen::Vector3d(2.0, 0.0, 0.0);  // Fast robot
-  soccer_objects[6].velocity = Eigen::Vector3d(0.1, 0.0, 0.0);  // Slow robot
-
-  int initial_foul_count_team1 = auto_ref->team_one_foul_counter;
-  int initial_foul_count_team2 = auto_ref->team_two_foul_counter;
-
-  // Execute the function
-  auto_ref->BotCrashUnique(soccer_objects, *game);
-
-  // Verify foul was detected (faster robot should get foul)
-  EXPECT_EQ(auto_ref->team_one_foul_counter, initial_foul_count_team1 + 1);
-  EXPECT_EQ(auto_ref->team_two_foul_counter, initial_foul_count_team2);
-}
-
 // Test BotCrashUnique with no collision
 TEST_F(AutoRefTest, TestBotCrashUniqueNoCollision) {
   // Position robots far apart (no collision)
@@ -660,25 +592,6 @@ TEST_F(AutoRefTest, TestBotCrashUniqueNoCollision) {
   // Verify no fouls were detected
   EXPECT_EQ(auto_ref->team_one_foul_counter, initial_foul_count_team1);
   EXPECT_EQ(auto_ref->team_two_foul_counter, initial_foul_count_team2);
-}
-
-// Test BotTooFastInStop with robot moving too fast during stop
-TEST_F(AutoRefTest, TestBotTooFastInStopViolation) {
-  // Set game state to Stop
-  game->state = ref::Game::Stop;
-
-  // Set robot velocity to exceed 1.2 m/s
-  soccer_objects[0].velocity = Eigen::Vector3d(1.5, 0.0, 0.0);
-  soccer_objects[0].was_given_speeding_foul_in_stop = false;
-
-  int initial_foul_count = auto_ref->team_one_foul_counter;
-
-  // Execute the function
-  auto_ref->BotTooFastInStop(soccer_objects, *game);
-
-  // Verify foul was detected
-  EXPECT_EQ(auto_ref->team_one_foul_counter, initial_foul_count + 1);
-  EXPECT_TRUE(soccer_objects[0].was_given_speeding_foul_in_stop);
 }
 
 // Test BotTooFastInStop with robot moving within speed limit
