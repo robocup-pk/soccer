@@ -10,9 +10,12 @@ namespace ctrl {
 class Trajectory3D {
  public:
   static std::pair<bool, std::optional<Eigen::Vector3d>> IsFeasible(
-      Eigen::Vector3d distance_m, double total_time_s, Eigen::Vector3d v0 = Eigen::Vector3d::Zero());
+      Eigen::Vector3d distance_m, double total_time_s,
+      Eigen::Vector3d v0 = Eigen::Vector3d::Zero());
 
   virtual Eigen::Vector3d VelocityAtT(double t) = 0;
+
+  virtual Eigen::Vector3d PositionAtT(double t) = 0;
 
   // Helpers
   virtual void Print() = 0;

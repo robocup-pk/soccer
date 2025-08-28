@@ -16,8 +16,8 @@ ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D(Eigen::Vector3d pose_
   this->v0 = v0;
   h = pose_end - pose_start;
   T = t_finish_s - t_start_s;
-  a = cfg::SystemConfig::max_acc_m_radpsps;
 
+  a = cfg::SystemConfig::max_acc_m_radpsps;
   std::pair<bool, std::optional<Eigen::Vector3d>> traj_v_cruise = IsFeasible(h, T, v0);
 
   if (!traj_v_cruise.first) {
@@ -54,7 +54,7 @@ ctrl::TrapezoidalTrajectoryVi3D::TrapezoidalTrajectoryVi3D(Eigen::Vector3d pose_
 
 Eigen::Vector3d ctrl::TrapezoidalTrajectoryVi3D::VelocityAtT(double t_sec) {
   // t_sec is global
-  if (t_sec < t_start_s || t_sec > t_finish_s) {
+  if (t_sec < t_start_s || t_sec >= t_finish_s) {
     return Eigen::Vector3d(0, 0, 0);
   }
   t_sec -= t_start_s;
@@ -65,7 +65,7 @@ Eigen::Vector3d ctrl::TrapezoidalTrajectoryVi3D::VelocityAtT(double t_sec) {
     if (v0[i] * h[i] >= 0) {
       // Case 1: No sign change
       int sign = v_cruise[i] >= v0[i] ? 1 : -1;
-      if (t_sec < t_a[i]) {
+      if (t_sec <= t_a[i]) {
         v_fWorld[i] = v0[i] + sign * a[i] * t_sec;
       } else if (t_sec < (T - t_d[i])) {
         v_fWorld[i] = v_cruise[i];
@@ -78,7 +78,7 @@ Eigen::Vector3d ctrl::TrapezoidalTrajectoryVi3D::VelocityAtT(double t_sec) {
       // Case 2: Sign change
       int sign = v0[i] > 0 ? -1 : 1;
       if (t_sec < t_1) {
-        v_fWorld[i] = v0[0] + sign * a[i] * t_sec;
+        v_fWorld[i] = v0[i] + sign * a[i] * t_sec;
       } else {
         // Now we are in the trapezoidal part
         t_sec -= t_1;
@@ -95,6 +95,70 @@ Eigen::Vector3d ctrl::TrapezoidalTrajectoryVi3D::VelocityAtT(double t_sec) {
   }
 
   return v_fWorld;
+}
+Eigen::Vector3d ctrl::TrapezoidalTrajectoryVi3D::PositionAtT(double t_sec) {
+  if (t_sec < t_start_s) {
+    return Eigen::Vector3d(0, 0, 0);
+  } else if (t_sec >= t_finish_s) {
+    return h;  // total displacement
+  }
+
+  t_sec -= t_start_s;  // make t_sec relative to trajectory start
+  Eigen::Vector3d a = cfg::SystemConfig::max_acc_m_radpsps;
+  Eigen::Vector3d position_fworld;
+
+  for (int i = 0; i < 3; ++i) {
+    if (v0[i] * h[i] >= 0) {
+      // No sign change case
+      int sign = v_cruise[i] >= v0[i] ? 1 : -1;
+      double acc = sign * a[i];
+
+      if (t_sec <= t_a[i]) {
+        position_fworld[i] = v0[i] * t_sec + 0.5 * acc * t_sec * t_sec;
+      } else if (t_sec < (T - t_d[i])) {
+        double acc_dist = v0[i] * t_a[i] + 0.5 * acc * t_a[i] * t_a[i];
+        double t_cruise = t_sec - t_a[i];
+        position_fworld[i] = acc_dist + v_cruise[i] * t_cruise;
+      } else {
+        double acc_dist = v0[i] * t_a[i] + 0.5 * acc * t_a[i] * t_a[i];
+        double cruise_dist = v_cruise[i] * (T - t_a[i] - t_d[i]);
+        double t_dec_s = t_sec - (T - t_d[i]);
+        int dec_sign = 0 >= v_cruise[i] ? 1 : -1;
+        double dec = dec_sign * a[i];
+        double dec_dist = v_cruise[i] * t_dec_s + 0.5 * dec * t_dec_s * t_dec_s;
+        position_fworld[i] = acc_dist + cruise_dist + dec_dist;
+      }
+
+    } else {
+      // Sign change case
+      int sign = v0[i] > 0 ? -1 : 1;
+      double acc = sign * a[i];
+
+      if (t_sec < t_1) {
+        position_fworld[i] = v0[i] * t_sec + 0.5 * acc * t_sec * t_sec;
+      } else {
+        double x_to_zero = v0[i] * t_1 + 0.5 * acc * t_1 * t_1;
+        t_sec -= t_1;
+        double acc2 = sign * a[i];
+
+        if (t_sec < t_a[i]) {
+          position_fworld[i] = x_to_zero + 0.5 * acc2 * t_sec * t_sec;
+        } else if (t_sec < t_2 - t_d[i]) {
+          double acc2_dist = 0.5 * acc2 * t_a[i] * t_a[i];
+          double t_cruise = t_sec - t_a[i];
+          position_fworld[i] = x_to_zero + acc2_dist + v_cruise[i] * t_cruise;
+        } else {
+          double acc2_dist = 0.5 * acc2 * t_a[i] * t_a[i];
+          double cruise_dist = v_cruise[i] * (t_2 - t_d[i] - t_a[i]);
+          double t_dec_s = t_sec - (t_2 - t_d[i]);
+          double dec_dist = v_cruise[i] * t_dec_s - 0.5 * acc2 * t_dec_s * t_dec_s;
+          position_fworld[i] = x_to_zero + acc2_dist + cruise_dist + dec_dist;
+        }
+      }
+    }
+  }
+
+  return position_fworld;
 }
 
 void ctrl::TrapezoidalTrajectoryVi3D::Print() {
