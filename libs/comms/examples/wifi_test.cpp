@@ -21,8 +21,8 @@ int main() {
   }
 
   while (running) {
-    int16_t x = receiver.getX();
-    int16_t y = receiver.getY();
+    int16_t x = receiver.getX1();
+    int16_t y = receiver.getY1();
     std::cout << "X: " << x << "  Y: " << y << std::endl;
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
