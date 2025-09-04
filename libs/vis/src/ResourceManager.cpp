@@ -83,7 +83,21 @@ vis::Texture2D vis::ResourceManager::loadTextureFromFile(const char* file, bool 
   }
   // load image
   int width, height, nrChannels;
+  stbi_set_flip_vertically_on_load(0);
   unsigned char* data = stbi_load(file, &width, &height, &nrChannels, 0);
+
+  if (!data) {
+    std::cerr << "[ResourceManager] Failed to load texture: '" << file
+              << "'. Generating fallback 1x1 texture.\n";
+    // Fallback: 1x1 magenta pixel so missing textures are visible
+    width = height = 1;
+    nrChannels = 4;
+    unsigned char fallback_rgba[4] = {255, 0, 255, 255};
+    texture.Internal_Format = GL_RGBA;
+    texture.Image_Format = GL_RGBA;
+    texture.Generate(width, height, fallback_rgba);
+    return texture;
+  }
 
   if (nrChannels == 3) {
     texture.Internal_Format = GL_RGB;
@@ -92,7 +106,10 @@ vis::Texture2D vis::ResourceManager::loadTextureFromFile(const char* file, bool 
     texture.Internal_Format = GL_RGBA;
     texture.Image_Format = GL_RGBA;
   }
+<<<<<<< HEAD
 
+=======
+>>>>>>> a6cc2553 (Fix textures and increase max_velocity to 1.5 m/s)
   // now generate texture
   texture.Generate(width, height, data);
   // and finally free image data

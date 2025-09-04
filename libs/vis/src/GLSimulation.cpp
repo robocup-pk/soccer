@@ -43,6 +43,29 @@ bool vis::GLSimulation::RunSimulationStep(std::vector<state::SoccerObject>& socc
   return Update();
 }
 
+// Resolve resource path relative to build dir or source tree.
+static std::string ResolveResourcePath(const std::string& relative)
+{
+  namespace fs = std::filesystem;
+  fs::path rel = relative;
+  // Strip any leading slash to allow clean path joins
+  if (!rel.empty() && rel.native()[0] == '/') {
+    std::string s = rel.string();
+    rel = fs::path(s.substr(1));
+  }
+  fs::path build_base(util::GetExecutableDir());
+  std::vector<fs::path> bases = {
+    build_base,
+    build_base.parent_path() / "soccer"
+  };
+  for (const auto& base : bases) {
+    fs::path candidate = base / rel;
+    if (fs::exists(candidate)) return candidate.string();
+  }
+  // Fallback: return build_base/relative even if it doesn't exist
+  return (build_base / rel).string();
+}
+
 void vis::GLSimulation::UpdateGameObject(const state::SoccerObject& soccer_object) {
   game_objects[soccer_object.name] = soccer_object;
 }
@@ -167,18 +190,14 @@ vis::GLSimulation::GLSimulation() {
 
 void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer_objects) {
   // Load Shaders
-  std::string vertex_shader_path =
-      util::GetExecutableDir() + "/libs/vis/resources/shaders/sprite.vs";
-  std::string fragment_shader_path =
-      util::GetExecutableDir() + "/libs/vis/resources/shaders/sprite.fs";
+  std::string vertex_shader_path = ResolveResourcePath("libs/vis/resources/shaders/sprite.vs");
+  std::string fragment_shader_path = ResolveResourcePath("libs/vis/resources/shaders/sprite.fs");
   ResourceManager::LoadShader(vertex_shader_path.c_str(), fragment_shader_path.c_str(), "sprite");
   ResourceManager::GetShader("sprite").Use().SetInteger("sprite", 0);
 
-  std::string field_vector_shader_path =
-      util::GetExecutableDir() + "/libs/vis/resources/shaders/field.vs";
+  std::string field_vector_shader_path = ResolveResourcePath("libs/vis/resources/shaders/field.vs");
 
-  std::string field_fragment_shader_path =
-      util::GetExecutableDir() + "/libs/vis/resources/shaders/field.fs";
+  std::string field_fragment_shader_path = ResolveResourcePath("libs/vis/resources/shaders/field.fs");
   ResourceManager::LoadShader(field_vector_shader_path.c_str(), field_fragment_shader_path.c_str(),
                               "field");
   ResourceManager::GetShader("field").Use().SetInteger("field", 0);
@@ -192,15 +211,10 @@ void vis::GLSimulation::InitGameObjects(std::vector<state::SoccerObject>& soccer
 
   renderer.Init(shader);
 
-  // Load Textures - use correct path relative to build directory
-  std::string robot_texture_path =
-      util::GetExecutableDir() + "/../libs/vis/resources/textures/robot.png";
-  std::string robot_texture_path_2 =
-      util::GetExecutableDir() + "/../libs/vis/resources/textures/ball.png";
-  std::string ball_texture_path =
-      util::GetExecutableDir() + "/../libs/vis/resources/textures/ball.png";
-  std::string arrow_texture_path =
-      util::GetExecutableDir() + "/../libs/vis/resources/textures/arrow.png";
+  // Load Textures
+  std::string robot_texture_path = ResolveResourcePath("libs/vis/resources/textures/robot.png");
+  std::string ball_texture_path = ResolveResourcePath("libs/vis/resources/textures/ball.png");
+  std::string arrow_texture_path = ResolveResourcePath("libs/vis/resources/textures/arrow.png");
 
   ResourceManager::LoadTexture(robot_texture_path.c_str(), false, "face");
   ResourceManager::LoadTexture(ball_texture_path.c_str(), false, "ball");
@@ -254,17 +268,17 @@ void vis::GLSimulation::InitGameObjectsTwoTeams(std::vector<state::SoccerObject>
 
   renderer.Init(shader);
 
-  // Load Textures - use correct path relative to build directory
+  // Load Textures
   std::string robot1_texture_path =
-      util::GetExecutableDir() + "/../libs/vis/resources/textures/robot1.png";
+      util::GetExecutableDir() + "/libs/vis/resources/textures/robot1.png";
   std::string robot2_texture_path =
-      util::GetExecutableDir() + "/../libs/vis/resources/textures/robot2.png";
+      util::GetExecutableDir() + "/libs/vis/resources/textures/robot2.png";
   std::string robot_texture_path_2 =
-      util::GetExecutableDir() + "/../libs/vis/resources/textures/ball.png";
+      util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
   std::string ball_texture_path =
-      util::GetExecutableDir() + "/../libs/vis/resources/textures/ball.png";
+      util::GetExecutableDir() + "/libs/vis/resources/textures/ball.png";
   std::string arrow_texture_path =
-      util::GetExecutableDir() + "/../libs/vis/resources/textures/arrow.png";
+      util::GetExecutableDir() + "/libs/vis/resources/textures/arrow.png";
 
   ResourceManager::LoadTexture(robot1_texture_path.c_str(), false, "face1");
   ResourceManager::LoadTexture(robot2_texture_path.c_str(), false, "face2");
@@ -661,6 +675,7 @@ void vis::MouseButtonCallback(GLFWwindow* window, int button, int action, int mo
     vis::g_mouse_clicked = true;
   }
 }
+<<<<<<< HEAD
 
 void vis::ProcessInput(GLFWwindow* gl_window, std::vector<rob::RobotManager>& robot_managers) {
   Eigen::Vector3d velocity_fBody_rob1(0, 0, 0);
@@ -749,3 +764,5 @@ void vis::ProcessInputMultipleObjects(GLFWwindow* gl_window,
     }
   }
 }
+=======
+>>>>>>> a6cc2553 (Fix textures and increase max_velocity to 1.5 m/s)
