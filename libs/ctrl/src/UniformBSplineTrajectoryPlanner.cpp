@@ -967,6 +967,105 @@ double UniformBSplineTrajectoryPlanner::GetHeadingAt(double u) const {
     return std::atan2(d[1], d[0]);
 }
 
+double UniformBSplineTrajectoryPlanner::ParameterToArcLength(double u) const {
+    // Clamp
+    u = std::clamp(u, 0.0, 1.0);
+    if (parameter_samples_.empty() || arc_length_samples_.empty()) return 0.0;
+    if (u <= parameter_samples_.front()) return arc_length_samples_.front();
+    if (u >= parameter_samples_.back()) return arc_length_samples_.back();
+
+    // Find segment in parameter_samples_
+    auto it = std::lower_bound(parameter_samples_.begin(), parameter_samples_.end(), u);
+    size_t idx = std::distance(parameter_samples_.begin(), it);
+    if (idx == 0) return 0.0;
+    double u0 = parameter_samples_[idx - 1];
+    double u1 = parameter_samples_[idx];
+    double s0 = arc_length_samples_[idx - 1];
+    double s1 = arc_length_samples_[idx];
+    double t = (u - u0) / std::max(1e-9, (u1 - u0));
+    return s0 + t * (s1 - s0);
+}
+
+double UniformBSplineTrajectoryPlanner::GetDesiredArcLengthNow() const {
+    if (!is_trajectory_active_) return total_arc_length_;
+    double elapsed = util::GetCurrentTime() - trajectory_start_time_;
+    return ComputeDesiredArcLength(elapsed);
+}
+
+double UniformBSplineTrajectoryPlanner::ProjectArcLengthAt(const Eigen::Vector2d& position) const {
+    double u = FindClosestParameter(position);
+    return ParameterToArcLength(u);
+}
+
+// ---------------------------------------------------------------------------
+// Closest-parameter search utilities
+// ---------------------------------------------------------------------------
+double UniformBSplineTrajectoryPlanner::FindClosestParameter(const Eigen::Vector2d& position) const {
+    double best_u = 0.0;
+    double min_dist_sq = std::numeric_limits<double>::max();
+    FindClosestParameterRecursive(position, 0.0, 1.0, best_u, min_dist_sq);
+    return best_u;
+}
+
+void UniformBSplineTrajectoryPlanner::FindClosestParameterRecursive(const Eigen::Vector2d& position,
+                                                                    double u_min,
+                                                                    double u_max,
+                                                                    double& best_u,
+                                                                    double& min_dist_sq) const {
+    // Base case: when the interval is sufficiently small, sample uniformly
+    if (u_max - u_min < 1e-3) {
+        const int num_samples = 10;
+        for (int i = 0; i <= num_samples; ++i) {
+            double u = u_min + (u_max - u_min) * static_cast<double>(i) / num_samples;
+            Eigen::Vector3d p = EvaluateBSpline(u);
+            double d2 = (p.head<2>() - position).squaredNorm();
+            if (d2 < min_dist_sq) { min_dist_sq = d2; best_u = u; }
+        }
+        return;
+    }
+
+    double u_mid = 0.5 * (u_min + u_max);
+    Eigen::Vector3d p_min = EvaluateBSpline(u_min);
+    Eigen::Vector3d p_mid = EvaluateBSpline(u_mid);
+    Eigen::Vector3d p_max = EvaluateBSpline(u_max);
+
+    double d2_min = (p_min.head<2>() - position).squaredNorm();
+    double d2_mid = (p_mid.head<2>() - position).squaredNorm();
+    double d2_max = (p_max.head<2>() - position).squaredNorm();
+
+    if (d2_min < min_dist_sq) { min_dist_sq = d2_min; best_u = u_min; }
+    if (d2_mid < min_dist_sq) { min_dist_sq = d2_mid; best_u = u_mid; }
+    if (d2_max < min_dist_sq) { min_dist_sq = d2_max; best_u = u_max; }
+
+    // Bounding-box based pruning
+    auto dist_sq_to_bb = [](const Eigen::Vector2d& p,
+                            const Eigen::Vector2d& mn,
+                            const Eigen::Vector2d& mx) -> double {
+        double d2 = 0.0;
+        for (int i = 0; i < 2; ++i) {
+            if (p[i] < mn[i]) d2 += (mn[i] - p[i]) * (mn[i] - p[i]);
+            else if (p[i] > mx[i]) d2 += (p[i] - mx[i]) * (p[i] - mx[i]);
+        }
+        return d2;
+    };
+
+    Eigen::Vector2d bb1_min = p_min.head<2>().cwiseMin(p_mid.head<2>());
+    Eigen::Vector2d bb1_max = p_min.head<2>().cwiseMax(p_mid.head<2>());
+    Eigen::Vector2d bb2_min = p_mid.head<2>().cwiseMin(p_max.head<2>());
+    Eigen::Vector2d bb2_max = p_mid.head<2>().cwiseMax(p_max.head<2>());
+
+    double bb1_d2 = dist_sq_to_bb(position, bb1_min, bb1_max);
+    double bb2_d2 = dist_sq_to_bb(position, bb2_min, bb2_max);
+
+    if (bb1_d2 < bb2_d2) {
+        if (bb1_d2 < min_dist_sq) FindClosestParameterRecursive(position, u_min, u_mid, best_u, min_dist_sq);
+        if (bb2_d2 < min_dist_sq) FindClosestParameterRecursive(position, u_mid, u_max, best_u, min_dist_sq);
+    } else {
+        if (bb2_d2 < min_dist_sq) FindClosestParameterRecursive(position, u_mid, u_max, best_u, min_dist_sq);
+        if (bb1_d2 < min_dist_sq) FindClosestParameterRecursive(position, u_min, u_mid, best_u, min_dist_sq);
+    }
+}
+
 Eigen::Vector3d UniformBSplineTrajectoryPlanner::GetIdealPosition(double current_time) const {
     if (!is_trajectory_active_) {
         return Eigen::Vector3d::Zero();

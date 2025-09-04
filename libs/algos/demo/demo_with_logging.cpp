@@ -110,10 +110,11 @@ int main(int argc, char* argv[]) {
             // Test 5: S-curve trajectory
             std::cout << "Test 5: S-curve trajectory" << std::endl;
             waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(0.5, 0.2, M_PI/6));
-            waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(1.5, -0.2, -M_PI/6));
-            waypoints.push_back(Eigen::Vector3d(2.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.8, 0.2, 0));
+            waypoints.push_back(Eigen::Vector3d(1.0, 0.4, 0.785));
+            waypoints.push_back(Eigen::Vector3d(1.2, 0.2, -0.785));
+            waypoints.push_back(Eigen::Vector3d(1.0, 0.0, -2.356));
+            waypoints.push_back(Eigen::Vector3d(0.8, 0.2, 0.785));
             break;
         }
         case 6: {

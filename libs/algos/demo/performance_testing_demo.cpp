@@ -412,17 +412,17 @@ int main(int argc, char* argv[]) {
                 Eigen::Vector3d true_pose = manager.GetPoseInWorldFrame();
                 auto& planner = manager.GetUniformBSplinePlanner();
                 double cross_track = CrossTrackErrorToPlanner(planner, true_pose);
-                // Along-track: difference in parameter mapped to arc length (approx via total length)
-                double u_robot = ClosestUToPlanner(planner, true_pose);
-                Eigen::Vector3d ref_pose = planner.IsActive() ? planner.GetCurrentDesiredPosition()
-                                                              : planner.EvaluateBSplineAtParameter(1.0);
-                double u_ref = ClosestUToPlanner(planner, ref_pose);
-                double along_abs = std::abs(u_ref - u_robot) * planner.GetTotalArcLength();
-                // Heading error at robot's closest point
-                Eigen::Vector3d d1 = planner.GetTangentAt(u_robot);
-                double heading_ref = std::atan2(d1[1], d1[0]);
-                double heading_err = util::WrapAngle(heading_ref - true_pose[2]);
-                double heading_abs = std::abs(heading_err);
+                // Along-track using arc length mapping (SSL-style): s_ref - s_robot
+                double s_robot = planner.ProjectArcLengthAt(true_pose.head<2>());
+                double s_ref = planner.GetDesiredArcLengthNow();
+                double along_abs = std::abs(s_ref - s_robot);
+                // Heading: use velocity-based heading when moving, else path tangent
+                Eigen::Vector3d vel_w = manager.GetVelocityInWorldFrame();
+                double speed = vel_w.head<2>().norm();
+                double heading_robot = (speed > 0.05) ? std::atan2(vel_w[1], vel_w[0])
+                                                      : planner.GetHeadingAt(ClosestUToPlanner(planner, true_pose));
+                double heading_ref = planner.GetHeadingAt(ClosestUToPlanner(planner, true_pose));
+                double heading_abs = std::abs(util::WrapAngle(heading_ref - heading_robot));
                 UpdatePerformanceMetrics(perf, cross_track, along_abs, heading_abs, simulation_time);
             }
             

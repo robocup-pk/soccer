@@ -486,6 +486,14 @@ public:
     // Public helpers for evaluation along the path
     Eigen::Vector3d GetTangentAt(double u) const;   // dX/du (not normalized)
     double GetHeadingAt(double u) const;            // atan2(tangent_y, tangent_x)
+
+    // Arc-length utilities for external evaluation (read-only)
+    // Map parameter u in [0,1] to arc length s in meters using precomputed samples
+    double ParameterToArcLength(double u) const;
+    // Desired arc length at "now" according to the internal time base
+    double GetDesiredArcLengthNow() const;
+    // Project a 2D position onto the spline and return its arc length (closest point)
+    double ProjectArcLengthAt(const Eigen::Vector2d& position) const;
     
     std::vector<Eigen::Vector3d> GetControlPoints() const {
         return control_points_;
