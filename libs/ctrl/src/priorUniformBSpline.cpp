@@ -169,13 +169,11 @@ void UniformBSplineTrajectoryPlanner::GenerateControlPointsFromWaypoints() {
             // Calculate corner angle based on position change
             Eigen::Vector2d v1 = curr.head<2>() - prev.head<2>();
             Eigen::Vector2d v2 = next.head<2>() - curr.head<2>();
-            double len1 = v1.norm();
-            double len2 = v2.norm();
             
             // Check if we have significant position movement
-            if (len1 > 1e-6 && len2 > 1e-6) {
-                v1 /= len1;
-                v2 /= len2;
+            if (v1.norm() > 1e-6 && v2.norm() > 1e-6) {
+                v1.normalize();
+                v2.normalize();
                 double angle = std::acos(std::clamp(v1.dot(v2), -1.0, 1.0));
 
                 // Always apply cornering logic, but vary the offset based on the angle
@@ -195,13 +193,7 @@ void UniformBSplineTrajectoryPlanner::GenerateControlPointsFromWaypoints() {
                     inward_pull_factor = PlannerConstants::CORNER_INWARD_PULL_FACTOR; // Use the same pull factor for consistency
                 }
 
-                // Scale corner offset by local segment lengths so we don't overshoot
-                // on tightly sampled curves (e.g., inner spiral turns)
-                double max_offset = 0.5 * std::min(len1, len2); // at most half the shorter segment
-                corner_offset = std::min(corner_offset, max_offset);
-
-                Eigen::Vector2d sum_dir = (v1 + v2);
-                Eigen::Vector2d bisector = -sum_dir.normalized();
+                Eigen::Vector2d bisector = -(v1 + v2).normalized();
 
                 Eigen::Vector3d before_corner = curr;
                 before_corner.head<2>() = curr.head<2>() - v1 * corner_offset;
@@ -443,6 +435,22 @@ Eigen::Vector3d UniformBSplineTrajectoryPlanner::EvaluateBSplineDerivativeAnalyt
     std::vector<double> derivative_knot_vector(knot_vector_.begin() + derivative_order, knot_vector_.end() - derivative_order);
 
     return EvaluateBSpline(u, SPLINE_DEGREE - derivative_order, derivative_control_points_[derivative_order - 1], derivative_knot_vector);
+}
+
+
+// Signed planar curvature at parameter u using analytic derivatives.
+// kappa = (x'y" - y'x") / (x'^2 + y'^2)^(3/2)
+double UniformBSplineTrajectoryPlanner::ComputeCurvatureAt(double u) const {
+    Eigen::Vector3d d1 = EvaluateBSplineDerivative(u, 1);
+    Eigen::Vector3d d2 = EvaluateBSplineDerivative(u, 2);
+
+    Eigen::Vector2d t = d1.head<2>();
+    Eigen::Vector2d a = d2.head<2>();
+    double t2 = t.squaredNorm();
+    if (t2 < 1e-10) return 0.0;
+    double cross = t.x() * a.y() - t.y() * a.x();
+    double denom = std::pow(t2, 1.5);
+    return cross / denom;
 }
 
 
@@ -717,77 +725,71 @@ Eigen::Vector3d UniformBSplineTrajectoryPlanner::CalculateVelocityCommand(const 
     Eigen::Vector3d pose_error = desired_state.pose - current_pose;
     double desired_speed = ComputeDesiredSpeed(elapsed_time);
 
-    Eigen::Vector3d desired_velocity_tangent = desired_state.velocity;
-    if (desired_velocity_tangent.head<2>().norm() > 1e-6) {
-        desired_velocity_tangent.head<2>().normalize();
-        desired_velocity_tangent.head<2>() *= desired_speed;
-    }
-
-    Eigen::Vector3d velocity_command;
-    double curvature = 0.0;
-    Eigen::Vector2d tangent_2d = desired_velocity_tangent.head<2>();
-    if (tangent_2d.norm() > 1e-6) {
-        tangent_2d.normalize();
-        Eigen::Vector2d perpendicular(-tangent_2d[1], tangent_2d[0]);
-        double cross_track_error = pose_error.head<2>().dot(perpendicular);
-        double along_track_error = pose_error.head<2>().dot(tangent_2d);
-
-        double lookahead_time = PlannerConstants::LOOKAHEAD_TIME_S;
-        // Look ahead based on current elapsed time, not total duration
-        double future_elapsed = elapsed_time + lookahead_time;
-        double future_u = std::clamp(ArcLengthToParameter(ComputeDesiredArcLength(future_elapsed)), 0.0, 1.0);
-        Eigen::Vector3d future_tangent = EvaluateBSplineDerivative(future_u, 1);
-
-        if (future_tangent.head<2>().norm() > 1e-6) {
-            future_tangent.head<2>().normalize();
-            double angle_change = std::acos(std::clamp(tangent_2d.dot(future_tangent.head<2>()), -1.0, 1.0));
-            curvature = angle_change / lookahead_time;
-        }
-
-        ApplyControlGains(velocity_command, pose_error, desired_velocity_tangent, curvature, desired_speed);
-    } else {
+    // Unit tangent at current point on the spline
+    Eigen::Vector2d t_hat = desired_state.velocity.head<2>();
+    Eigen::Vector3d velocity_command = Eigen::Vector3d::Zero();
+    if (t_hat.norm() < 1e-9) {
+        // Degenerate case: just move towards the error
         velocity_command.head<2>() = kp_ * 2.0 * pose_error.head<2>();
-    }
-
-    if (has_previous_update_ && dt > 0.001) {
-        Eigen::Vector3d error_derivative = (pose_error - previous_pose_error_) / dt;
-        velocity_command.head<2>() -= PlannerConstants::DAMPING_GAIN * error_derivative.head<2>();
-    }
-
-    double desired_heading = 0.0;
-    double heading_lookahead = PlannerConstants::HEADING_LOOKAHEAD_S;
-    // Use elapsed_time to compute heading lookahead parameter
-    double heading_elapsed = elapsed_time + heading_lookahead;
-    double heading_u = std::clamp(ArcLengthToParameter(ComputeDesiredArcLength(heading_elapsed)), 0.0, 1.0);
-    Eigen::Vector3d heading_tangent = EvaluateBSplineDerivative(heading_u, 1);
-
-    if (heading_tangent.head<2>().norm() > 0.1) {
-        desired_heading = std::atan2(heading_tangent[1], heading_tangent[0]);
-    } else if (velocity_command.head<2>().norm() > 0.1) {
-        desired_heading = std::atan2(velocity_command[1], velocity_command[0]);
     } else {
-        desired_heading = current_pose[2];
-    }
+        t_hat.normalize();
+        Eigen::Vector2d n_hat(-t_hat.y(), t_hat.x());
 
-    double heading_error = NormalizeAngle(desired_heading - current_pose[2]);
-    double heading_gain = PlannerConstants::BASE_HEADING_GAIN;
-    if (std::abs(heading_error) < PlannerConstants::SMALL_HEADING_ERROR_RAD) {
-        heading_gain = PlannerConstants::SMALL_HEADING_ERROR_GAIN;
-    } else if (std::abs(heading_error) > PlannerConstants::LARGE_HEADING_ERROR_RAD) {
-        heading_gain = PlannerConstants::LARGE_HEADING_ERROR_GAIN;
-    }
+        // Along- and cross-track errors
+        double e_cross = pose_error.head<2>().dot(n_hat);
+        double e_along = pose_error.head<2>().dot(t_hat);
 
-    // Apply mild speed reduction only for very large heading errors to prevent wobble
-    // but don't be too aggressive as it causes jerkiness
-    {
-        double he = std::abs(heading_error);
-        double linear_scale = 1.0;
-        if (he > PlannerConstants::LARGE_HEADING_ERROR_RAD * 1.5) {  // Only for very large errors (> 0.75 rad)
-            linear_scale = 0.7;   // mild reduction
+        // Curvature at current parameter (analytic, parameterization independent)
+        double u_now = ArcLengthToParameter(ComputeDesiredArcLength(elapsed_time));
+        double kappa = ComputeCurvatureAt(u_now); // signed 1/m
+
+        // Smooth speed limit by lateral acceleration
+        double a_lat_max = PlannerConstants::LATERAL_ACCEL_LIMIT_FRACTION * a_max_;
+        double v_allowed_curve = v_max_;
+        double abs_kappa = std::abs(kappa);
+        if (abs_kappa > 1e-6) {
+            v_allowed_curve = std::min(v_max_, std::sqrt(std::max(0.0, a_lat_max / abs_kappa)));
         }
-        velocity_command.head<2>() *= linear_scale;
+
+        double v_base = std::min(desired_speed, v_allowed_curve);
+        // Limit along-track correction to avoid sign flips/stop-go jitter
+        double along_corr = std::clamp(PlannerConstants::BASE_ALONG_TRACK_GAIN * e_along, -0.15, 0.15);
+        double v_t = std::clamp(v_base + along_corr, 0.05, v_allowed_curve);
+
+        // Cross-track correction with saturation to keep total speed smooth
+        double k_ct = PlannerConstants::BASE_CROSS_TRACK_GAIN;
+        double err_mag = std::abs(e_cross);
+        if (err_mag > PlannerConstants::LARGE_ERROR_THRESHOLD_M)      k_ct = PlannerConstants::LARGE_ERROR_CROSS_TRACK_GAIN;
+        else if (err_mag > PlannerConstants::MEDIUM_ERROR_THRESHOLD_M) k_ct = PlannerConstants::MEDIUM_ERROR_CROSS_TRACK_GAIN;
+
+        double v_n = std::clamp(k_ct * e_cross,
+                                -PlannerConstants::MAX_LATERAL_SPEED_MPS,
+                                PlannerConstants::MAX_LATERAL_SPEED_MPS);
+
+        // Compose world-frame linear velocity
+        Eigen::Vector2d v2 = v_t * t_hat + v_n * n_hat;
+        velocity_command.head<2>() = v2;
+
+        // Small PD damping using error derivative
+        if (has_previous_update_ && dt > 0.001) {
+            Eigen::Vector3d error_derivative = (pose_error - previous_pose_error_) / dt;
+            velocity_command.head<2>() -= PlannerConstants::DAMPING_GAIN * error_derivative.head<2>();
+        }
+
+        // Heading control with curvature feed-forward: omega = v_t * kappa + K * e_heading
+        double desired_heading = std::atan2(t_hat.y(), t_hat.x());
+        double heading_error = NormalizeAngle(desired_heading - current_pose[2]);
+        double heading_gain = PlannerConstants::BASE_HEADING_GAIN;
+        if (std::abs(heading_error) < PlannerConstants::SMALL_HEADING_ERROR_RAD) {
+            heading_gain = PlannerConstants::SMALL_HEADING_ERROR_GAIN;
+        } else if (std::abs(heading_error) > PlannerConstants::LARGE_HEADING_ERROR_RAD) {
+            heading_gain = PlannerConstants::LARGE_HEADING_ERROR_GAIN;
+        }
+        // Clamp curvature to avoid extreme spikes from numerical noise
+        kappa = std::clamp(kappa, -8.0, 8.0);
+        double omega_ff = v_t * kappa; // signed
+        velocity_command[2] = omega_ff + heading_gain * heading_error;
     }
-    velocity_command[2] = heading_gain * heading_error;
 
     return velocity_command;
 }
@@ -837,8 +839,8 @@ void UniformBSplineTrajectoryPlanner::ApplyVelocityLimitsAndFilter(Eigen::Vector
     velocity_command[2] = std::clamp(velocity_command[2], -omega_max_, omega_max_);
 
     if (has_previous_command_) {
-        velocity_command = PlannerConstants::VELOCITY_FILTER_ALPHA * velocity_command +
-                         (1.0 - PlannerConstants::VELOCITY_FILTER_ALPHA) * previous_velocity_command_;
+        velocity_command = velocity_filter_alpha_ * velocity_command +
+                           (1.0 - velocity_filter_alpha_) * previous_velocity_command_;
     }
 }
 
@@ -911,9 +913,6 @@ double UniformBSplineTrajectoryPlanner::NormalizeAngle(double angle) const {
     return angle;
 }
 
-double UniformBSplineTrajectoryPlanner::ParameterToTime(double u) const {
-    return u * trajectory_duration_;
-}
 
 Eigen::Vector3d UniformBSplineTrajectoryPlanner::GetIdealPosition(double current_time) const {
     if (!is_trajectory_active_) {
@@ -1014,30 +1013,17 @@ bool UniformBSplineTrajectoryPlanner::TryAutoReplan(const Eigen::Vector3d& state
                                                    double current_time,
                                                    double position_error_threshold,
                                                    double angle_error_threshold) {
-    if (verbose_) {
-        std::cout << "[TryAutoReplan] replanning_enabled_=" << replanning_enabled_ 
-                  << ", is_trajectory_active_=" << is_trajectory_active_ 
-                  << ", is_trajectory_finished_=" << is_trajectory_finished_ << std::endl;
-    }
-    
     if (!replanning_enabled_ || !is_trajectory_active_ || is_trajectory_finished_) {
-        if (verbose_) std::cout << "[TryAutoReplan] Early exit: replanning disabled or trajectory not active" << std::endl;
         return false;
     }
     if (current_time - last_replan_time_ < min_replan_interval_) {
-        if (verbose_) std::cout << "[TryAutoReplan] Too soon since last replan (" << (current_time - last_replan_time_) << "s < " << min_replan_interval_ << "s)" << std::endl;
         return false;
     }
-    
-    if (verbose_) std::cout << "[TryAutoReplan] Calling UpdatePartialTrajectory..." << std::endl;
     
     // Never do full replanning as it causes discontinuities
     bool corrected = UpdatePartialTrajectory(state_estimation_pose, 4);
     if (corrected) {
         last_replan_time_ = current_time;
-        if (verbose_) std::cout << "[TryAutoReplan] Successfully replanned!" << std::endl;
-    } else {
-        if (verbose_) std::cout << "[TryAutoReplan] UpdatePartialTrajectory returned false" << std::endl;
     }
     return corrected;
 }
@@ -1047,18 +1033,13 @@ bool UniformBSplineTrajectoryPlanner::UpdatePartialTrajectory(const Eigen::Vecto
                                                              int num_control_points_to_update) {
     std::lock_guard<std::mutex> guard(planner_mutex_);
     if (!is_trajectory_active_ || control_points_.size() < 6) {
-        if (verbose_) std::cout << "[UpdatePartialTrajectory] Early exit: trajectory not active or insufficient control points" << std::endl;
         return false;
     }
     
     // Don't update if we're too close to the end
     double elapsed = util::GetCurrentTime() - trajectory_start_time_;
     double progress = elapsed / trajectory_duration_;
-    if (verbose_) {
-        std::cout << "[UpdatePartialTrajectory] Progress: " << progress*100 << "% (elapsed=" << elapsed << "s, duration=" << trajectory_duration_ << "s)" << std::endl;
-    }
     if (progress > 0.85 || progress < 0.05) {  // Don't replan at start or end
-        if (verbose_) std::cout << "[UpdatePartialTrajectory] Trajectory progress outside replanning window (5%-85%)" << std::endl;
         return false;
     }
     
@@ -1071,15 +1052,8 @@ bool UniformBSplineTrajectoryPlanner::UpdatePartialTrajectory(const Eigen::Vecto
     Eigen::Vector3d error = current_pose - desired_pos;
     double position_error = error.head<2>().norm();
     
-    if (verbose_) {
-        std::cout << "[UpdatePartialTrajectory] Position error: " << position_error*1000 << "mm (threshold: 5-200mm)" << std::endl;
-        std::cout << "[UpdatePartialTrajectory] Current pose: (" << current_pose.transpose() << ")" << std::endl;
-        std::cout << "[UpdatePartialTrajectory] Desired pose: (" << desired_pos.transpose() << ")" << std::endl;
-    }
-    
     // Only update if error is significant but not too large
-    if (position_error < 0.005 || position_error > 0.2) {  // Between 5mm and 20cm (very sensitive)
-        if (verbose_) std::cout << "[UpdatePartialTrajectory] Position error outside replanning range (5-200mm)" << std::endl;
+    if (position_error < 0.02 || position_error > 0.2) {  // Between 2cm and 20cm
         return false;
     }
     
@@ -1093,29 +1067,11 @@ bool UniformBSplineTrajectoryPlanner::UpdatePartialTrajectory(const Eigen::Vecto
     span_idx = std::max(p, std::min(span_idx, n - 1));
     
     // Start updating from 2 control points ahead to maintain continuity
-    // But ensure we respect the boundary constraints
-    int start_idx = std::max(p, std::min(span_idx + 2, n - num_control_points_to_update));
-    int end_idx = std::min(start_idx + num_control_points_to_update, n - p);  // Respect upper boundary
-    
-    // Ensure we have at least some control points to update
-    if (end_idx <= start_idx) {
-        // Try a smaller update window
-        num_control_points_to_update = std::max(1, (n - p - p) / 2);  // Half the available range
-        start_idx = std::max(p, span_idx);
-        end_idx = std::min(start_idx + num_control_points_to_update, n - p);
-    }
-    
-    if (verbose_) {
-        std::cout << "[UpdatePartialTrajectory] Control point indices: n=" << n << ", p=" << p 
-                  << ", span_idx=" << span_idx << ", start_idx=" << start_idx 
-                  << ", end_idx=" << end_idx << std::endl;
-        std::cout << "[UpdatePartialTrajectory] Boundary check: start_idx >= p? " << (start_idx >= p) 
-                  << ", end_idx <= n-p? " << (end_idx <= n - p) << std::endl;
-    }
+    int start_idx = std::min(span_idx + 2, n - num_control_points_to_update);
+    int end_idx = std::min(start_idx + num_control_points_to_update, n);
     
     // Ensure we're not updating too close to the boundaries
-    if (start_idx < p || end_idx > n - p || end_idx <= start_idx) {
-        if (verbose_) std::cout << "[UpdatePartialTrajectory] Failed boundary check or no valid range!" << std::endl;
+    if (start_idx < p || end_idx > n - p) {
         return false;
     }
     
@@ -1131,16 +1087,16 @@ bool UniformBSplineTrajectoryPlanner::UpdatePartialTrajectory(const Eigen::Vecto
         // Smooth bell-shaped correction factor
         double correction_factor = std::exp(-4.0 * (window_pos - 0.3) * (window_pos - 0.3));
         
-        // Apply 15% correction - balanced between responsiveness and stability
-        Eigen::Vector3d correction = error * 0.15 * correction_factor;
+        // Apply only 10% correction to avoid instability
+        Eigen::Vector3d correction = error * 0.1 * correction_factor;
         
         // Only correct x,y position, preserve orientation
         correction[2] = 0.0;
         
         // Limit individual correction magnitude
         double correction_norm = correction.head<2>().norm();
-        if (correction_norm > 0.03) {  // Max 3cm correction per control point (increased)
-            correction.head<2>() *= 0.03 / correction_norm;
+        if (correction_norm > 0.02) {  // Max 2cm correction per control point
+            correction.head<2>() *= 0.02 / correction_norm;
         }
         
         control_points_[i] += correction;
@@ -1233,6 +1189,7 @@ std::vector<Eigen::Vector3d> UniformBSplineTrajectoryPlanner::GetRemainingPath(c
 
     return remaining_path;
 }
+
 
 
 } // namespace ctrl

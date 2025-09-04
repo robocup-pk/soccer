@@ -114,7 +114,7 @@ void rob::RobotManager::ControlLogic() {
         const double now = util::GetCurrentTime();
         const Eigen::Vector3d est_pose = state_estimator.GetPose();
         // TryAutoReplan now uses UpdatePartialTrajectory for soft corrections
-        (void)uniform_bspline_planner.TryAutoReplan(est_pose, now, 0.05, 0.1);  // 5cm, 0.1rad thresholds
+        (void)uniform_bspline_planner.TryAutoReplan(est_pose, now, 0.03, 0.08);  // 3cm, 0.08rad thresholds (more sensitive)
       }
       
       break;

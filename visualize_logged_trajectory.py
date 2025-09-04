@@ -51,52 +51,22 @@ def read_trajectory_log(filename):
     return np.array(waypoints), np.array(trajectory_data), trajectory_type
 
 def generate_ideal_bspline(waypoints, num_samples=500):
-    """Generate ideal B-spline path for comparison"""
+    """Generate simple linear path connecting waypoints - matches what robot should follow"""
     if len(waypoints) < 2:
         return np.array([])
     
-    # For square path, create smoother corners
+    # Simple approach: connect waypoints with straight lines
+    # This represents the ideal path the robot should follow
     points = []
-    corner_radius = 0.1  # Radius for corner smoothing
     
     for i in range(len(waypoints) - 1):
-        p1 = waypoints[i, :2]
-        p2 = waypoints[i+1, :2]
+        p1 = waypoints[i, :2]  # Current waypoint (x, y only)
+        p2 = waypoints[i+1, :2]  # Next waypoint (x, y only)
         
-        # Check if this is a corner (significant angle change)
-        if i > 0 and i < len(waypoints) - 1:
-            v1 = p1 - waypoints[i-1, :2]
-            v2 = p2 - p1
-            
-            # Normalize vectors
-            if np.linalg.norm(v1) > 0 and np.linalg.norm(v2) > 0:
-                v1_norm = v1 / np.linalg.norm(v1)
-                v2_norm = v2 / np.linalg.norm(v2)
-                
-                # Calculate angle between vectors
-                dot_product = np.clip(np.dot(v1_norm, v2_norm), -1, 1)
-                angle = np.arccos(dot_product)
-                
-                # If it's a significant corner (> 30 degrees)
-                if angle > np.pi/6:
-                    # Add points before corner
-                    corner_start = p1 - v1_norm * corner_radius
-                    for t in np.linspace(0, 1, 10):
-                        point = waypoints[i-1, :2] * (1-t) + corner_start * t
-                        points.append(point)
-                    
-                    # Add corner arc
-                    corner_end = p1 + v2_norm * corner_radius
-                    # Simple arc approximation
-                    for t in np.linspace(0, 1, 20):
-                        # Bezier curve for corner
-                        point = (1-t)**2 * corner_start + 2*(1-t)*t * p1 + t**2 * corner_end
-                        points.append(point)
-                    
-                    continue
-        
-        # Add straight line segments
-        for t in np.linspace(0, 1, 30):
+        # Add interpolated points between waypoints
+        num_segments = 50  # Number of points between each waypoint pair
+        for j in range(num_segments):
+            t = j / (num_segments - 1) if num_segments > 1 else 0
             point = p1 * (1 - t) + p2 * t
             points.append(point)
     

@@ -33,7 +33,7 @@ struct PlannerConstants {
 
     // The distance to offset the control points from the waypoint for a 90-degree corner.
     // Increasing this value will make the robot cut the corner more, resulting in a wider turn.
-    static constexpr double CORNER_OFFSET_M = 0.015;
+    static constexpr double CORNER_OFFSET_M = 0.025;
 
     // The factor by which to pull the corner control point inwards.
     // This helps to tighten the turn. A value of 0.5 means the control point is placed halfway
@@ -42,14 +42,14 @@ struct PlannerConstants {
 
     // The distance to offset the control points from the waypoint for a general sharp corner.
     // Increasing this value will make the robot cut the corner more.
-    static constexpr double GENERAL_CORNER_OFFSET_M = 0.05;
+    static constexpr double GENERAL_CORNER_OFFSET_M = 0.08;
 
     // The inward pull factor for a general sharp corner.
     static constexpr double GENERAL_CORNER_INWARD_PULL_FACTOR = 0.4;
 
     // The distance to offset the control points from the waypoint for a smooth corner.
     // Increasing this value will make the robot cut the corner more.
-    static constexpr double SMOOTH_CORNER_OFFSET_M = 0.03;
+    static constexpr double SMOOTH_CORNER_OFFSET_M = 0.1;
 
 
     // =====================================================================================
@@ -92,7 +92,7 @@ struct PlannerConstants {
 
     // The lookahead time (in seconds) for corner detection.
     // Increasing this value will make the robot detect corners earlier and start turning sooner.
-    static constexpr double LOOKAHEAD_TIME_S = 0.1;
+    static constexpr double LOOKAHEAD_TIME_S = 0.15;
 
     // The curvature threshold for detecting a sharp corner.
     // Higher values will make the corner detection less sensitive.
@@ -103,16 +103,16 @@ struct PlannerConstants {
 
     // The factor by which to increase the cross-track gain for a sharp corner.
     // This makes the robot turn more aggressively in sharp corners.
-    static constexpr double SHARP_CORNER_GAIN_FACTOR = 1.8;
+    static constexpr double SHARP_CORNER_GAIN_FACTOR = 1.5;
 
     // The factor by which to increase the cross-track gain for a moderate corner.
-    static constexpr double MODERATE_CORNER_GAIN_FACTOR = 1.4;
+    static constexpr double MODERATE_CORNER_GAIN_FACTOR = 1.2;
 
     // The factor by which to reduce the speed for a sharp corner.
-    static constexpr double SHARP_CORNER_SPEED_FACTOR = 0.6;
+    static constexpr double SHARP_CORNER_SPEED_FACTOR = 0.5;
 
     // The factor by which to reduce the speed for a moderate corner.
-    static constexpr double MODERATE_CORNER_SPEED_FACTOR = 0.75;
+    static constexpr double MODERATE_CORNER_SPEED_FACTOR = 0.6;
 
     // The curvature threshold for detecting a very sharp corner.
     static constexpr double VERY_SHARP_CORNER_CURVATURE = 2.5;
@@ -126,7 +126,7 @@ struct PlannerConstants {
 
     // The alpha value for the low-pass filter on the velocity command.
     // A value of 1.0 means no filtering, while a value of 0.0 means full filtering.
-    static constexpr double VELOCITY_FILTER_ALPHA = 0.9;
+    static constexpr double VELOCITY_FILTER_ALPHA = 0.8;
 
 
     // =====================================================================================
@@ -134,24 +134,34 @@ struct PlannerConstants {
     // These parameters control the feedback gains for the trajectory controller.
     // =====================================================================================
 
+    // Velocity command low-pass filter: 1.0 = no filtering, 0.0 = full filtering
+    static constexpr double VELOCITY_FILTER_ALPHA_DEFAULT = 0.9;
+    // Lateral acceleration limit used to smoothly cap speed in curves:
+    // v_allowed = sqrt(a_lat_max / |kappa|). We treat a_lat_max as a
+    // fraction of the tangential acceleration limit a_max_.
+    static constexpr double LATERAL_ACCEL_LIMIT_FRACTION = 0.85; // of a_max_
+    // Maximum lateral correction speed from cross-track control (m/s)
+    static constexpr double MAX_LATERAL_SPEED_MPS = 0.5;
+
+    
     // The position error threshold (in meters) for using the large error gains.
-    static constexpr double LARGE_ERROR_THRESHOLD_M = 0.08;
+    static constexpr double LARGE_ERROR_THRESHOLD_M = 0.05;
 
     // The position error threshold (in meters) for using the medium error gains.
-    static constexpr double MEDIUM_ERROR_THRESHOLD_M = 0.03;
+    static constexpr double MEDIUM_ERROR_THRESHOLD_M = 0.02;
 
     // The base gain for cross-track error.
     // This is the gain used when the error is small.
-    static constexpr double BASE_CROSS_TRACK_GAIN = 18.0;
+    static constexpr double BASE_CROSS_TRACK_GAIN = 12.0;
 
     // The gain for cross-track error when the error is large.
-    static constexpr double LARGE_ERROR_CROSS_TRACK_GAIN = 25.0;
+    static constexpr double LARGE_ERROR_CROSS_TRACK_GAIN = 15.0;
 
     // The gain for cross-track error when the error is medium.
-    static constexpr double MEDIUM_ERROR_CROSS_TRACK_GAIN = 20.0;
+    static constexpr double MEDIUM_ERROR_CROSS_TRACK_GAIN = 12.0;
 
     // The gain for along-track error.
-    static constexpr double BASE_ALONG_TRACK_GAIN = 5.0;
+    static constexpr double BASE_ALONG_TRACK_GAIN = 3.0;
 
     // The base gain for heading error.
     static constexpr double BASE_HEADING_GAIN = 8.0;
@@ -169,7 +179,7 @@ struct PlannerConstants {
     static constexpr double LARGE_HEADING_ERROR_RAD = 0.5;
 
     // The damping gain for the PD controller.
-    static constexpr double DAMPING_GAIN = 0.2;
+    static constexpr double DAMPING_GAIN = 0.1;
 
 
     // =====================================================================================
@@ -402,6 +412,9 @@ private:
     // Original waypoints from RRT*
     std::vector<Eigen::Vector3d> waypoints_;
     
+    // Signed curvature in 2D at parameter u (1/m)
+    double ComputeCurvatureAt(double u) const;
+
     // Arc length parameterization
     double total_arc_length_;
     std::vector<double> arc_length_samples_;

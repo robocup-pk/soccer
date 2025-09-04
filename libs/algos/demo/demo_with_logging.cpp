@@ -2,6 +2,8 @@
 #include <fstream>
 #include <vector>
 #include <chrono>
+#include <cstdlib>
+#include <ctime>
 #include "Waypoint.h"
 #include "GLSimulation.h"
 #include "SoccerObject.h"
@@ -14,6 +16,9 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
     std::cout << "[Demo] Running RobotManager demo with trajectory logging" << std::endl;
+    
+    // Initialize random seed for drift simulation
+    srand(static_cast<unsigned int>(time(nullptr)));
 
     // Initialize objects
     vector<state::SoccerObject> soccer_objects;
@@ -32,6 +37,11 @@ int main(int argc, char* argv[]) {
     vector<Eigen::Vector3d> waypoints;
     robot_manager.GetUniformBSplinePlanner().SetLimits(0.8, 0.5, 0.8, 0.5);
     robot_manager.GetUniformBSplinePlanner().SetFeedbackGains(0.1, 0.05);
+    
+    // Enable replanning for testing
+    robot_manager.GetUniformBSplinePlanner().SetReplanningEnabled(true);
+    robot_manager.GetUniformBSplinePlanner().SetVerbose(false);  // Disable verbose for clean output
+    std::cout << "[Demo] Replanning enabled for trajectory adaptation" << std::endl;
     
     // Choose a test case based on command line argument
     int test_case = 1;
@@ -163,18 +173,36 @@ int main(int argc, char* argv[]) {
             break;
         }
         case 10: {
-            // Test 10: Spiral trajectory (increasing radius)
-            std::cout << "Test 10: Spiral trajectory" << std::endl;
-            int N = 20;
+            // Test 10: Improved spiral trajectory with smooth velocity-based orientations
+            std::cout << "Test 10: Smooth spiral trajectory" << std::endl;
+            int N = 16;  // Fewer waypoints for smoother motion
+            std::vector<Eigen::Vector3d> spiral_waypoints;
+            //spiral_waypoints.push_back(Eigen::Vector3d(0,0,0));
+            //spiral_waypoints.push_back(Eigen::Vector3d(0.5,0,0));
             for (int i = 0; i <= N; ++i) {
-                double angle = 3.0 * M_PI * i / N;  // 1.5 full rotations
-                double radius = 0.1 + 0.4 * i / N;  // Radius from 0.1 to 0.5
-                waypoints.push_back(Eigen::Vector3d(
-                    radius * std::cos(angle),
-                    radius * std::sin(angle),
-                    angle
-                ));
+                double angle = 1.5 * M_PI * i / N;  // Reduced to 0.75 rotations (270°)
+                double radius = 0.1 + 0.3 * i / N;  // Radius from 0.1 to 0.4 (smaller for safety)
+                
+                // Position
+                double x = radius * std::cos(angle);
+                double y = radius * std::sin(angle);
+                
+                // Calculate orientation based on velocity direction (tangent to spiral)
+                double theta;
+                if (i == 0) {
+                    theta = 0.0;  // Start facing forward
+                } else {
+                    // Compute tangent vector (derivative of spiral)
+                    double dr_dangle = 0.3 / (1.5 * M_PI);  // radius change rate
+                    double dx_dangle = dr_dangle * std::cos(angle) - radius * std::sin(angle);
+                    double dy_dangle = dr_dangle * std::sin(angle) + radius * std::cos(angle);
+                    theta = std::atan2(dy_dangle, dx_dangle);
+                }
+                
+                spiral_waypoints.push_back(Eigen::Vector3d(x, y, theta));
             }
+            
+            waypoints = spiral_waypoints;
             break;
         }
         default: {
@@ -218,6 +246,7 @@ int main(int argc, char* argv[]) {
         case 2:
             std::cout << "Using Uniform B-spline trajectory (EWOK-based)" << std::endl;
             robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::UniformBSpline);
+            robot_manager.GetUniformBSplinePlanner().SetReplanningEnabled(true);  // Enable replanning
             robot_manager.SetUniformBSplinePath(waypoints, util::GetCurrentTime());
             break;
         case 3:
@@ -268,6 +297,73 @@ int main(int argc, char* argv[]) {
         Eigen::Vector3d current_pose = robot_manager.GetPoseInWorldFrame();
         Eigen::Vector3d current_velocity = robot_manager.GetVelocityInWorldFrame();
         
+        // Realistic RoboCup SSL noise simulation
+        static std::random_device rd;
+        static std::mt19937 gen(rd());
+        static std::normal_distribution<double> vision_noise(0.0, 0.005);  // 5mm std dev for SSL vision
+        static std::normal_distribution<double> orientation_noise(0.0, 0.02);  // 0.02 rad (~1.1°) for orientation
+        static std::uniform_real_distribution<double> dropout_prob(0.0, 1.0);
+        static int frames_since_last_vision = 0;
+        static Eigen::Vector3d last_vision_pose = current_pose;
+        static double accumulated_drift = 0.0;
+        
+        // Simulate realistic SSL conditions
+        frames_since_last_vision++;
+        
+        // Vision system updates (SSL camera runs at ~60Hz, we simulate ~50Hz with occasional dropouts)
+        bool vision_available = (frames_since_last_vision >= 1) && (dropout_prob(gen) > 0.05); // 5% dropout rate
+        
+        if (vision_available) {
+            frames_since_last_vision = 0;
+            
+            // Add realistic vision noise
+            Eigen::Vector3d noisy_vision_pose = current_pose;
+            noisy_vision_pose[0] += vision_noise(gen);  // X position noise
+            noisy_vision_pose[1] += vision_noise(gen);  // Y position noise  
+            noisy_vision_pose[2] += orientation_noise(gen);  // Orientation noise
+            
+            // Simulate state estimation drift between vision updates (IMU drift, wheel slip, etc.)
+            accumulated_drift += 0.001 * frames_since_last_vision;  // 1mm drift per frame without vision
+            noisy_vision_pose[0] += accumulated_drift * (gen() % 3 - 1);  // Random drift direction
+            noisy_vision_pose[1] += accumulated_drift * (gen() % 3 - 1);
+            
+            last_vision_pose = noisy_vision_pose;
+        }
+        
+        // Intelligent replanning based on noisy vision data
+        static int last_replan_frame = 0;
+        if (frame_count % 15 == 0 && frame_count > 30) {  // Every 15 frames (~0.3s in real SSL)
+            
+            // Calculate tracking error using noisy vision pose
+            Eigen::Vector3d desired_pose = robot_manager.GetUniformBSplinePlanner().GetCurrentDesiredPosition();
+            double tracking_error = (last_vision_pose.head<2>() - desired_pose.head<2>()).norm();
+            
+            // SSL typical replanning threshold: 20mm position error
+            if (tracking_error > 0.02 && (frame_count - last_replan_frame) > 25) {
+                
+                // Enable verbose occasionally for monitoring
+                bool verbose = (frame_count % 150 == 75);
+                robot_manager.GetUniformBSplinePlanner().SetVerbose(verbose);
+                
+                // Replan using the noisy vision pose (realistic scenario)
+                bool replanned = robot_manager.GetUniformBSplinePlanner().UpdatePartialTrajectory(
+                    last_vision_pose, 3);
+                
+                if (replanned) {
+                    last_replan_frame = frame_count;
+                    accumulated_drift *= 0.5;  // Reset some accumulated drift after correction
+                    
+                    if (verbose) {
+                        std::cout << "[Demo] SSL realistic: tracking_error=" << tracking_error*1000 
+                                  << "mm, vision_available=" << vision_available 
+                                  << ", drift=" << accumulated_drift*1000 << "mm" << std::endl;
+                    }
+                }
+                
+                robot_manager.GetUniformBSplinePlanner().SetVerbose(false);
+            }
+        }
+        
         // Calculate timestamp
         auto current_time = std::chrono::steady_clock::now();
         std::chrono::duration<double> elapsed = current_time - start_time;
@@ -293,6 +389,10 @@ int main(int argc, char* argv[]) {
     trajectory_log.close();
     std::cout << "[Demo] Trajectory data saved to trajectory_log.txt" << std::endl;
     std::cout << "[Demo] Recorded " << frame_count << " frames" << std::endl;
+    
+    // Report replanning statistics
+    int replan_count = robot_manager.GetUniformBSplinePlanner().GetReplanCount();
+    std::cout << "[Demo] Total replanning events: " << replan_count << std::endl;
     
     return 0;
 }
