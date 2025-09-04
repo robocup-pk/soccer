@@ -802,26 +802,57 @@ void UniformBSplineTrajectoryPlanner::ApplyControlGains(Eigen::Vector3d& velocit
     double cross_track_error = pose_error.head<2>().dot(perpendicular);
     double along_track_error = pose_error.head<2>().dot(tangent_2d);
 
+    // Adaptive cross-track gain based on error magnitude and trajectory phase
     double cross_track_gain = PlannerConstants::BASE_CROSS_TRACK_GAIN;
     double error_magnitude = std::abs(cross_track_error);
+    
+    // Increase gain based on error magnitude
     if (error_magnitude > PlannerConstants::LARGE_ERROR_THRESHOLD_M) {
         cross_track_gain = PlannerConstants::LARGE_ERROR_CROSS_TRACK_GAIN;
     } else if (error_magnitude > PlannerConstants::MEDIUM_ERROR_THRESHOLD_M) {
         cross_track_gain = PlannerConstants::MEDIUM_ERROR_CROSS_TRACK_GAIN;
     }
+    
+    // Additional adaptive gain based on velocity - lower gain at high speeds for stability
+    double velocity_factor = std::min(1.0, v_max_ / std::max(0.1, desired_speed));
+    cross_track_gain *= (0.7 + 0.3 * velocity_factor);
 
     double speed_factor = 1.0;
     if (curvature > PlannerConstants::SHARP_CORNER_CURVATURE) {
-        cross_track_gain *= PlannerConstants::SHARP_CORNER_GAIN_FACTOR;
+        cross_track_gain *= PlannerConstants::SHARP_CORNER_GAIN_FACTOR * 1.1; // More conservative
         speed_factor = PlannerConstants::SHARP_CORNER_SPEED_FACTOR;
     } else if (curvature > PlannerConstants::MODERATE_CORNER_CURVATURE) {
-        cross_track_gain *= PlannerConstants::MODERATE_CORNER_GAIN_FACTOR;
+        cross_track_gain *= PlannerConstants::MODERATE_CORNER_GAIN_FACTOR * 1.05; // More conservative
         speed_factor = PlannerConstants::MODERATE_CORNER_SPEED_FACTOR;
+    } else if (curvature > 0.4) {  // Higher threshold for gentle curve handling
+        cross_track_gain *= 1.08;
+        speed_factor = 0.97;
     }
 
     velocity_command.head<2>() = tangent_2d * (desired_speed * speed_factor);
-    velocity_command.head<2>() += perpendicular * (cross_track_gain * cross_track_error);
+    // Anti-oscillation: reduce corrections if we're changing direction frequently
+    static double prev_cross_track_error = 0.0;
+    static int oscillation_counter = 0;
+    
+    if (std::abs(cross_track_error) > 0.001 && 
+        cross_track_error * prev_cross_track_error < 0) { // Sign change detected
+        oscillation_counter++;
+    } else if (std::abs(cross_track_error) < 0.001) {
+        oscillation_counter = std::max(0, oscillation_counter - 1); // Decay counter
+    }
+    
+    // Reduce gain if oscillating
+    double oscillation_damping = 1.0;
+    if (oscillation_counter > 2) {
+        oscillation_damping = 0.6; // Reduce corrections by 40%
+    } else if (oscillation_counter > 1) {
+        oscillation_damping = 0.8; // Reduce corrections by 20%
+    }
+    
+    velocity_command.head<2>() += perpendicular * (cross_track_gain * cross_track_error * oscillation_damping);
     velocity_command.head<2>() += tangent_2d * (PlannerConstants::BASE_ALONG_TRACK_GAIN * along_track_error);
+    
+    prev_cross_track_error = cross_track_error;
 
     if (curvature > PlannerConstants::VERY_SHARP_CORNER_CURVATURE) {
         velocity_command.head<2>() += perpendicular * PlannerConstants::VERY_SHARP_CORNER_COMPENSATION_M;
@@ -836,9 +867,20 @@ void UniformBSplineTrajectoryPlanner::ApplyVelocityLimitsAndFilter(Eigen::Vector
 
     velocity_command[2] = std::clamp(velocity_command[2], -omega_max_, omega_max_);
 
+    // Enhanced velocity smoothing with adaptive filtering
     if (has_previous_command_) {
-        velocity_command = PlannerConstants::VELOCITY_FILTER_ALPHA * velocity_command +
-                         (1.0 - PlannerConstants::VELOCITY_FILTER_ALPHA) * previous_velocity_command_;
+        // Use stronger filtering when angular velocity is high (indicates high curvature)
+        double filter_strength = PlannerConstants::VELOCITY_FILTER_ALPHA;
+        double angular_vel_magnitude = std::abs(velocity_command[2]);
+        
+        if (angular_vel_magnitude > PlannerConstants::MODERATE_CORNER_CURVATURE * vel_magnitude) {
+            filter_strength = std::min(0.5, filter_strength + 0.1); // More conservative smoothing
+        } else if (angular_vel_magnitude > 0.15 * vel_magnitude) {
+            filter_strength = std::min(0.65, filter_strength + 0.05); // Gentle smoothing for curves
+        }
+        
+        velocity_command = filter_strength * velocity_command +
+                         (1.0 - filter_strength) * previous_velocity_command_;
     }
 }
 
@@ -913,6 +955,16 @@ double UniformBSplineTrajectoryPlanner::NormalizeAngle(double angle) const {
 
 double UniformBSplineTrajectoryPlanner::ParameterToTime(double u) const {
     return u * trajectory_duration_;
+}
+
+Eigen::Vector3d UniformBSplineTrajectoryPlanner::GetTangentAt(double u) const {
+    return EvaluateBSplineDerivative(u, 1);
+}
+
+double UniformBSplineTrajectoryPlanner::GetHeadingAt(double u) const {
+    Eigen::Vector3d d = EvaluateBSplineDerivative(u, 1);
+    if (d.head<2>().norm() < 1e-9) return 0.0;
+    return std::atan2(d[1], d[0]);
 }
 
 Eigen::Vector3d UniformBSplineTrajectoryPlanner::GetIdealPosition(double current_time) const {
@@ -1057,8 +1109,8 @@ bool UniformBSplineTrajectoryPlanner::UpdatePartialTrajectory(const Eigen::Vecto
     if (verbose_) {
         std::cout << "[UpdatePartialTrajectory] Progress: " << progress*100 << "% (elapsed=" << elapsed << "s, duration=" << trajectory_duration_ << "s)" << std::endl;
     }
-    if (progress > 0.85 || progress < 0.05) {  // Don't replan at start or end
-        if (verbose_) std::cout << "[UpdatePartialTrajectory] Trajectory progress outside replanning window (5%-85%)" << std::endl;
+    if (progress > 0.92 || progress < 0.03) {  // Allow more replanning for curved trajectories
+        if (verbose_) std::cout << "[UpdatePartialTrajectory] Trajectory progress outside replanning window (3%-92%)" << std::endl;
         return false;
     }
     
@@ -1116,6 +1168,12 @@ bool UniformBSplineTrajectoryPlanner::UpdatePartialTrajectory(const Eigen::Vecto
     // Ensure we're not updating too close to the boundaries
     if (start_idx < p || end_idx > n - p || end_idx <= start_idx) {
         if (verbose_) std::cout << "[UpdatePartialTrajectory] Failed boundary check or no valid range!" << std::endl;
+        // If we're near the end of the trajectory (span_idx close to n-p), allow trajectory to continue
+        // without replanning rather than blocking it entirely
+        if (span_idx >= n - p - 1) {
+            if (verbose_) std::cout << "[UpdatePartialTrajectory] Near trajectory end, allowing completion without replanning" << std::endl;
+            return true; // Allow trajectory to proceed to completion
+        }
         return false;
     }
     
@@ -1131,8 +1189,14 @@ bool UniformBSplineTrajectoryPlanner::UpdatePartialTrajectory(const Eigen::Vecto
         // Smooth bell-shaped correction factor
         double correction_factor = std::exp(-4.0 * (window_pos - 0.3) * (window_pos - 0.3));
         
-        // Apply 15% correction - balanced between responsiveness and stability
-        Eigen::Vector3d correction = error * 0.15 * correction_factor;
+        // Dynamic correction strength based on error magnitude and trajectory phase
+        double base_correction = 0.10; // More conservative to prevent oscillations
+        
+        // Increase correction for larger errors, but cap it for stability
+        double error_norm = error.head<2>().norm();
+        double correction_multiplier = std::min(1.3, 0.8 + error_norm * 8.0); // More conservative
+        
+        Eigen::Vector3d correction = error * base_correction * correction_factor * correction_multiplier;
         
         // Only correct x,y position, preserve orientation
         correction[2] = 0.0;

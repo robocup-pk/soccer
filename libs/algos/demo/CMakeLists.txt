@@ -16,6 +16,7 @@ add_executable(demo_rrt_kick DemoRRTKick.cpp)
 add_executable(basic_demo demo.cpp)
 add_executable(demo_with_logging demo_with_logging.cpp)
 add_executable(demo_kalman_logging demo_kalman_logging.cpp)
+add_executable(performance_testing_demo performance_testing_demo.cpp)
 # Link required libraries
 target_link_libraries(demo_rrt_kick 
     algos_lib 
@@ -270,4 +271,17 @@ target_link_libraries(demo_bspline_corner_improved
     hw_lib
     Eigen3::Eigen
 )
+<<<<<<< HEAD
 >>>>>>> 95c268e7 (Debug Kalmans Filter)
+=======
+target_link_libraries(performance_testing_demo 
+    algos_lib 
+    state_lib 
+    vis_lib 
+    kin_lib 
+    rob_lib 
+    cfg_lib 
+    utils_lib
+    Eigen3::Eigen
+)
+>>>>>>> 73c525b1 (Testing Trajectory Planner with Multiple Robot & Tracking error)

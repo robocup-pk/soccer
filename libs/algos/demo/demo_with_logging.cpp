@@ -62,10 +62,11 @@ int main(int argc, char* argv[]) {
             // Test 1: Straight line trajectory
             std::cout << "Test 1: Straight line trajectory" << std::endl;
             waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(0.0, 1.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(0.5, 0.5, 0.0));
-            // waypoints.push_back(Eigen::Vector3d(1.5, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
+            waypoints.push_back(Eigen::Vector3d(0.8, -0.6, 0));
+            waypoints.push_back(Eigen::Vector3d(1.0, -0.4, 0.785));
+            waypoints.push_back(Eigen::Vector3d(1.2, -0.6, 0));
+            waypoints.push_back(Eigen::Vector3d(1.0, -0.8, -0.785));
+            waypoints.push_back(Eigen::Vector3d(0.8, -0.6, 0));
             break;
         }
         case 2: {
@@ -338,8 +339,16 @@ int main(int argc, char* argv[]) {
             Eigen::Vector3d desired_pose = robot_manager.GetUniformBSplinePlanner().GetCurrentDesiredPosition();
             double tracking_error = (last_vision_pose.head<2>() - desired_pose.head<2>()).norm();
             
-            // SSL typical replanning threshold: 20mm position error
-            if (tracking_error > 0.02 && (frame_count - last_replan_frame) > 25) {
+            // Adaptive replanning threshold based on trajectory complexity
+            double adaptive_threshold = 0.015; // Base 15mm threshold
+            
+            // Increase threshold for high-speed sections to avoid over-correcting
+            double robot_speed = std::sqrt(current_velocity[0]*current_velocity[0] + current_velocity[1]*current_velocity[1]);
+            if (robot_speed > 0.6) {
+                adaptive_threshold = 0.025; // 25mm at high speed
+            }
+            
+            if (tracking_error > adaptive_threshold && (frame_count - last_replan_frame) > 20) {
                 
                 // Enable verbose occasionally for monitoring
                 bool verbose = (frame_count % 150 == 75);

@@ -126,7 +126,7 @@ struct PlannerConstants {
 
     // The alpha value for the low-pass filter on the velocity command.
     // A value of 1.0 means no filtering, while a value of 0.0 means full filtering.
-    static constexpr double VELOCITY_FILTER_ALPHA = 0.9;
+    static constexpr double VELOCITY_FILTER_ALPHA = 0.75; // Increased smoothing for better stability
 
 
     // =====================================================================================
@@ -482,6 +482,10 @@ public:
     Eigen::Vector3d EvaluateBSplineAtParameter(double u) const {
         return EvaluateBSpline(u);
     }
+    
+    // Public helpers for evaluation along the path
+    Eigen::Vector3d GetTangentAt(double u) const;   // dX/du (not normalized)
+    double GetHeadingAt(double u) const;            // atan2(tangent_y, tangent_x)
     
     std::vector<Eigen::Vector3d> GetControlPoints() const {
         return control_points_;

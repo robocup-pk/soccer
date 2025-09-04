@@ -5,7 +5,11 @@
 
 namespace cfg {
 struct SystemConfig {
+<<<<<<< HEAD
   static constexpr int num_robots = 12;
+=======
+  static constexpr int num_robots = 6;
+>>>>>>> 73c525b1 (Testing Trajectory Planner with Multiple Robot & Tracking error)
   static const Eigen::Vector3d max_velocity_fBody_mps;
   static const Eigen::Vector3d max_acc_m_radpsps;
   static const double avg_velocity_fBody_mps;
