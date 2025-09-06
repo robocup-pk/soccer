@@ -1,8 +1,7 @@
 #pragma once
 
 #include "BangBangTrajectoryFactory.h"
-#include "BangBangTrajectory2D.h"
-#include "BangBangTrajectory1DOrient.h"
+#include "TrajectoryXyw.h"
 #include <vector>
 #include <memory>
 
@@ -42,11 +41,10 @@ public:
 
 private:
     /**
-     * @brief Trajectory segment combining position and orientation trajectories
+     * @brief Trajectory segment using unified 3D trajectory (TIGERs approach)
      */
     struct TrajectorySegment {
-        BangBangTrajectory2D position_traj;        // XY position trajectory
-        BangBangTrajectory1DOrient orientation_traj; // Theta orientation trajectory
+        TrajectoryXyw trajectory;                  // Unified XYW trajectory (TIGERs style)
         double start_time{0.0};                    // Absolute start time of this segment
         double duration{0.0};                      // Duration of this segment
         

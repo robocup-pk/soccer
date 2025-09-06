@@ -1,6 +1,8 @@
 set(SOURCES
     src/PlanarCurveSegment.cpp
     src/PlanarCurve.cpp
+    src/PlanarCurveFactory.cpp
+    src/DestinationForTimedPositionCalc.cpp
     src/AdvanceMotionPlanner.cpp
     src/TrajectoryTracker.cpp
     src/BangBangTrajectory1D.cpp
@@ -8,6 +10,7 @@ set(SOURCES
     src/BangBangTrajectory1DOrient.cpp
     src/BangBangTrajectory2DAsync.cpp
     src/BangBangTrajectoryFactory.cpp
+    src/TrajectoryXyw.cpp
 )
 
 file(GLOB_RECURSE HEADERS "include/*.h")

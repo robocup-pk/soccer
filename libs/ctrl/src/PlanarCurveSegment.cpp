@@ -3,63 +3,127 @@
 
 namespace ctrl {
 
-PlanarCurveSegment::PlanarCurveSegment(const Eigen::Vector2d& p0, const Eigen::Vector2d& p1,
-                                     const Eigen::Vector2d& m0, const Eigen::Vector2d& m1)
-    : p0_(p0), p1_(p1), m0_(m0), m1_(m1) {}
+// Corresponds to PlanarCurveSegment.java
 
-// Hermite basis functions
-inline double h00(double t) { return 2 * t * t * t - 3 * t * t + 1; }
-inline double h10(double t) { return t * t * t - 2 * t * t + t; }
-inline double h01(double t) { return -2 * t * t * t + 3 * t * t; }
-inline double h11(double t) { return t * t * t - t * t; }
+PlanarCurveSegment::PlanarCurveSegment(EPlanarCurveSegmentType type, const Eigen::Vector2d& pos, const Eigen::Vector2d& vel, const Eigen::Vector2d& acc, double startTime, double endTime)
+    : type(type), pos(pos), vel(vel), acc(acc), startTime(startTime), endTime(endTime) {}
 
-// Derivatives of Hermite basis functions
-inline double h00_d(double t) { return 6 * t * t - 6 * t; }
-inline double h10_d(double t) { return 3 * t * t - 4 * t + 1; }
-inline double h01_d(double t) { return -6 * t * t + 6 * t; }
-inline double h11_d(double t) { return 3 * t * t - 2 * t; }
+PlanarCurveSegment PlanarCurveSegment::fromPoint(const Eigen::Vector2d& pos, double tStart, double tEnd) {
+    return PlanarCurveSegment(EPlanarCurveSegmentType::POINT, pos, Eigen::Vector2d::Zero(), Eigen::Vector2d::Zero(), tStart, tEnd);
+}
 
-// Second derivatives of Hermite basis functions
-inline double h00_dd(double t) { return 12 * t - 6; }
-inline double h10_dd(double t) { return 6 * t - 4; }
-inline double h01_dd(double t) { return -12 * t + 6; }
-inline double h11_dd(double t) { return 6 * t - 2; }
+PlanarCurveSegment PlanarCurveSegment::fromFirstOrder(const Eigen::Vector2d& pos, const Eigen::Vector2d& vel, double tStart, double tEnd) {
+    return PlanarCurveSegment(EPlanarCurveSegmentType::FIRST_ORDER, pos, vel, Eigen::Vector2d::Zero(), tStart, tEnd);
+}
 
+PlanarCurveSegment PlanarCurveSegment::fromSecondOrder(const Eigen::Vector2d& pos, const Eigen::Vector2d& vel, const Eigen::Vector2d& acc, double tStart, double tEnd) {
+    return PlanarCurveSegment(EPlanarCurveSegmentType::SECOND_ORDER, pos, vel, acc, tStart, tEnd);
+}
+
+void PlanarCurveSegment::setEndTime(double tEnd) {
+    endTime = tEnd;
+}
 
 Eigen::Vector2d PlanarCurveSegment::getPosition(double t) const {
-    return h00(t) * p0_ + h10(t) * m0_ + h01(t) * p1_ + h11(t) * m1_;
+    switch (type) {
+        case EPlanarCurveSegmentType::FIRST_ORDER:
+            return pos + vel * t;
+        case EPlanarCurveSegmentType::SECOND_ORDER:
+            return pos + vel * t + acc * (0.5 * t * t);
+        case EPlanarCurveSegmentType::POINT:
+        default:
+            return pos;
+    }
 }
 
 Eigen::Vector2d PlanarCurveSegment::getVelocity(double t) const {
-    return h00_d(t) * p0_ + h10_d(t) * m0_ + h01_d(t) * p1_ + h11_d(t) * m1_;
+    if (type == EPlanarCurveSegmentType::SECOND_ORDER) {
+        return vel + acc * t;
+    }
+    return vel;
 }
 
-Eigen::Vector2d PlanarCurveSegment::getAcceleration(double t) const {
-    return h00_dd(t) * p0_ + h10_dd(t) * m0_ + h01_dd(t) * p1_ + h11_dd(t) * m1_;
+double PlanarCurveSegment::getLength() const {
+    // For simple segments, approximate length using straight line distance
+    // This is a simplified implementation - could be enhanced with numerical integration
+    switch (type) {
+        case EPlanarCurveSegmentType::POINT:
+            return 0.0;
+        case EPlanarCurveSegmentType::FIRST_ORDER: {
+            // Linear motion: length = velocity * time
+            double duration = getDuration();
+            return vel.norm() * duration;
+        }
+        case EPlanarCurveSegmentType::SECOND_ORDER: {
+            // Quadratic motion: approximate with numerical integration
+            double duration = getDuration();
+            const int num_samples = 10;
+            double length = 0.0;
+            for (int i = 0; i < num_samples; ++i) {
+                double t1 = (i * duration) / num_samples;
+                double t2 = ((i + 1) * duration) / num_samples;
+                Eigen::Vector2d p1 = getPosition(t1);
+                Eigen::Vector2d p2 = getPosition(t2);
+                length += (p2 - p1).norm();
+            }
+            return length;
+        }
+        default:
+            return 0.0;
+    }
 }
 
 double PlanarCurveSegment::getCurvature(double t) const {
-    const Eigen::Vector2d vel = getVelocity(t);
-    const Eigen::Vector2d acc = getAcceleration(t);
-    const double vel_sq_norm = vel.squaredNorm();
-
-    if (vel_sq_norm < 1e-8) {
-        return 0.0;
+    switch (type) {
+        case EPlanarCurveSegmentType::POINT:
+        case EPlanarCurveSegmentType::FIRST_ORDER:
+            return 0.0; // No curvature for point or straight line
+        case EPlanarCurveSegmentType::SECOND_ORDER: {
+            // For quadratic motion: curvature = |v x a| / |v|^3
+            Eigen::Vector2d velocity = getVelocity(t);
+            double vel_magnitude = velocity.norm();
+            if (vel_magnitude < 1e-9) return 0.0;
+            
+            // 2D cross product: v x a = v.x * a.y - v.y * a.x
+            double cross_product = velocity.x() * acc.y() - velocity.y() * acc.x();
+            return std::abs(cross_product) / (vel_magnitude * vel_magnitude * vel_magnitude);
+        }
+        default:
+            return 0.0;
     }
-
-    return (vel.x() * acc.y() - vel.y() * acc.x()) / std::pow(vel_sq_norm, 1.5);
 }
 
-double PlanarCurveSegment::getLength(int intervals) const {
-    double length = 0.0;
-    Eigen::Vector2d last_pos = getPosition(0);
-    for (int i = 1; i <= intervals; ++i) {
-        double t = static_cast<double>(i) / intervals;
-        Eigen::Vector2d current_pos = getPosition(t);
-        length += (current_pos - last_pos).norm();
-        last_pos = current_pos;
+std::pair<PlanarCurveSegment, PlanarCurveSegment> PlanarCurveSegment::split(double tSplit) const {
+    if (tSplit >= endTime) {
+        Eigen::Vector2d endPos = getPosition(getDuration());
+        return {*this, PlanarCurveSegment::fromPoint(endPos, endTime, tSplit)};
     }
-    return length;
+
+    double t = tSplit - startTime;
+    PlanarCurveSegment first(type, pos, vel, acc, startTime, tSplit);
+    
+    switch (type) {
+        case EPlanarCurveSegmentType::FIRST_ORDER: {
+            Eigen::Vector2d posNow = pos + (vel * t);
+            return {first, PlanarCurveSegment::fromFirstOrder(posNow, vel, tSplit, endTime)};
+        }
+        case EPlanarCurveSegmentType::SECOND_ORDER: {
+            Eigen::Vector2d posNow = pos + (vel * t) + (acc * (0.5 * t * t));
+            Eigen::Vector2d velNow = vel + (acc * t);
+            return {first, PlanarCurveSegment::fromSecondOrder(posNow, velNow, acc, tSplit, endTime)};
+        }
+        default: // POINT
+            return {first, PlanarCurveSegment::fromPoint(pos, tSplit, endTime)};
+    }
 }
+
+
+double PlanarCurveSegment::getEndTime() const { return endTime; }
+double PlanarCurveSegment::getStartTime() const { return startTime; }
+double PlanarCurveSegment::getDuration() const { return endTime - startTime; }
+EPlanarCurveSegmentType PlanarCurveSegment::getType() const { return type; }
+const Eigen::Vector2d& PlanarCurveSegment::getPos() const { return pos; }
+const Eigen::Vector2d& PlanarCurveSegment::getVel() const { return vel; }
+const Eigen::Vector2d& PlanarCurveSegment::getAcc() const { return acc; }
 
 } // namespace ctrl

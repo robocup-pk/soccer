@@ -12,12 +12,12 @@ TrajectoryTracker::TrajectoryTracker()
       is_finished_(true) {
     
     // PID gains tuned for SSL robots (more conservative than original TIGERs)
-    pos_pid_.kp = 6.0;   // Moderate proportional gain for position
+    pos_pid_.kp = 2.0;   // Moderate proportional gain for position
     pos_pid_.ki = 0.1;   // Small integral to handle steady-state errors
     pos_pid_.kd = 0.1;   // Small derivative to dampen oscillations
     pos_pid_.integral_clamp = 0.3;
     
-    angle_pid_.kp = 4.0;  // Moderate proportional gain for orientation
+    angle_pid_.kp = 2.0;  // Moderate proportional gain for orientation
     angle_pid_.ki = 0.05;
     angle_pid_.kd = 0.1;
     angle_pid_.integral_clamp = 0.2;

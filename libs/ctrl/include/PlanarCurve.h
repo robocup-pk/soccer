@@ -1,45 +1,52 @@
 #pragma once
 
 #include "PlanarCurveSegment.h"
+#include "PlanarCurveState.h"
 #include <vector>
+#include <Eigen/Dense>
 
 namespace ctrl {
 
-/**
- * @brief Represents a continuous, smooth path composed of multiple segments.
- *
- * This class takes a series of waypoints and creates a smooth, C1-continuous
- * spline curve that passes through them. It automatically calculates tangents
- * at each waypoint to ensure smooth transitions between segments. It also
- * parameterizes the entire curve by arc length, making it easy for a controller
- * to query points at a specific distance along the path.
- */
-class PlanarCurve {
-public:
-    PlanarCurve() = default;
+// Corresponds to PlanarCurve.java
 
-    /**
-     * @brief Constructs a smooth curve from a list of waypoints.
-     * @param waypoints A vector of 2D points from a path planner like RRTX.
-     */
+class PlanarCurve {
+private:
+    std::vector<PlanarCurveSegment> segments_;
+    std::vector<double> cumulativeArcLengths_;
+    std::vector<double> segment_start_arclengths_;
+    double total_length_ = 0.0;
+
+public:
+    // Constructors
+    PlanarCurve(const std::vector<PlanarCurveSegment>& segments);
     PlanarCurve(const std::vector<Eigen::Vector2d>& waypoints);
 
-    // --- Path Properties at a given Arc Length 's' ---
+    // Segment access
+    const std::vector<PlanarCurveSegment>& getSegments() const;
+    double getTEnd() const;
+    double getTStart() const;
+
+    // State queries (time-based)
+    PlanarCurveState getState(double t) const;
+    Eigen::Vector2d getPos(double t) const;
+    Eigen::Vector2d getVel(double t) const;
+    Eigen::Vector2d getAcc(double t) const;
+    
+    // Arc-length parameterization
     Eigen::Vector2d getPositionAt(double s) const;
     Eigen::Vector2d getTangentAt(double s) const;
     double getCurvatureAt(double s) const;
-
-    double getTotalLength() const { return total_length_; }
-    bool isValid() const { return !segments_.empty(); }
+    
+    // Factory methods
+    static PlanarCurve fromPoint(const Eigen::Vector2d& point);
+    
+    // Validation
+    bool isValid() const;
 
 private:
-    std::pair<int, double> findSegmentForArcLength(double s) const;
     void build(const std::vector<Eigen::Vector2d>& waypoints);
     void parameterizeByArcLength();
-
-    std::vector<PlanarCurveSegment> segments_;
-    std::vector<double> segment_start_arclengths_;
-    double total_length_ = 0.0;
+    std::pair<int, double> findSegmentForArcLength(double s) const;
 };
 
 } // namespace ctrl

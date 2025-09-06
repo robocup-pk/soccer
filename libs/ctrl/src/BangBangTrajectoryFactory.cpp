@@ -1,4 +1,5 @@
 #include "BangBangTrajectoryFactory.h"
+#include "PlanarCurveFactory.h"
 #include "Utils.h"
 #include <stdexcept>
 #include <cmath>
@@ -117,6 +118,79 @@ double BangBangTrajectoryFactory::adaptVel(double v0, double vMax) {
         return std::copysign(vMax, v0);
     }
     return v0;
+}
+
+// --- PlanarCurve Integration Methods ---
+
+PlanarCurve BangBangTrajectoryFactory::toPlanarCurve(
+    const Eigen::Vector2d& s0,
+    const Eigen::Vector2d& s1,
+    const Eigen::Vector2d& v0,
+    double vmax,
+    double acc,
+    int numSegments) {
+    
+    // Create 2D BangBang trajectory
+    BangBangTrajectory2D trajectory = sync(s0, s1, v0, vmax, acc);
+    
+    // Convert to PlanarCurve using factory
+    return PlanarCurveFactory::fromBangBangTrajectory2D(trajectory, numSegments);
+}
+
+std::vector<BBTrajectoryPart> BangBangTrajectoryFactory::createTrajectoryParts(
+    double initialPos,
+    double finalPos,
+    double initialVel,
+    double maxVel,
+    double maxAcc) {
+    
+    // Create 1D trajectory to get the parts
+    BangBangTrajectory1D trajectory = singleDim(initialPos, finalPos, initialVel, maxVel, maxAcc);
+    
+    // Extract trajectory parts from the 1D trajectory
+    std::vector<BBTrajectoryPart> parts;
+    for (int i = 0; i < trajectory.numParts; ++i) {
+        parts.push_back(trajectory.parts[i]);
+    }
+    
+    return parts;
+}
+
+// --- Timed Interception Methods ---
+
+BangBangTrajectory2D BangBangTrajectoryFactory::syncTimed(
+    const Eigen::Vector2d& s0,
+    const Eigen::Vector2d& s1,
+    const Eigen::Vector2d& v0,
+    double vmax,
+    double acc,
+    double targetTime) {
+    
+    // Calculate virtual destination using DestinationForTimedPositionCalc
+    Eigen::Vector2d virtual_destination = destination_calc_.destinationForBangBang2dSync(
+        s0, s1, v0, vmax, acc, targetTime
+    );
+    
+    // Create trajectory to virtual destination
+    return sync(s0, virtual_destination, v0, vmax, acc);
+}
+
+BangBangTrajectory2DAsync BangBangTrajectoryFactory::asyncTimed(
+    const Eigen::Vector2d& s0,
+    const Eigen::Vector2d& s1,
+    const Eigen::Vector2d& v0,
+    double vmax,
+    double acc,
+    double targetTime,
+    const Eigen::Vector2d& primaryDirection) {
+    
+    // Calculate virtual destination using DestinationForTimedPositionCalc
+    Eigen::Vector2d virtual_destination = destination_calc_.destinationForBangBang2dAsync(
+        s0, s1, v0, vmax, acc, targetTime, primaryDirection
+    );
+    
+    // Create asynchronous trajectory to virtual destination
+    return async(s0, virtual_destination, v0, vmax, acc, primaryDirection);
 }
 
 } // namespace ctrl

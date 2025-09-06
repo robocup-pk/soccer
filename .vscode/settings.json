@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "dense": "cpp",
+        "random": "cpp",
+        "algorithm": "cpp"
+    }
+}

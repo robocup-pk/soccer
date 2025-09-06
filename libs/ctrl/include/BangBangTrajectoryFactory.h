@@ -4,6 +4,9 @@
 #include "BangBangTrajectory2D.h"
 #include "BangBangTrajectory1DOrient.h"
 #include "BangBangTrajectory2DAsync.h"
+#include "BBTrajectoryPart.h"
+#include "PlanarCurve.h"
+#include "DestinationForTimedPositionCalc.h"
 #include <Eigen/Dense>
 #include <functional>
 #include <memory>
@@ -107,6 +110,86 @@ public:
         double maxVel,
         double maxAcc
     );
+    
+    // --- PlanarCurve Integration Methods (Sumatra approach) ---
+    
+    /**
+     * @brief Create PlanarCurve from 2D BangBang trajectory
+     * @param s0 Start position
+     * @param s1 Target position  
+     * @param v0 Initial velocity
+     * @param vmax Maximum velocity
+     * @param acc Maximum acceleration
+     * @param numSegments Number of curve segments (default: auto-detect)
+     * @return PlanarCurve representation
+     */
+    PlanarCurve toPlanarCurve(
+        const Eigen::Vector2d& s0,
+        const Eigen::Vector2d& s1,
+        const Eigen::Vector2d& v0,
+        double vmax,
+        double acc,
+        int numSegments = -1
+    );
+    
+    /**
+     * @brief Create BBTrajectoryPart segments directly (advanced usage)
+     * @param initialPos Initial position
+     * @param finalPos Final position
+     * @param initialVel Initial velocity
+     * @param maxVel Maximum velocity
+     * @param maxAcc Maximum acceleration
+     * @return Vector of trajectory parts/segments
+     */
+    std::vector<BBTrajectoryPart> createTrajectoryParts(
+        double initialPos,
+        double finalPos,
+        double initialVel,
+        double maxVel,
+        double maxAcc
+    );
+    
+    // --- Timed Interception Methods (DestinationForTimedPositionCalc integration) ---
+    
+    /**
+     * @brief Create trajectory with timed interception (overshooting)
+     * @param s0 Start position
+     * @param s1 Target position  
+     * @param v0 Initial velocity
+     * @param vmax Maximum velocity
+     * @param acc Maximum acceleration
+     * @param targetTime Target time to reach position
+     * @return Synchronized 2D trajectory that reaches target at specific time
+     */
+    BangBangTrajectory2D syncTimed(
+        const Eigen::Vector2d& s0,
+        const Eigen::Vector2d& s1,
+        const Eigen::Vector2d& v0,
+        double vmax,
+        double acc,
+        double targetTime
+    );
+    
+    /**
+     * @brief Create asynchronous trajectory with timed interception
+     * @param s0 Start position
+     * @param s1 Target position  
+     * @param v0 Initial velocity
+     * @param vmax Maximum velocity
+     * @param acc Maximum acceleration
+     * @param targetTime Target time to reach position
+     * @param primaryDirection Primary direction of movement
+     * @return Asynchronous 2D trajectory that reaches target at specific time
+     */
+    BangBangTrajectory2DAsync asyncTimed(
+        const Eigen::Vector2d& s0,
+        const Eigen::Vector2d& s1,
+        const Eigen::Vector2d& v0,
+        double vmax,
+        double acc,
+        double targetTime,
+        const Eigen::Vector2d& primaryDirection
+    );
 
 private:
     /**
@@ -124,6 +207,10 @@ private:
      * @return Adapted velocity
      */
     static double adaptVel(double v0, double vMax);
+
+private:
+    /// Calculator for timed interception trajectories
+    DestinationForTimedPositionCalc destination_calc_;
 };
 
 } // namespace ctrl

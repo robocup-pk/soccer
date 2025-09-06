@@ -12,6 +12,9 @@ namespace ctrl {
 template<typename T>
 class PosVelAcc {
 public:
+    /// Default constructor
+    PosVelAcc() = default;
+    
     /**
      * @brief Constructor
      * @param pos Position [m]
@@ -29,6 +32,20 @@ public:
     
     /// Get acceleration [m/s²]
     const T& getAcc() const { return acc_; }
+    
+    /// Set position [m]
+    void setPos(const T& pos) { pos_ = pos; }
+    
+    /// Set velocity [m/s]
+    void setVel(const T& vel) { vel_ = vel; }
+    
+    /// Set acceleration [m/s²]
+    void setAcc(const T& acc) { acc_ = acc; }
+    
+    // Public members for direct access (matching original usage pattern)
+    T pos{};  ///< Position [m]
+    T vel{};  ///< Velocity [m/s]
+    T acc{};  ///< Acceleration [m/s²]
 
 private:
     T pos_;  ///< Position [m]

@@ -47,32 +47,30 @@ void AdvancedMotionPlanner::plan(const std::vector<Eigen::Vector3d>& waypoints,
             // Get velocity from previous segment at its end time
             const auto& prev_segment = segments_.back();
             double prev_end_time = prev_segment.duration;
-            initial_velocity = prev_segment.position_traj.getVelocity(prev_end_time);
-            initial_angular_velocity = prev_segment.orientation_traj.getVelocity(prev_end_time);
+            Eigen::Vector3d prev_velocity = prev_segment.trajectory.getVelocity(prev_end_time);
+            initial_velocity = prev_velocity.head<2>();
+            initial_angular_velocity = prev_velocity.z();
         }
         
-        // Create synchronized 2D position trajectory
-        segment.position_traj = factory_.sync(
+        // Create separate XY and orientation trajectories
+        BangBangTrajectory2D xy_traj = factory_.sync(
             start_pos, end_pos, initial_velocity, maxVel, maxAcc
         );
         
-        // Create orientation trajectory  
-        segment.orientation_traj = factory_.orientation(
+        BangBangTrajectory1DOrient orient_traj = factory_.orientation(
             start_theta, end_theta, initial_angular_velocity, maxOmega, maxOmegaAcc
         );
         
-        // Duration is the maximum of position and orientation trajectory times
-        segment.duration = std::max(
-            segment.position_traj.getTotalTime(),
-            segment.orientation_traj.getTotalTime()
-        );
+        // Combine into unified TrajectoryXyw (true TIGERs approach)
+        segment.trajectory = TrajectoryXyw(xy_traj, orient_traj);
+        segment.duration = segment.trajectory.getTotalTime();
         
         cumulative_time += segment.duration;
         segments_.push_back(segment);
         
         std::cout << "[AdvancedMotionPlanner] Segment " << i << ": " 
-                  << "pos_time=" << segment.position_traj.getTotalTime() << "s, "
-                  << "orient_time=" << segment.orientation_traj.getTotalTime() << "s, "
+                  << "pos_time=" << xy_traj.getTotalTime() << "s, "
+                  << "orient_time=" << orient_traj.getTotalTime() << "s, "
                   << "duration=" << segment.duration << "s" << std::endl;
     }
     
@@ -95,19 +93,13 @@ Eigen::Vector3d AdvancedMotionPlanner::getPosition(double time) const {
     
     if (time <= 0.0) {
         // Return first waypoint
-        const auto& first_segment = segments_[0];
-        Eigen::Vector2d pos = first_segment.position_traj.getPosition(0.0);
-        double theta = first_segment.orientation_traj.getPosition(0.0);
-        return Eigen::Vector3d(pos.x(), pos.y(), theta);
+        return segments_[0].trajectory.getPosition(0.0);
     }
     
     if (time >= total_time_) {
         // Return last waypoint
         const auto& last_segment = segments_.back();
-        double local_time = last_segment.duration;
-        Eigen::Vector2d pos = last_segment.position_traj.getPosition(local_time);
-        double theta = last_segment.orientation_traj.getPosition(local_time);
-        return Eigen::Vector3d(pos.x(), pos.y(), theta);
+        return last_segment.trajectory.getPosition(last_segment.duration);
     }
     
     // Find active segment and get position
@@ -115,10 +107,7 @@ Eigen::Vector3d AdvancedMotionPlanner::getPosition(double time) const {
     const auto& segment = segments_[active_idx];
     double local_time = segment.getLocalTime(time);
     
-    Eigen::Vector2d pos = segment.position_traj.getPosition(local_time);
-    double theta = segment.orientation_traj.getPosition(local_time);
-    
-    return Eigen::Vector3d(pos.x(), pos.y(), theta);
+    return segment.trajectory.getPosition(local_time);
 }
 
 Eigen::Vector3d AdvancedMotionPlanner::getVelocity(double time) const {
@@ -133,10 +122,7 @@ Eigen::Vector3d AdvancedMotionPlanner::getVelocity(double time) const {
     const auto& segment = segments_[active_idx];
     double local_time = segment.getLocalTime(time);
     
-    Eigen::Vector2d vel = segment.position_traj.getVelocity(local_time);
-    double omega = segment.orientation_traj.getVelocity(local_time);
-    
-    return Eigen::Vector3d(vel.x(), vel.y(), omega);
+    return segment.trajectory.getVelocity(local_time);
 }
 
 double AdvancedMotionPlanner::getTotalTime() const {
