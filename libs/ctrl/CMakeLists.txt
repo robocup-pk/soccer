@@ -1,11 +1,13 @@
 set(SOURCES
-    src/MotionController.cpp
-    src/BSplineTrajectory.cpp
-    src/BSplineTrajectoryManager.cpp
-    src/UniformBSplineTrajectoryPlanner.cpp
-    src/BezierTrajectoryPlanner.cpp
-    src/DBRRTTrajectoryPlanner.cpp
-    src/BangBangTrajectoryPlanner.cpp
+    src/PlanarCurveSegment.cpp
+    src/PlanarCurve.cpp
+    src/AdvanceMotionPlanner.cpp
+    src/TrajectoryTracker.cpp
+    src/BangBangTrajectory1D.cpp
+    src/BangBangTrajectory2D.cpp
+    src/BangBangTrajectory1DOrient.cpp
+    src/BangBangTrajectory2DAsync.cpp
+    src/BangBangTrajectoryFactory.cpp
 )
 
 file(GLOB_RECURSE HEADERS "include/*.h")

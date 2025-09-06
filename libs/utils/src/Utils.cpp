@@ -45,6 +45,14 @@ Eigen::Vector3d util::RotateAboutZ(Eigen::Vector3d pose, double angle_rad) {
   return rotation * pose;
 }
 
+Eigen::Vector2d util::RotateAboutZ(const Eigen::Vector2d& vec, double angle_rad) {
+  double c = std::cos(angle_rad);
+  double s = std::sin(angle_rad);
+  Eigen::Matrix2d rotation_matrix;
+  rotation_matrix << c, -s, s, c;
+  return rotation_matrix * vec;
+}
+
 double util::WrapAngle(double angle_rad) {
   double rad = std::fmod(angle_rad + M_PI, 2 * M_PI);
   if (rad < 0) rad += 2 * M_PI;
@@ -52,6 +60,11 @@ double util::WrapAngle(double angle_rad) {
   // Normalize -π to +π
   if (std::abs(rad + M_PI) < 1e-8) return M_PI;
   return rad;
+}
+
+double util::MirrorAngle(double angle_rad) {
+  // Mirror angle by negating it (Sumatra AngleMath.mirror functionality)
+  return -angle_rad;
 }
 
 void util::WaitMs(int ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }

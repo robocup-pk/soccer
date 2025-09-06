@@ -12,6 +12,7 @@
 #include "GLCallback.h"
 #include "Utils.h"
 #include "SoccerField.h"
+#include "SystemConfig.h"  // cfg::SystemConfig constants (robot count, size)
 
 namespace vis {
 int team_one_selected_player = 0;

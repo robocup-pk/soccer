@@ -2,7 +2,7 @@
 #include <tuple>
 
 #include "SystemConfig.h"
-#include "MotionController.h"
+#include "AdvancedMotionPlanner.h"
 #include "RobotManager.h"
 #include "Utils.h"
 #include "Waypoint.h"
@@ -20,11 +20,7 @@ rob::RobotManager::RobotManager() {
   finished_motion = true;
   num_sensor_readings_failed = 0;
   rob_manager_running.store(true);
-  trajectory_manager_type_ = TrajectoryManagerType::UniformBSpline;  // Default to uniform B-spline
-
-  // Configure uniform B-spline planner defaults: enable safe replanning, keep logs quiet
-  uniform_bspline_planner.SetReplanningEnabled(true);
-  uniform_bspline_planner.SetVerbose(false);
+  trajectory_manager_type_ = TrajectoryManagerType::TIGERsTrajectory;  // Default to TIGERs trajectory system
 
 #ifdef BUILD_ON_PI
   state_estimator.initialized_pose = false;
@@ -83,6 +79,7 @@ void rob::RobotManager::ControlLogic() {
       // finished_motion = true;
       break;
 <<<<<<< HEAD
+<<<<<<< HEAD
     case RobotState::GOING_HOME:
       // std::tie(finished_motion, velocity_fBody_) = trajectory_manager.Update(pose_fWorld);
       std::tie(finished_motion, velocity_fBody_) = motion_controller.DriveToPoint(pose_fWorld, pose_home_fWorld);
@@ -130,6 +127,11 @@ void rob::RobotManager::ControlLogic() {
     case RobotState::BANGBANG_DRIVING:
       velocity_fBody_ = bangbang_planner.Update(pose_fWorld, util::GetCurrentTime());
       finished_motion = bangbang_planner.IsFinished();
+=======
+    case RobotState::TRAJECTORY_FOLLOWING:
+      velocity_fBody_ = trajectory_tracker.update(pose_fWorld);
+      finished_motion = trajectory_tracker.isFinished();
+>>>>>>> 5eb85243 (Tiger Manim BangBang2D Trajectory Planner)
       break;
   }
 
@@ -189,163 +191,48 @@ void rob::RobotManager::SenseLogic() {
 }
 
 
-void rob::RobotManager::SetBSplinePath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
-  bool is_path_valid;
-  {
-    // Print the path
-    std::cout << "[rob::RobotManager::SetBSplinePath] B-spline trajectory for smooth waypoint following: ";
-    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
-      std::cout << path_fWorld[i].transpose() << " -> ";
-    }
-    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
 
-    // Initialize trajectory manager with current robot state
-    pose_fWorld = state_estimator.GetPose();
-    bspline_manager.InitializeFromRobotManager(this);
-    
-    // Create trajectories using B-spline Manager
-    is_path_valid = bspline_manager.CreateTrajectoriesFromPath(path_fWorld, t_start_s);
-    std::cout << "[rob::RobotManager::SetBSplinePath] Finish creating B-spline trajectories" << std::endl;
-  }
 
-  if (is_path_valid) {
-    std::unique_lock<std::mutex> lock(robot_state_mutex);
-    robot_state = RobotState::BSPLINE_DRIVING;
-    trajectory_manager_type_ = TrajectoryManagerType::BSpline;
-  } else {
-    std::cout << "[rob::RobotManager::SetBSplinePath] Given path is invalid. Failed to create "
-                 "B-spline trajectories\nPath: ";
-  }
-}
 
-void rob::RobotManager::SetUniformBSplinePath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
-  bool is_path_valid;
-  {
-    // Print the path
-    std::cout << "[rob::RobotManager::SetUniformBSplinePath] Uniform B-spline trajectory for smooth waypoint following: ";
-    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
-      std::cout << path_fWorld[i].transpose() << " -> ";
-    }
-    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
-
-    // Initialize trajectory manager with current robot state
-    pose_fWorld = state_estimator.GetPose();
-    uniform_bspline_planner.InitializeFromRobotManager(this);
-    
-    // Create trajectories using Uniform B-spline Planner
-    is_path_valid = uniform_bspline_planner.SetPath(path_fWorld, t_start_s);
-    std::cout << "[rob::RobotManager::SetUniformBSplinePath] Finish creating Uniform B-spline trajectories" << std::endl;
-  }
-
-  if (is_path_valid) {
-    std::unique_lock<std::mutex> lock(robot_state_mutex);
-    robot_state = RobotState::UNIFORM_BSPLINE_DRIVING;
-    trajectory_manager_type_ = TrajectoryManagerType::UniformBSpline;
-  } else {
-    std::cout << "[rob::RobotManager::SetUniformBSplinePath] Given path is invalid. Failed to create "
-                 "Uniform B-spline trajectories\nPath: ";
-  }
-}
-
-void rob::RobotManager::SetBezierTrajectoryPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
-  bool is_path_valid;
-  {
-    // Print the path
-    std::cout << "[rob::RobotManager::SetBezierTrajectoryPath] Bezier trajectory for accurate waypoint following: ";
-    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
-      std::cout << path_fWorld[i].transpose() << " -> ";
-    }
-    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
-    // Initialize trajectory manager with current robot state
-    pose_fWorld = state_estimator.GetPose();
-    bezier_trajectory_planner.InitializeFromRobotManager(this);
-    
-    // Create trajectories using Bezier Trajectory Planner
-    is_path_valid = bezier_trajectory_planner.SetPath(path_fWorld, t_start_s);
-    std::cout << "[rob::RobotManager::SetBezierTrajectoryPath] Finish creating Bezier trajectories" << std::endl;
-  }
-  if (is_path_valid) {
-    std::unique_lock<std::mutex> lock(robot_state_mutex);
-    robot_state = RobotState::BEZIER_TRAJECTORY_DRIVING;
-    trajectory_manager_type_ = TrajectoryManagerType::BezierTrajectory;
-  } else {
-    std::cout << "[rob::RobotManager::SetBezierTrajectoryPath] Given path is invalid. Failed to create "
-                 "Bezier trajectories\nPath: ";
-  }
-}
-
-void rob::RobotManager::SetBangBangPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
-  bool is_path_valid;
-  {
-    // Print the path
-    std::cout << "[rob::RobotManager::SetBangBangPath] Bang-bang trajectory for time-optimal motion: ";
-    for (int i = 0; i < path_fWorld.size() - 1; ++i) {
-      std::cout << path_fWorld[i].transpose() << " -> ";
-    }
-    std::cout << path_fWorld[path_fWorld.size() - 1].transpose() << std::endl;
-    
-    // Initialize trajectory planner with current robot state
-    pose_fWorld = state_estimator.GetPose();
-    
-    // Set robot parameters
-    bangbang_planner.SetRobotRadius(0.09);  // 90mm robot radius
-    bangbang_planner.SetLimits(0.8, 2.0);   // 0.8 m/s max vel, 2.0 m/s^2 max acc (more reasonable)
-    bangbang_planner.SetFeedbackGains(2.0, 0.5);  // Reduced gains for stability
-    bangbang_planner.SetFieldBoundaries(-4.5, 4.5, -3.0, 3.0);  // SSL field size
-    
-    // Create trajectory using Bang-bang planner
-    is_path_valid = bangbang_planner.SetPath(path_fWorld, t_start_s);
-    std::cout << "[rob::RobotManager::SetBangBangPath] Finish creating Bang-bang trajectory" << std::endl;
-  }
-  
-  if (is_path_valid) {
-    std::unique_lock<std::mutex> lock(robot_state_mutex);
-    robot_state = RobotState::BANGBANG_DRIVING;
-    trajectory_manager_type_ = TrajectoryManagerType::BangBang;
-  } else {
-    std::cout << "[rob::RobotManager::SetBangBangPath] Failed to create Bang-bang trajectory" << std::endl;
-  }
-}
 
 void rob::RobotManager::GoHome(){
   
 }
-void rob::RobotManager::SetDBRRTGoal(const Eigen::Vector3d& goal) {
-  std::cout << "[rob::RobotManager::SetDBRRTGoal] DB-RRT planning to goal: " << goal.transpose() << std::endl;
+
+void rob::RobotManager::SetSmoothPathTrackerPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
+  std::cout << "[rob::RobotManager::SetSmoothPathTrackerPath] Setting TIGERs-style trajectory with " 
+            << path_fWorld.size() << " waypoints" << std::endl;
   
-  // Initialize planner
-  pose_fWorld = state_estimator.GetPose();
-  dbrrt_planner.InitializeFromRobotManager(this);
+  // Step 1: Use AdvancedMotionPlanner for path smoothing, velocity profiling, and time parameterization
+  double max_vel = 1.0;   // m/s
+  double max_acc = 0.8;   // m/s²
+  double max_omega = 3.0; // rad/s
+  double max_omega_acc = 2.5; // rad/s²
   
-  // Plan trajectory from current pose to goal
-  bool planning_success = dbrrt_planner.PlanTrajectory(pose_fWorld, goal, 1.0);
+  advanced_motion_planner.plan(path_fWorld, max_vel, max_acc, max_omega, max_omega_acc);
   
-  if (planning_success) {
+  if (advanced_motion_planner.isValid()) {
+    // Step 2: Set the time-parameterized trajectory for the TrajectoryTracker
+    trajectory_tracker.setTrajectory(std::make_shared<ctrl::AdvancedMotionPlanner>(advanced_motion_planner));
+    
     std::unique_lock<std::mutex> lock(robot_state_mutex);
-    robot_state = RobotState::DBRRT_DRIVING;
-    trajectory_manager_type_ = TrajectoryManagerType::DBRRT;
-    std::cout << "[rob::RobotManager::SetDBRRTGoal] Planning successful! Trajectory duration: " 
-              << dbrrt_planner.GetTrajectoryDuration() << "s" << std::endl;
+    robot_state = RobotState::TRAJECTORY_FOLLOWING;
+    trajectory_manager_type_ = TrajectoryManagerType::TIGERsTrajectory;
+    
+    std::cout << "[rob::RobotManager::SetSmoothPathTrackerPath] TIGERs-style trajectory created successfully! Duration: " 
+              << advanced_motion_planner.getTotalTime() << "s" << std::endl;
   } else {
-    std::cout << "[rob::RobotManager::SetDBRRTGoal] Planning failed!" << std::endl;
+    std::cout << "[rob::RobotManager::SetSmoothPathTrackerPath] Failed to create trajectory" << std::endl;
   }
 }
+
 
 void rob::RobotManager::SetTrajectoryManagerType(TrajectoryManagerType type) {
   trajectory_manager_type_ = type;
   std::string type_name;
   switch (type) {
-    case TrajectoryManagerType::BSpline:
-      type_name = "B_SPLINE";
-      break;
-    case TrajectoryManagerType::UniformBSpline:
-      type_name = "UNIFORM_B_SPLINE";
-      break;
-    case TrajectoryManagerType::BezierTrajectory:
-      type_name = "BEZIER_TRAJECTORY";
-      break;
-    case TrajectoryManagerType::DBRRT:
-      type_name = "DB_RRT";
+    case TrajectoryManagerType::TIGERsTrajectory:
+      type_name = "TIGERs_TRAJECTORY";
       break;
   }
   std::cout << "[rob::RobotManager::SetTrajectoryManagerType] Set to " << type_name << std::endl;
@@ -432,6 +319,7 @@ std::string rob::RobotManager::GetRobotState() {
     case RobotState::IDLE:
       return "IDLE";
 <<<<<<< HEAD
+<<<<<<< HEAD
     case RobotState::CALIBRATING:
       return "CALIBRATING";
     case RobotState::DRIVING_TO_POINT:
@@ -452,10 +340,20 @@ std::string rob::RobotManager::GetRobotState() {
     case RobotState::DBRRT_DRIVING:
       return "DBRRT_DRIVING";
 >>>>>>> 35d39075 (Added DBRT Planner)
+=======
+    case RobotState::DRIVING_TO_POINT:
+      return "DRIVING_TO_POINT";
+    case RobotState::INTERPOLATING_TO_POINT:
+      return "INTERPOLATING_TO_POINT";
+>>>>>>> 5eb85243 (Tiger Manim BangBang2D Trajectory Planner)
     case RobotState::MANUAL_DRIVING:
       return "MANUAL_DRIVING";
+    case RobotState::AUTONOMOUS_DRIVING:
+      return "AUTONOMOUS_DRIVING";
     case RobotState::CALIBRATING:
       return "CALIBRATING";
+    case RobotState::TRAJECTORY_FOLLOWING:
+      return "TRAJECTORY_FOLLOWING";
   }
   return "ERROR";
 }

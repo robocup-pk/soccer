@@ -28,20 +28,13 @@ int main(int argc, char* argv[]) {
     
     // Initialize RobotManager
     rob::RobotManager robot_manager;
-    ctrl::BSplineTrajectoryManager bspline_manager;
-    bspline_manager.SetFeedbackGains(0.5, 0.1);
     
     // Set initial robot pose
     Eigen::Vector3d robot_start_pose(0.0, 0.0, 0.0);
     robot_manager.InitializePose(robot_start_pose);
     vector<Eigen::Vector3d> waypoints;
-    robot_manager.GetUniformBSplinePlanner().SetLimits(0.8, 0.5, 0.8, 0.5);
-    robot_manager.GetUniformBSplinePlanner().SetFeedbackGains(0.1, 0.05);
     
-    // Enable replanning for testing
-    robot_manager.GetUniformBSplinePlanner().SetReplanningEnabled(true);
-    robot_manager.GetUniformBSplinePlanner().SetVerbose(false);  // Disable verbose for clean output
-    std::cout << "[Demo] Replanning enabled for trajectory adaptation" << std::endl;
+    std::cout << "[Demo] Using TIGERs trajectory planning system" << std::endl;
     
     // Choose a test case based on command line argument
     int test_case = 1;
@@ -74,9 +67,9 @@ int main(int argc, char* argv[]) {
             std::cout << "Test 2: L-shaped path (90-degree turn)" << std::endl;
             waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
             waypoints.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(1.0, 0.5, M_PI/2));
-            waypoints.push_back(Eigen::Vector3d(1.0, 1.0, M_PI/2));
+            // waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
+            // waypoints.push_back(Eigen::Vector3d(1.0, 0.5, M_PI/2));
+            // waypoints.push_back(Eigen::Vector3d(1.0, 1.0, M_PI/2));
             break;
         }
         case 3: {
@@ -231,42 +224,12 @@ int main(int argc, char* argv[]) {
                   << waypoints[i][1] << ", " << waypoints[i][2] << ")" << std::endl;
     }
     
-    // Choose trajectory type based on second argument
-    int traj_type = 2; // Default to Uniform B-spline
-    if (argc > 2) {
-        traj_type = std::atoi(argv[2]);
-    }
+    // Use TIGERs trajectory system
+    trajectory_log << "# TRAJECTORY_TYPE TIGERs" << std::endl;
     
-    trajectory_log << "# TRAJECTORY_TYPE " << traj_type << std::endl;
-    
-    switch (traj_type) {
-        case 1:
-            std::cout << "Using B-spline trajectory" << std::endl;
-            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BSpline);
-            robot_manager.SetBSplinePath(waypoints, util::GetCurrentTime());
-            break;
-        case 2:
-            std::cout << "Using Uniform B-spline trajectory (EWOK-based)" << std::endl;
-            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::UniformBSpline);
-            robot_manager.GetUniformBSplinePlanner().SetReplanningEnabled(true);  // Enable replanning
-            robot_manager.SetUniformBSplinePath(waypoints, util::GetCurrentTime());
-            break;
-        case 3:
-            std::cout << "Using Bezier trajectory" << std::endl;
-            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BezierTrajectory);
-            robot_manager.GetBezierTrajectoryPlanner().SetLimits(0.8, 0.5, 2.5, 3.0);
-            robot_manager.GetBezierTrajectoryPlanner().SetFeedbackGains(0.05, 0.3);
-            if (test_case == 1) {
-                robot_manager.GetBezierTrajectoryPlanner().SetCornerCutDistance(0.05);
-            }
-            robot_manager.SetBezierTrajectoryPath(waypoints, util::GetCurrentTime());
-            break;
-        default:
-            std::cout << "Using B-spline trajectory (default)" << std::endl;
-            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BSpline);
-            robot_manager.SetBSplinePath(waypoints, util::GetCurrentTime());
-            break;
-    }
+    std::cout << "Using TIGERs-style Advanced Motion Planning + Trajectory Tracking" << std::endl;
+    robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::TIGERsTrajectory);
+    robot_manager.SetSmoothPathTrackerPath(waypoints, util::GetCurrentTime());
     
     trajectory_log << "# DATA_START" << std::endl;
     
@@ -332,47 +295,8 @@ int main(int argc, char* argv[]) {
             last_vision_pose = noisy_vision_pose;
         }
         
-        // Intelligent replanning based on noisy vision data
-        static int last_replan_frame = 0;
-        if (frame_count % 15 == 0 && frame_count > 30) {  // Every 15 frames (~0.3s in real SSL)
-            
-            // Calculate tracking error using noisy vision pose
-            Eigen::Vector3d desired_pose = robot_manager.GetUniformBSplinePlanner().GetCurrentDesiredPosition();
-            double tracking_error = (last_vision_pose.head<2>() - desired_pose.head<2>()).norm();
-            
-            // Adaptive replanning threshold based on trajectory complexity
-            double adaptive_threshold = 0.015; // Base 15mm threshold
-            
-            // Increase threshold for high-speed sections to avoid over-correcting
-            double robot_speed = std::sqrt(current_velocity[0]*current_velocity[0] + current_velocity[1]*current_velocity[1]);
-            if (robot_speed > 0.6) {
-                adaptive_threshold = 0.025; // 25mm at high speed
-            }
-            
-            if (tracking_error > adaptive_threshold && (frame_count - last_replan_frame) > 20) {
-                
-                // Enable verbose occasionally for monitoring
-                bool verbose = (frame_count % 150 == 75);
-                robot_manager.GetUniformBSplinePlanner().SetVerbose(verbose);
-                
-                // Replan using the noisy vision pose (realistic scenario)
-                bool replanned = robot_manager.GetUniformBSplinePlanner().UpdatePartialTrajectory(
-                    last_vision_pose, 3);
-                
-                if (replanned) {
-                    last_replan_frame = frame_count;
-                    accumulated_drift *= 0.5;  // Reset some accumulated drift after correction
-                    
-                    if (verbose) {
-                        std::cout << "[Demo] SSL realistic: tracking_error=" << tracking_error*1000 
-                                  << "mm, vision_available=" << vision_available 
-                                  << ", drift=" << accumulated_drift*1000 << "mm" << std::endl;
-                    }
-                }
-                
-                robot_manager.GetUniformBSplinePlanner().SetVerbose(false);
-            }
-        }
+        // The TIGERs system uses robust PID feedback control that automatically 
+        // handles tracking errors without needing explicit replanning
         
         // Calculate timestamp
         auto current_time = std::chrono::steady_clock::now();
@@ -400,9 +324,7 @@ int main(int argc, char* argv[]) {
     std::cout << "[Demo] Trajectory data saved to trajectory_log.txt" << std::endl;
     std::cout << "[Demo] Recorded " << frame_count << " frames" << std::endl;
     
-    // Report replanning statistics
-    int replan_count = robot_manager.GetUniformBSplinePlanner().GetReplanCount();
-    std::cout << "[Demo] Total replanning events: " << replan_count << std::endl;
+    std::cout << "[Demo] TIGERs trajectory execution completed" << std::endl;
     
     return 0;
 }

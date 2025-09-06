@@ -9,6 +9,7 @@
 
 #include "StateEstimator.h"
 #include "HardwareManager.h"
+<<<<<<< HEAD
 #include "MotionController.h"
 <<<<<<< HEAD
 #include "TrajectoryManager.h"
@@ -42,6 +43,10 @@
 =======
 #include "BangBangTrajectoryPlanner.h"
 >>>>>>> 08bf10ed (Fix Ideal position in Kalman Filter Logging)
+=======
+#include "AdvancedMotionPlanner.h"
+#include "TrajectoryTracker.h"
+>>>>>>> 5eb85243 (Tiger Manim BangBang2D Trajectory Planner)
 
 // Forward declarations
 namespace state {
@@ -56,21 +61,12 @@ enum class RobotState {
   INTERPOLATING_TO_POINT,
   MANUAL_DRIVING,
   AUTONOMOUS_DRIVING,
-  GOING_HOME,
   CALIBRATING,
-  BSPLINE_DRIVING,       // B-spline trajectory following
-  UNIFORM_BSPLINE_DRIVING, // Uniform B-spline trajectory following
-  BEZIER_TRAJECTORY_DRIVING, // Bezier trajectory following (RoboJackets-style)
-  DBRRT_DRIVING,         // DB-RRT trajectory following
-  BANGBANG_DRIVING       // Bang-bang trajectory following (Sumatra-style)
+  TRAJECTORY_FOLLOWING   // TIGERs-style trajectory following
 };
 
 enum class TrajectoryManagerType {
-  BSpline,       // Use B-spline for trajectories
-  UniformBSpline, // Use uniform B-spline (EWOK-based) for robust trajectories
-  BezierTrajectory, // Use Bezier trajectory (RoboJackets-style)
-  DBRRT,         // Use DB-RRT (Dynamically feasible B-spline based RRT)
-  BangBang       // Use Bang-bang trajectory (Sumatra-style)
+  TIGERsTrajectory // Use TIGERs-style AdvancedMotionPlanner + TrajectoryTracker
 };
 
 enum class RobotAction {
@@ -101,6 +97,7 @@ class RobotManager {
   void SetUniformBSplinePath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Uniform B-spline path
   void SetBezierTrajectoryPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Bezier trajectory path
   void SetBangBangPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Bang-bang trajectory path
+  void SetSmoothPathTrackerPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Smooth path tracker with Pure Pursuit
   void SetDBRRTGoal(const Eigen::Vector3d& goal); // DB-RRT goal-based planning
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
@@ -109,11 +106,9 @@ class RobotManager {
   void SetTrajectoryManagerType(TrajectoryManagerType type);
   TrajectoryManagerType GetTrajectoryManagerType() const { return trajectory_manager_type_; }
   
-  // Get access to planners for configuration
-  ctrl::UniformBSplineTrajectoryPlanner& GetUniformBSplinePlanner() { return uniform_bspline_planner; }
-  ctrl::BezierTrajectoryPlanner& GetBezierTrajectoryPlanner() { return bezier_trajectory_planner; }
-  ctrl::DBRRTTrajectoryPlanner& GetDBRRTPlanner() { return dbrrt_planner; }
-  ctrl::BangBangTrajectoryPlanner& GetBangBangPlanner() { return bangbang_planner; }
+  // Get access to TIGERs trajectory system components
+  ctrl::AdvancedMotionPlanner& GetAdvancedMotionPlanner() { return advanced_motion_planner; }
+  ctrl::TrajectoryTracker& GetTrajectoryTracker() { return trajectory_tracker; }
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
 
@@ -150,12 +145,8 @@ class RobotManager {
 
   est::StateEstimator state_estimator;
   hw::HardwareManager hardware_manager;
-  ctrl::MotionController motion_controller;
-  ctrl::BSplineTrajectoryManager bspline_manager;  // B-spline trajectory manager
-  ctrl::UniformBSplineTrajectoryPlanner uniform_bspline_planner;  // Uniform B-spline trajectory planner
-  ctrl::BezierTrajectoryPlanner bezier_trajectory_planner;  // Bezier trajectory planner
-  ctrl::DBRRTTrajectoryPlanner dbrrt_planner;  // DB-RRT trajectory planner
-  ctrl::BangBangTrajectoryPlanner bangbang_planner;  // Bang-bang trajectory planner
+  ctrl::AdvancedMotionPlanner advanced_motion_planner;  // TIGERs-style advanced motion planner
+  ctrl::TrajectoryTracker trajectory_tracker;  // TIGERs-style PID trajectory tracker
   
   TrajectoryManagerType trajectory_manager_type_;
 

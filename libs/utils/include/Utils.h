@@ -13,7 +13,9 @@ namespace util {
 std::string ReadFile(const std::string& path);
 std::string GetExecutableDir();
 Eigen::Vector3d RotateAboutZ(Eigen::Vector3d pose, double angle_rad);
+Eigen::Vector2d RotateAboutZ(const Eigen::Vector2d& vec, double angle_rad);
 double WrapAngle(double angle_rad);
+double MirrorAngle(double angle_rad);
 double GetCurrentTime();
 void WaitMs(int ms);
 double CalculateDt();  // Relative to the first call of this function. Returns time_sec between

@@ -37,7 +37,7 @@ void hw::HardwareManager::SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
 std::optional<Eigen::Vector4d> hw::HardwareManager::NewMotorsRpms() {
   auto [motor_rpms, gyro_data] = sensor_driver->GetSensorsData();
 
-  sensor_driver->SetAngularVelocityRadps(gyro_data);
+  //sensor_driver->SetAngularVelocityRadps(gyro_data);
 
   if (sensor_driver->NewDataAvailable()) {
     // In MODEL mode, sensor driver always has data available, so we shouldn't reset the flag
