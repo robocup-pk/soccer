@@ -121,7 +121,7 @@ def plot_trajectory_analysis(waypoints, trajectory_data, trajectory_type):
     ax1.set_xlabel('X (m)', fontsize=12)
     ax1.set_ylabel('Y (m)', fontsize=12)
     
-    traj_type_names = {1: "B-spline", 2: "Uniform B-spline", 3: "Bezier"}
+    traj_type_names = {1: "B-spline", 2: "Uniform B-spline", 3: "Bezier", 4: "TIGERs BangBang"}
     title = f'Robot Trajectory Analysis - {traj_type_names.get(trajectory_type, "Unknown")}'
     ax1.set_title(title, fontsize=14, fontweight='bold')
     

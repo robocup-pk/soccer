@@ -224,8 +224,8 @@ int main(int argc, char* argv[]) {
                   << waypoints[i][1] << ", " << waypoints[i][2] << ")" << std::endl;
     }
     
-    // Use TIGERs trajectory system
-    trajectory_log << "# TRAJECTORY_TYPE TIGERs" << std::endl;
+    // Use TIGERs trajectory system (type 4 = TIGERs BangBang)
+    trajectory_log << "# TRAJECTORY_TYPE 4" << std::endl;
     
     std::cout << "Using TIGERs-style Advanced Motion Planning + Trajectory Tracking" << std::endl;
     robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::TIGERsTrajectory);

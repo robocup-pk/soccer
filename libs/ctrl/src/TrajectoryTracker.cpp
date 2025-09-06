@@ -8,23 +8,25 @@ namespace ctrl {
 TrajectoryTracker::TrajectoryTracker()
     : motion_planner_(nullptr),
       start_time_(0.0),
+      last_update_time_(0.0),
       is_finished_(true) {
     
-    // PID gains from TIGERs Mannheim (converted from Java)
-    pos_pid_.kp = 8.0;   // Strong proportional gain for position
-    pos_pid_.ki = 0.5;   // Small integral to handle steady-state errors
-    pos_pid_.kd = 0.3;   // Derivative to dampen oscillations
-    pos_pid_.integral_clamp = 0.5;
+    // PID gains tuned for SSL robots (more conservative than original TIGERs)
+    pos_pid_.kp = 6.0;   // Moderate proportional gain for position
+    pos_pid_.ki = 0.1;   // Small integral to handle steady-state errors
+    pos_pid_.kd = 0.1;   // Small derivative to dampen oscillations
+    pos_pid_.integral_clamp = 0.3;
     
-    angle_pid_.kp = 6.0;  // Strong proportional gain for orientation
-    angle_pid_.ki = 0.2;
-    angle_pid_.kd = 0.2;
-    angle_pid_.integral_clamp = 0.4;
+    angle_pid_.kp = 4.0;  // Moderate proportional gain for orientation
+    angle_pid_.ki = 0.05;
+    angle_pid_.kd = 0.1;
+    angle_pid_.integral_clamp = 0.2;
 }
 
 void TrajectoryTracker::setTrajectory(std::shared_ptr<AdvancedMotionPlanner> planner) {
     motion_planner_ = planner;
     start_time_ = util::GetCurrentTime();
+    last_update_time_ = start_time_;  // Initialize to start time
     is_finished_ = false;
     
     // Reset PID controllers
@@ -44,16 +46,25 @@ Eigen::Vector3d TrajectoryTracker::update(const Eigen::Vector3d& current_pose) {
         return Eigen::Vector3d::Zero();
     }
     
-    double elapsed_time = util::GetCurrentTime() - start_time_;
-    static double last_time = elapsed_time;
-    double dt = elapsed_time - last_time;
-    last_time = elapsed_time;
+    double current_time = util::GetCurrentTime();
+    double elapsed_time = current_time - start_time_;
     
-    if (dt < 1e-6) dt = 0.02; // Default 50Hz
+    // Calculate dt properly - track previous update time
+    double dt = current_time - last_update_time_;
+    last_update_time_ = current_time;
+    
+    if (dt < 1e-6 || dt > 0.1) dt = 0.02; // Default 50Hz, clamp large dt
     
     // --- Step 1: Get feedforward commands from AdvancedMotionPlanner ---
+    // Pass absolute time since trajectory start (Sumatra approach)
     Eigen::Vector3d desired_position = motion_planner_->getPosition(elapsed_time);
     Eigen::Vector3d desired_velocity = motion_planner_->getVelocity(elapsed_time);
+    
+    // Debug: Check raw trajectory velocity
+    if (desired_velocity.head<2>().norm() > 1.4) {
+        std::cout << "[TrajectoryTracker] WARNING: Raw trajectory velocity too high at t=" << elapsed_time 
+                  << "s: " << desired_velocity.transpose() << std::endl;
+    }
     
     // --- Step 2: Calculate position and orientation errors ---
     Eigen::Vector2d pos_error = desired_position.head<2>() - current_pose.head<2>();
@@ -69,7 +80,15 @@ Eigen::Vector3d TrajectoryTracker::update(const Eigen::Vector3d& current_pose) {
     world_velocity.z() = desired_velocity.z() + angle_correction;
     
     // --- Step 5: Convert to body frame ---
-    return util::RotateAboutZ(world_velocity, -current_pose.z());
+    Eigen::Vector3d body_velocity = util::RotateAboutZ(world_velocity, -current_pose.z());
+    
+    // --- Step 6: Clamp velocities to robot limits ---
+    // Use SystemConfig limits: (1.5, 1.5, 5.0) m/s
+    body_velocity.x() = std::clamp(body_velocity.x(), -1.4, 1.4);  // Slightly under limit for safety
+    body_velocity.y() = std::clamp(body_velocity.y(), -1.4, 1.4);
+    body_velocity.z() = std::clamp(body_velocity.z(), -4.8, 4.8);
+    
+    return body_velocity;
 }
 
 } // namespace ctrl

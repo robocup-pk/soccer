@@ -76,6 +76,7 @@ private:
     PIDController angle_pid_; // PID for orientation
     
     double start_time_;
+    double last_update_time_;
     bool is_finished_;
 };
 
