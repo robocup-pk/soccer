@@ -3,54 +3,26 @@
 namespace ctrl {
 
 /**
- * @brief State class containing position, velocity and acceleration.
- * 
- * Direct C++ port of PosVelAcc.java from TIGERs Mannheim
- * 
- * @tparam T The type (e.g., double for 1D, Eigen::Vector2d for 2D)
+ * @brief EXACT copy of Sumatra's PosVelAcc.java
+ * State class containing position, velocity and acceleration.
  */
 template<typename T>
-class PosVelAcc {
-public:
-    /// Default constructor
+struct PosVelAcc {
+    T pos;  // [m]
+    T vel;  // [m/s] 
+    T acc;  // [m/s^2]
+    
     PosVelAcc() = default;
+    PosVelAcc(const T& p, const T& v, const T& a) : pos(p), vel(v), acc(a) {}
     
-    /**
-     * @brief Constructor
-     * @param pos Position [m]
-     * @param vel Velocity [m/s]  
-     * @param acc Acceleration [m/s²]
-     */
-    PosVelAcc(const T& pos, const T& vel, const T& acc) 
-        : pos_(pos), vel_(vel), acc_(acc) {}
+    // Getter methods (like Sumatra)
+    const T& getPos() const { return pos; }
+    const T& getVel() const { return vel; }
+    const T& getAcc() const { return acc; }
     
-    /// Get position [m]
-    const T& getPos() const { return pos_; }
-    
-    /// Get velocity [m/s]
-    const T& getVel() const { return vel_; }
-    
-    /// Get acceleration [m/s²]
-    const T& getAcc() const { return acc_; }
-    
-    /// Set position [m]
-    void setPos(const T& pos) { pos_ = pos; }
-    
-    /// Set velocity [m/s]
-    void setVel(const T& vel) { vel_ = vel; }
-    
-    /// Set acceleration [m/s²]
-    void setAcc(const T& acc) { acc_ = acc; }
-    
-    // Public members for direct access (matching original usage pattern)
-    T pos{};  ///< Position [m]
-    T vel{};  ///< Velocity [m/s]
-    T acc{};  ///< Acceleration [m/s²]
-
-private:
-    T pos_;  ///< Position [m]
-    T vel_;  ///< Velocity [m/s]
-    T acc_;  ///< Acceleration [m/s²]
+    T& getPos() { return pos; }
+    T& getVel() { return vel; }
+    T& getAcc() { return acc; }
 };
 
 } // namespace ctrl

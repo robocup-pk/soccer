@@ -98,6 +98,7 @@ class RobotManager {
   void SetBezierTrajectoryPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Bezier trajectory path
   void SetBangBangPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Bang-bang trajectory path
   void SetSmoothPathTrackerPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Smooth path tracker with Pure Pursuit
+  void SetSumatraTrajectory(const ctrl::AdvancedMotionPlanner& sumatra_planner); // Direct Sumatra trajectory
   void SetDBRRTGoal(const Eigen::Vector3d& goal); // DB-RRT goal-based planning
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);

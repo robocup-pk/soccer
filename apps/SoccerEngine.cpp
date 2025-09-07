@@ -14,6 +14,7 @@
 #include "RobotManager.h"
 #include "SoccerField.h"
 #include "AutoRef.h"
+#include "SystemConfig.h"
 
 int main(int argc, char* argv[]) {
   // TODO: Game State

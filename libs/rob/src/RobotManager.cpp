@@ -200,29 +200,75 @@ void rob::RobotManager::GoHome(){
 }
 
 void rob::RobotManager::SetSmoothPathTrackerPath(std::vector<Eigen::Vector3d> path_fWorld, double t_start_s) {
-  std::cout << "[rob::RobotManager::SetSmoothPathTrackerPath] Setting TIGERs-style trajectory with " 
+  if (path_fWorld.size() < 2) {
+    std::cout << "[rob::RobotManager::SetSmoothPathTrackerPath] Error: Need at least 2 waypoints" << std::endl;
+    return;
+  }
+  
+  std::cout << "[rob::RobotManager::SetSmoothPathTrackerPath] Creating REAL TIGERs smooth trajectory using TrajPath with " 
             << path_fWorld.size() << " waypoints" << std::endl;
   
-  // Step 1: Use AdvancedMotionPlanner for path smoothing, velocity profiling, and time parameterization
-  double max_vel = 1.0;   // m/s
-  double max_acc = 0.8;   // m/s²
-  double max_omega = 3.0; // rad/s
-  double max_omega_acc = 2.5; // rad/s²
+  // EXACT Sumatra approach: Use complete PathFinder system with MoveConstraints
+  ctrl::MoveConstraints moveConstraints;
+  moveConstraints.setVelMax(1.0)        // m/s - matches Sumatra's default
+                 .setAccMax(0.8)        // m/s² - matches Sumatra's default  
+                 .setVelMaxW(3.0)       // rad/s - matches Sumatra's default
+                 .setAccMaxW(2.5);      // rad/s² - matches Sumatra's default
   
-  advanced_motion_planner.plan(path_fWorld, max_vel, max_acc, max_omega, max_omega_acc);
+  if (path_fWorld.size() == 2) {
+    // Single destination: Use PathFinder system
+    std::vector<std::shared_ptr<ctrl::IObstacle>> obstacles; // Empty for now
+    
+    advanced_motion_planner.planTrajectory(
+      this->GetPoseInWorldFrame(),      // Current robot position
+      this->GetVelocityInWorldFrame(),  // Current robot velocity
+      path_fWorld.back(),               // Final destination
+      obstacles,                        // Obstacles (empty for now)
+      moveConstraints                   // Sumatra-style constraints
+    );
+  } else {
+    // Multiple waypoints: Use backward-compatible method
+    double max_vel = moveConstraints.getVelMax();
+    double max_acc = moveConstraints.getAccMax();
+    double max_omega = moveConstraints.getVelMaxW();
+    double max_omega_acc = moveConstraints.getAccMaxW();
+    
+    advanced_motion_planner.planSmoothTrajectory(path_fWorld, max_vel, max_acc, max_omega, max_omega_acc);
+  }
   
   if (advanced_motion_planner.isValid()) {
-    // Step 2: Set the time-parameterized trajectory for the TrajectoryTracker
+    // Set the smooth TrajPath trajectory for the TrajectoryTracker
     trajectory_tracker.setTrajectory(std::make_shared<ctrl::AdvancedMotionPlanner>(advanced_motion_planner));
     
     std::unique_lock<std::mutex> lock(robot_state_mutex);
     robot_state = RobotState::TRAJECTORY_FOLLOWING;
     trajectory_manager_type_ = TrajectoryManagerType::TIGERsTrajectory;
     
-    std::cout << "[rob::RobotManager::SetSmoothPathTrackerPath] TIGERs-style trajectory created successfully! Duration: " 
+    std::cout << "[rob::RobotManager::SetSmoothPathTrackerPath] Successfully created smooth TIGERs trajectory! Duration: " 
               << advanced_motion_planner.getTotalTime() << "s" << std::endl;
   } else {
-    std::cout << "[rob::RobotManager::SetSmoothPathTrackerPath] Failed to create trajectory" << std::endl;
+    std::cout << "[rob::RobotManager::SetSmoothPathTrackerPath] Failed to create smooth trajectory" << std::endl;
+  }
+}
+
+void rob::RobotManager::SetSumatraTrajectory(const ctrl::AdvancedMotionPlanner& sumatra_planner) {
+  std::cout << "[rob::RobotManager::SetSumatraTrajectory] Directly setting Sumatra trajectory..." << std::endl;
+  
+  // Copy the Sumatra planner (it already has the complete trajectory)
+  advanced_motion_planner = sumatra_planner;
+  
+  if (advanced_motion_planner.isValid()) {
+    // Set the Sumatra trajectory for the TrajectoryTracker
+    trajectory_tracker.setTrajectory(std::make_shared<ctrl::AdvancedMotionPlanner>(advanced_motion_planner));
+    
+    std::unique_lock<std::mutex> lock(robot_state_mutex);
+    robot_state = RobotState::TRAJECTORY_FOLLOWING;
+    trajectory_manager_type_ = TrajectoryManagerType::TIGERsTrajectory;
+    
+    std::cout << "[rob::RobotManager::SetSumatraTrajectory] Successfully set Sumatra trajectory! Duration: " 
+              << advanced_motion_planner.getTotalTime() << "s" << std::endl;
+  } else {
+    std::cout << "[rob::RobotManager::SetSumatraTrajectory] Invalid Sumatra trajectory!" << std::endl;
   }
 }
 

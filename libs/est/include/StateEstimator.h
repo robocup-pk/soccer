@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "RobotModel.h"
+#include "SystemConfig.h"
 
 namespace est {
 class StateEstimator {

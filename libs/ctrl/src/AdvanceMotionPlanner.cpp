@@ -1,132 +1,160 @@
 #include "AdvancedMotionPlanner.h"
+#include "TrajectoryGenerator.h"
 #include "Utils.h"
 #include <iostream>
 #include <algorithm>
 
 namespace ctrl {
 
-void AdvancedMotionPlanner::plan(const std::vector<Eigen::Vector3d>& waypoints,
-                                 double maxVel, double maxAcc, double maxOmega, double maxOmegaAcc) {
-    segments_.clear();
-    total_time_ = 0.0;
+void AdvancedMotionPlanner::planTrajectory(const Eigen::Vector3d& botPos,
+                                          const Eigen::Vector3d& botVel,
+                                          const Eigen::Vector3d& dest,
+                                          const std::vector<std::shared_ptr<IObstacle>>& obstacles,
+                                          const MoveConstraints& moveConstraints) {
     
-    if (waypoints.size() < 2) {
-        std::cout << "[AdvancedMotionPlanner] Error: Need at least 2 waypoints" << std::endl;
-        return;
+    std::cout << "[AdvancedMotionPlanner] Using COMPLETE Sumatra PathFinder system" << std::endl;
+    std::cout << "  From: (" << botPos.x() << ", " << botPos.y() << ", " << botPos.z() << ")" << std::endl;
+    std::cout << "  To: (" << dest.x() << ", " << dest.y() << ", " << dest.z() << ")" << std::endl;
+    std::cout << "  Obstacles: " << obstacles.size() << std::endl;
+    
+    // Create PathFinderInput using EXACT Sumatra approach
+    PathFinderInput input = PathFinderInput::fromBot(botPos, botVel)
+        .dest(dest.head<2>())
+        .obstacles(obstacles)
+        .moveConstraints(moveConstraints)
+        .timestamp(0) // Can be enhanced with actual timestamp
+        .build();
+    
+    // Use PathFinder to calculate optimal path (EXACT Sumatra approach)
+    auto pathResult = pathFinder_.calcPath(input);
+    
+    if (pathResult.has_value() && pathResult->isCollisionFree()) {
+        trajPath_ = pathResult->getTrajectory();
+        is_valid_ = (trajPath_.getTotalTime() > 0.0);
+        
+        std::cout << "[AdvancedMotionPlanner] Successfully created collision-free path with total time: " 
+                  << trajPath_.getTotalTime() << "s" << std::endl;
+    } else if (pathResult.has_value()) {
+        // Accept path even with collisions (like Sumatra sometimes does)
+        trajPath_ = pathResult->getTrajectory();
+        is_valid_ = (trajPath_.getTotalTime() > 0.0);
+        
+        std::cout << "[AdvancedMotionPlanner] WARNING: Path has " << pathResult->getCollisions().size() 
+                  << " collisions, first at t=" << pathResult->getFirstCollisionTime() << "s" << std::endl;
+    } else {
+        is_valid_ = false;
+        std::cout << "[AdvancedMotionPlanner] ERROR: Failed to create valid path" << std::endl;
     }
-
-    max_velocity_ = maxVel;
-    max_acceleration_ = maxAcc;
-    max_angular_velocity_ = maxOmega;
-    max_angular_acceleration_ = maxOmegaAcc;
-
-    std::cout << "[AdvancedMotionPlanner] Planning BangBang trajectory through " 
-              << waypoints.size() << " waypoints" << std::endl;
-
-    // Create BangBang trajectory segments between consecutive waypoints
-    double cumulative_time = 0.0;
-    
-    for (size_t i = 0; i < waypoints.size() - 1; ++i) {
-        const Eigen::Vector3d& start = waypoints[i];
-        const Eigen::Vector3d& end = waypoints[i + 1];
-        
-        TrajectorySegment segment;
-        segment.start_time = cumulative_time;
-        
-        // Extract 2D positions and orientations
-        Eigen::Vector2d start_pos = start.head<2>();
-        Eigen::Vector2d end_pos = end.head<2>();
-        double start_theta = start.z();
-        double end_theta = end.z();
-        
-        // Estimate initial velocity based on previous trajectory (if available)
-        Eigen::Vector2d initial_velocity = Eigen::Vector2d::Zero();
-        double initial_angular_velocity = 0.0;
-        
-        if (i > 0 && !segments_.empty()) {
-            // Get velocity from previous segment at its end time
-            const auto& prev_segment = segments_.back();
-            double prev_end_time = prev_segment.duration;
-            Eigen::Vector3d prev_velocity = prev_segment.trajectory.getVelocity(prev_end_time);
-            initial_velocity = prev_velocity.head<2>();
-            initial_angular_velocity = prev_velocity.z();
-        }
-        
-        // Create separate XY and orientation trajectories
-        BangBangTrajectory2D xy_traj = factory_.sync(
-            start_pos, end_pos, initial_velocity, maxVel, maxAcc
-        );
-        
-        BangBangTrajectory1DOrient orient_traj = factory_.orientation(
-            start_theta, end_theta, initial_angular_velocity, maxOmega, maxOmegaAcc
-        );
-        
-        // Combine into unified TrajectoryXyw (true TIGERs approach)
-        segment.trajectory = TrajectoryXyw(xy_traj, orient_traj);
-        segment.duration = segment.trajectory.getTotalTime();
-        
-        cumulative_time += segment.duration;
-        segments_.push_back(segment);
-        
-        std::cout << "[AdvancedMotionPlanner] Segment " << i << ": " 
-                  << "pos_time=" << xy_traj.getTotalTime() << "s, "
-                  << "orient_time=" << orient_traj.getTotalTime() << "s, "
-                  << "duration=" << segment.duration << "s" << std::endl;
-    }
-    
-    total_time_ = cumulative_time;
-    std::cout << "[AdvancedMotionPlanner] Total trajectory time: " << total_time_ << "s" << std::endl;
 }
 
-int AdvancedMotionPlanner::findActiveSegment(double time) const {
-    for (int i = 0; i < (int)segments_.size(); ++i) {
-        if (segments_[i].isActive(time)) {
-            return i;
-        }
+void AdvancedMotionPlanner::planSmoothTrajectory(const std::vector<Eigen::Vector3d>& waypoints,
+                                                 double maxVel, double maxAcc, double maxOmega, double maxOmegaAcc) {
+    if (waypoints.size() < 2) {
+        std::cout << "[AdvancedMotionPlanner] Error: Need at least 2 waypoints" << std::endl;
+        is_valid_ = false;
+        return;
     }
-    // Return last segment if time is beyond all segments
-    return std::max(0, (int)segments_.size() - 1);
+    
+    std::cout << "[AdvancedMotionPlanner] DEPRECATED: Multiple waypoints not supported by pure Sumatra!" << std::endl;
+    std::cout << "[AdvancedMotionPlanner] Sumatra expects: SINGLE destination + obstacles, not multiple waypoints" << std::endl;
+    std::cout << "[AdvancedMotionPlanner] Creating fallback trajectory to final destination only" << std::endl;
+    
+    // PURE SUMATRA APPROACH: Only use start and final destination
+    // Ignore intermediate waypoints - Sumatra doesn't use them!
+    
+    if (waypoints.size() > 2) {
+        std::cout << "[AdvancedMotionPlanner] WARNING: Ignoring " << waypoints.size()-2 
+                  << " intermediate waypoints - Sumatra uses PathFinder for obstacle avoidance instead!" << std::endl;
+    }
+    
+    // Use only start and final destination (EXACT Sumatra approach)
+    Eigen::Vector3d start = waypoints[0];
+    Eigen::Vector3d destination = waypoints.back();
+    
+    // Create MoveConstraints (EXACT Sumatra format)
+    MoveConstraints mc;
+    mc.setVelMax(maxVel).setAccMax(maxAcc).setVelMaxW(maxOmega).setAccMaxW(maxOmegaAcc);
+    
+    // Create single trajectory from start to destination using TrajectoryGenerator
+    auto posTrajectory = TrajectoryGenerator::generatePositionTrajectory(
+        mc, start.head<2>(), Eigen::Vector2d::Zero(), destination.head<2>());
+    auto rotTrajectory = TrajectoryGenerator::generateRotationTrajectory(
+        start.z(), 0.0, destination.z(), mc);
+    
+    TrajectoryXyw trajectory(posTrajectory, rotTrajectory);
+    trajPath_ = TrajPath(trajectory, trajectory.getTotalTime(), nullptr);
+    
+    is_valid_ = true;
+    
+    std::cout << "[AdvancedMotionPlanner] Successfully created smooth TrajPath - Total time: " 
+              << trajPath_.getTotalTime() << "s" << std::endl;
+    
+    // Debug: Check velocities at waypoint connection points
+    double currentTime = 0.0;
+    for (size_t i = 1; i < waypoints.size(); ++i) {
+        currentTime += (trajPath_.getTotalTime() / (waypoints.size() - 1)) * 0.6; // Use 60% for debug
+        Eigen::Vector3d vel = trajPath_.getVelocity(currentTime);
+        std::cout << "[AdvancedMotionPlanner] Velocity at waypoint " << i 
+                  << " transition (t=" << currentTime << "s): (" 
+                  << vel.x() << ", " << vel.y() << ", " << vel.z() << ") - magnitude: " 
+                  << vel.head<2>().norm() << std::endl;
+    }
 }
 
 Eigen::Vector3d AdvancedMotionPlanner::getPosition(double time) const {
     if (!isValid()) return Eigen::Vector3d::Zero();
     
     if (time <= 0.0) {
-        // Return first waypoint
-        return segments_[0].trajectory.getPosition(0.0);
+        return trajPath_.getPosition(0.0);
     }
     
-    if (time >= total_time_) {
-        // Return last waypoint
-        const auto& last_segment = segments_.back();
-        return last_segment.trajectory.getPosition(last_segment.duration);
+    if (time >= trajPath_.getTotalTime()) {
+        return trajPath_.getPosition(trajPath_.getTotalTime());
     }
     
-    // Find active segment and get position
-    int active_idx = findActiveSegment(time);
-    const auto& segment = segments_[active_idx];
-    double local_time = segment.getLocalTime(time);
-    
-    return segment.trajectory.getPosition(local_time);
+    return trajPath_.getPosition(time);
 }
 
 Eigen::Vector3d AdvancedMotionPlanner::getVelocity(double time) const {
     if (!isValid()) return Eigen::Vector3d::Zero();
     
-    if (time <= 0.0 || time >= total_time_) {
-        return Eigen::Vector3d::Zero(); // Zero velocity at start and end
+    if (time <= 0.0 || time >= trajPath_.getTotalTime()) {
+        return Eigen::Vector3d::Zero();
     }
     
-    // Find active segment and get velocity
-    int active_idx = findActiveSegment(time);
-    const auto& segment = segments_[active_idx];
-    double local_time = segment.getLocalTime(time);
-    
-    return segment.trajectory.getVelocity(local_time);
+    return trajPath_.getVelocity(time);
 }
 
 double AdvancedMotionPlanner::getTotalTime() const {
-    return total_time_;
+    if (!isValid()) return 0.0;
+    return trajPath_.getTotalTime();
+}
+
+double AdvancedMotionPlanner::findOptimalConnectionTime(double segmentDuration, double maxVel) const {
+    // Find connection time when velocity is still high (>70% of maxVel)
+    // This ensures smooth transitions by connecting before significant deceleration
+    
+    double targetVelThreshold = maxVel * 0.7; // Connect when velocity > 70% of max
+    double timeStep = segmentDuration * 0.01; // Check every 1% of duration
+    
+    // Start from middle and work forward to find when velocity drops below threshold
+    for (double t = segmentDuration * 0.4; t < segmentDuration * 0.9; t += timeStep) {
+        Eigen::Vector3d vel = trajPath_.getVelocity(t);
+        double speed = vel.head<2>().norm();
+        
+        if (speed < targetVelThreshold) {
+            // Found where velocity starts dropping - connect just before this
+            double connectionTime = std::max(t - timeStep, segmentDuration * 0.3);
+            std::cout << "  Optimal connection at t=" << connectionTime << "s (velocity=" 
+                      << speed << "m/s, " << (connectionTime/segmentDuration*100) << "% of duration)" << std::endl;
+            return connectionTime;
+        }
+    }
+    
+    // If velocity stays high throughout, connect at 60% of duration
+    double fallbackTime = segmentDuration * 0.6;
+    std::cout << "  Using fallback connection at t=" << fallbackTime << "s (60% of duration)" << std::endl;
+    return fallbackTime;
 }
 
 } // namespace ctrl

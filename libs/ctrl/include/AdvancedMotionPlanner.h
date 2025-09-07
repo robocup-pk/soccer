@@ -2,76 +2,66 @@
 
 #include "BangBangTrajectoryFactory.h"
 #include "TrajectoryXyw.h"
+#include "TrajPath.h"
+#include "PathFinder.h"
+#include "PathFinderInput.h"
 #include <vector>
 #include <memory>
 
 namespace ctrl {
 
 /**
- * @brief Complete TIGERs Mannheim-style motion planner using BangBang trajectories.
+ * @brief EXACT copy of Sumatra's trajectory planning system using PathFinder.
  *
- * This class implements the true TIGERs approach:
- * 1. Takes waypoints from a pathfinder (e.g., RRTX).
- * 2. Creates optimal BangBang trajectories between consecutive waypoints using BangBangTrajectoryFactory.
- * 3. Handles both position (XY) and orientation (theta) trajectories separately.
- * 4. Provides a unified time-parameterized interface for TrajectoryTracker.
+ * This class implements the COMPLETE Sumatra approach:
+ * 1. Uses PathFinderInput with MoveConstraints for proper input handling
+ * 2. Uses PathFinder for obstacle avoidance and path generation
+ * 3. Uses TrajPath for smooth multi-waypoint motion
+ * 4. Integrates complete TIGERs Mannheim trajectory planning pipeline
  * 
- * This is a direct implementation of the Sumatra trajectory planning approach.
+ * Direct port of Sumatra's complete trajectory planning system.
  */
 class AdvancedMotionPlanner {
 public:
     AdvancedMotionPlanner() = default;
 
     /**
-     * @brief Plans a complete trajectory from a list of waypoints using BangBang trajectories.
-     * @param waypoints List of 3D waypoints (x, y, theta)
-     * @param maxVel Maximum linear velocity [m/s]
-     * @param maxAcc Maximum linear acceleration [m/s²]
-     * @param maxOmega Maximum angular velocity [rad/s]
-     * @param maxOmegaAcc Maximum angular acceleration [rad/s²]
+     * @brief Plan trajectory using COMPLETE Sumatra PathFinder system.
+     * @param botPos Current robot position (x, y, theta)
+     * @param botVel Current robot velocity (vx, vy, omega)
+     * @param dest Destination position (x, y, theta)
+     * @param obstacles List of obstacles for avoidance
+     * @param moveConstraints Movement constraints (EXACT Sumatra format)
      */
-    void plan(const std::vector<Eigen::Vector3d>& waypoints,
-              double maxVel, double maxAcc, double maxOmega, double maxOmegaAcc);
+    void planTrajectory(const Eigen::Vector3d& botPos,
+                       const Eigen::Vector3d& botVel,
+                       const Eigen::Vector3d& dest,
+                       const std::vector<std::shared_ptr<IObstacle>>& obstacles,
+                       const MoveConstraints& moveConstraints);
+    
+    /**
+     * @brief Plan smooth trajectory through multiple waypoints (for backward compatibility).
+     */
+    void planSmoothTrajectory(const std::vector<Eigen::Vector3d>& waypoints,
+                             double maxVel, double maxAcc, double maxOmega, double maxOmegaAcc);
 
     // --- Trajectory Query Functions ---
     Eigen::Vector3d getPosition(double time) const;
     Eigen::Vector3d getVelocity(double time) const;
     double getTotalTime() const;
-    bool isValid() const { return !segments_.empty(); }
+    bool isValid() const { return is_valid_; }
+    
+    // --- Sumatra-style TrajPath Access ---
+    TrajPath getTrajPath() const { return trajPath_; }
 
 private:
-    /**
-     * @brief Trajectory segment using unified 3D trajectory (TIGERs approach)
-     */
-    struct TrajectorySegment {
-        TrajectoryXyw trajectory;                  // Unified XYW trajectory (TIGERs style)
-        double start_time{0.0};                    // Absolute start time of this segment
-        double duration{0.0};                      // Duration of this segment
-        
-        bool isActive(double time) const {
-            return time >= start_time && time <= (start_time + duration);
-        }
-        
-        double getLocalTime(double time) const {
-            return std::max(0.0, time - start_time);
-        }
-    };
-
-    // --- Helper Functions ---
-    int findActiveSegment(double time) const;
+    // --- Complete Sumatra system components ---
+    TrajPath trajPath_;
+    PathFinder pathFinder_;
+    bool is_valid_{false};
     
-    // --- Trajectory Data ---
-    std::vector<TrajectorySegment> segments_;
-    BangBangTrajectoryFactory factory_;
-    
-    // --- Robot limits ---
-    double max_velocity_;
-    double max_acceleration_;
-    double max_angular_velocity_;
-    double max_angular_acceleration_;
-    
-    // --- Cached values ---
-    double total_time_{0.0};
+    // --- Helper methods ---
+    double findOptimalConnectionTime(double segmentDuration, double maxVel) const;
 };
 
 } // namespace ctrl

@@ -13,9 +13,13 @@
 #include "RobotManager.h"
 #include "SoccerField.h"
 #include "AutoRef.h"
+<<<<<<< HEAD
 #include "Game.h"
 #include <cmath>
 #include "Controller.h"
+=======
+#include "SystemConfig.h"
+>>>>>>> 915c3968 (Completed Planning + Trajectory Planner)
 
 int main(int argc, char* argv[]) {
   // TODO: Game State

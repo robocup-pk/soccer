@@ -5,6 +5,9 @@ set(SOURCES
     src/DestinationForTimedPositionCalc.cpp
     src/AdvanceMotionPlanner.cpp
     src/TrajectoryTracker.cpp
+    src/TrajPath.cpp
+    src/PathFinder.cpp
+    src/TrajectoryGenerator.cpp
     src/BangBangTrajectory1D.cpp
     src/BangBangTrajectory2D.cpp
     src/BangBangTrajectory1DOrient.cpp

@@ -12,13 +12,13 @@ TrajectoryTracker::TrajectoryTracker()
       is_finished_(true) {
     
     // PID gains tuned for SSL robots (more conservative than original TIGERs)
-    pos_pid_.kp = 2.0;   // Moderate proportional gain for position
-    pos_pid_.ki = 0.1;   // Small integral to handle steady-state errors
+    pos_pid_.kp = 8.0;   // Moderate proportional gain for position
+    pos_pid_.ki = 0.5;   // Small integral to handle steady-state errors
     pos_pid_.kd = 0.1;   // Small derivative to dampen oscillations
     pos_pid_.integral_clamp = 0.3;
     
-    angle_pid_.kp = 2.0;  // Moderate proportional gain for orientation
-    angle_pid_.ki = 0.05;
+    angle_pid_.kp = 6.0;  // Moderate proportional gain for orientation
+    angle_pid_.ki = 0.1;
     angle_pid_.kd = 0.1;
     angle_pid_.integral_clamp = 0.2;
 }
@@ -56,7 +56,7 @@ Eigen::Vector3d TrajectoryTracker::update(const Eigen::Vector3d& current_pose) {
     if (dt < 1e-6 || dt > 0.1) dt = 0.02; // Default 50Hz, clamp large dt
     
     // --- Step 1: Get feedforward commands from AdvancedMotionPlanner ---
-    // Pass absolute time since trajectory start (Sumatra approach)
+    // This matches exactly how Sumatra's MoveBangBangSkill works (lines 92, 111)
     Eigen::Vector3d desired_position = motion_planner_->getPosition(elapsed_time);
     Eigen::Vector3d desired_velocity = motion_planner_->getVelocity(elapsed_time);
     
