@@ -4,6 +4,7 @@
 #include "PathFinderInput.h"
 #include "PathFinderResult.h"
 #include "IObstacle.h"
+#include "PathfindingConfig.h"
 #include <vector>
 #include <memory>
 #include <optional>
@@ -18,9 +19,15 @@ class PathFinder {
 private:
     std::vector<std::shared_ptr<IObstacle>> obstacles_;
     MoveConstraints moveConstraints_;
+    PathfindingConfig config_;
     
 public:
-    PathFinder() = default;
+    PathFinder() : config_(PathfindingConfig::createBalanced()) {}
+    explicit PathFinder(const PathfindingConfig& config) : config_(config) {}
+    
+    // Configuration management
+    void setConfig(const PathfindingConfig& config) { config_ = config; }
+    const PathfindingConfig& getConfig() const { return config_; }
     
     /**
      * Calculate path from input (EXACT copy of Sumatra's calcPath method)
@@ -34,9 +41,23 @@ public:
     bool isDirectPathPossible(const PathFinderInput& input);
     
     /**
+     * Simple collision checking methods
+     */
+    bool isDirectPathClear(const PathFinderInput& input);
+    bool isPathClear(const Eigen::Vector2d& start, const Eigen::Vector2d& end, 
+                    const std::vector<std::shared_ptr<IObstacle>>& obstacles);
+    double distanceFromLineToObstacle(const Eigen::Vector2d& start, const Eigen::Vector2d& end,
+                                     std::shared_ptr<IObstacle> obstacle);
+    
+    /**
      * Generate waypoints around obstacles (simplified for now)
      */
     std::vector<Eigen::Vector2d> generateWaypoints(const PathFinderInput& input);
+    
+    /**
+     * Create path to destination (EXACT copy of Sumatra)
+     */
+    TrajPath createPath(const PathFinderInput& input, const Eigen::Vector2d& dest);
     
     /**
      * Create smooth path through multiple waypoints (KEY method!)

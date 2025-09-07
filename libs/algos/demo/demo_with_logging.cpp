@@ -291,7 +291,7 @@ int main(int argc, char* argv[]) {
     trajectory_log << "# TRAJECTORY_TYPE 4" << std::endl;
     
     std::cout << "Using TIGERs-style Advanced Motion Planning + Trajectory Tracking" << std::endl;
-    robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::TIGERsTrajectory);
+    robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::AdvancedTrajectory);
     
     // PURE SUMATRA TEST: Handle empty waypoints (cases 11-13)
     if (waypoints.empty()) {
@@ -399,7 +399,7 @@ int main(int argc, char* argv[]) {
                 
                 // CLEAN SOLUTION: Use RobotManager's direct Sumatra trajectory method
                 std::cout << "[SUMATRA] Setting Sumatra trajectory directly via RobotManager..." << std::endl;
-                robot_manager.SetSumatraTrajectory(pure_sumatra_planner);
+                robot_manager.SetAdvancedTrajectory(pure_sumatra_planner);
                 std::cout << "[SUMATRA] Robot should now follow obstacle-aware trajectory!" << std::endl;
                 
             } else {

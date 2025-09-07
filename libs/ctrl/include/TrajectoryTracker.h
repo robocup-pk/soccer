@@ -9,9 +9,9 @@ namespace ctrl {
 class AdvancedMotionPlanner;
 
 /**
- * @brief TIGERs Mannheim-style trajectory tracker with PID feedback control.
+ * @brief Advanced trajectory tracker with PID feedback control.
  *
- * This class implements the complete TIGERs pipeline:
+ * This class implements the complete advanced pipeline:
  * 1. Receives a time-parameterized trajectory from AdvancedMotionPlanner
  * 2. Uses feedforward commands (desired position/velocity at current time)
  * 3. Adds PID feedback corrections based on actual vs desired position/orientation

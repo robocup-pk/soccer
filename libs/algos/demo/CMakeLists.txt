@@ -7,6 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> 2cdab88a (Temp Changes)
 
 <<<<<<< HEAD
@@ -17,6 +18,9 @@ add_executable(demo_rrt_kick DemoRRTKick.cpp)
 add_executable(basic_demo demo.cpp)
 =======
 >>>>>>> 915c3968 (Completed Planning + Trajectory Planner)
+=======
+
+>>>>>>> 469d71a6 (Add Obstacle Avoidance in Path-Finder)
 add_executable(demo_with_logging demo_with_logging.cpp)
 # Link required libraries
 <<<<<<< HEAD
@@ -72,6 +76,7 @@ target_link_libraries(demo_with_logging
     utils_lib
     Eigen3::Eigen
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 target_link_libraries(simulate_log_file_demo 
 >>>>>>> 376f91f0 (Improve BSpline Corner turns)
@@ -110,10 +115,18 @@ target_link_libraries(simulate_log_file_demo
 
 add_executable(demo_trajectory_comparison demo_trajectory_comparison.cpp)
 target_link_libraries(demo_trajectory_comparison 
+=======
+)
+
+# Multi-robot demo for testing trajectory planning with multiple agents
+add_executable(multi_robot_demo multi_robot_demo.cpp)
+target_link_libraries(multi_robot_demo 
+>>>>>>> 469d71a6 (Add Obstacle Avoidance in Path-Finder)
     algos_lib 
     state_lib 
     vis_lib 
     kin_lib 
+<<<<<<< HEAD
     rob_lib 
     cfg_lib 
     utils_lib
@@ -293,3 +306,11 @@ target_link_libraries(performance_testing_demo
 =======
 )
 >>>>>>> 915c3968 (Completed Planning + Trajectory Planner)
+=======
+    rob_lib
+    ctrl_lib  # For AdvancedMotionPlanner 
+    cfg_lib 
+    utils_lib
+    Eigen3::Eigen
+)
+>>>>>>> 469d71a6 (Add Obstacle Avoidance in Path-Finder)

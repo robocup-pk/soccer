@@ -20,7 +20,7 @@ rob::RobotManager::RobotManager() {
   finished_motion = true;
   num_sensor_readings_failed = 0;
   rob_manager_running.store(true);
-  trajectory_manager_type_ = TrajectoryManagerType::TIGERsTrajectory;  // Default to TIGERs trajectory system
+  trajectory_manager_type_ = TrajectoryManagerType::AdvancedTrajectory;  // Default to advanced trajectory system
 
 #ifdef BUILD_ON_PI
   state_estimator.initialized_pose = false;
@@ -133,6 +133,11 @@ void rob::RobotManager::ControlLogic() {
       finished_motion = trajectory_tracker.isFinished();
 >>>>>>> 5eb85243 (Tiger Manim BangBang2D Trajectory Planner)
       break;
+    case RobotState::REPLANNING_CONTROL:
+      // Sumatra-style replanning with dynamic obstacle avoidance
+      velocity_fBody_ = replanning_controller_.update(pose_fWorld, this->GetVelocityInWorldFrame());
+      finished_motion = replanning_controller_.isDestinationReached();
+      break;
   }
 
   if (finished_motion) robot_state = RobotState::IDLE;
@@ -242,33 +247,33 @@ void rob::RobotManager::SetSmoothPathTrackerPath(std::vector<Eigen::Vector3d> pa
     
     std::unique_lock<std::mutex> lock(robot_state_mutex);
     robot_state = RobotState::TRAJECTORY_FOLLOWING;
-    trajectory_manager_type_ = TrajectoryManagerType::TIGERsTrajectory;
+    trajectory_manager_type_ = TrajectoryManagerType::AdvancedTrajectory;
     
-    std::cout << "[rob::RobotManager::SetSmoothPathTrackerPath] Successfully created smooth TIGERs trajectory! Duration: " 
+    std::cout << "[rob::RobotManager::SetSmoothPathTrackerPath] Successfully created smooth advanced trajectory! Duration: " 
               << advanced_motion_planner.getTotalTime() << "s" << std::endl;
   } else {
     std::cout << "[rob::RobotManager::SetSmoothPathTrackerPath] Failed to create smooth trajectory" << std::endl;
   }
 }
 
-void rob::RobotManager::SetSumatraTrajectory(const ctrl::AdvancedMotionPlanner& sumatra_planner) {
-  std::cout << "[rob::RobotManager::SetSumatraTrajectory] Directly setting Sumatra trajectory..." << std::endl;
+void rob::RobotManager::SetAdvancedTrajectory(const ctrl::AdvancedMotionPlanner& advanced_planner) {
+  std::cout << "[rob::RobotManager::SetAdvancedTrajectory] Directly setting advanced trajectory..." << std::endl;
   
-  // Copy the Sumatra planner (it already has the complete trajectory)
-  advanced_motion_planner = sumatra_planner;
+  // Copy the advanced planner (it already has the complete trajectory)
+  advanced_motion_planner = advanced_planner;
   
   if (advanced_motion_planner.isValid()) {
-    // Set the Sumatra trajectory for the TrajectoryTracker
+    // Set the advanced trajectory for the TrajectoryTracker
     trajectory_tracker.setTrajectory(std::make_shared<ctrl::AdvancedMotionPlanner>(advanced_motion_planner));
     
     std::unique_lock<std::mutex> lock(robot_state_mutex);
     robot_state = RobotState::TRAJECTORY_FOLLOWING;
-    trajectory_manager_type_ = TrajectoryManagerType::TIGERsTrajectory;
+    trajectory_manager_type_ = TrajectoryManagerType::AdvancedTrajectory;
     
-    std::cout << "[rob::RobotManager::SetSumatraTrajectory] Successfully set Sumatra trajectory! Duration: " 
+    std::cout << "[rob::RobotManager::SetAdvancedTrajectory] Successfully set advanced trajectory! Duration: " 
               << advanced_motion_planner.getTotalTime() << "s" << std::endl;
   } else {
-    std::cout << "[rob::RobotManager::SetSumatraTrajectory] Invalid Sumatra trajectory!" << std::endl;
+    std::cout << "[rob::RobotManager::SetAdvancedTrajectory] Invalid advanced trajectory!" << std::endl;
   }
 }
 
@@ -277,8 +282,8 @@ void rob::RobotManager::SetTrajectoryManagerType(TrajectoryManagerType type) {
   trajectory_manager_type_ = type;
   std::string type_name;
   switch (type) {
-    case TrajectoryManagerType::TIGERsTrajectory:
-      type_name = "TIGERs_TRAJECTORY";
+    case TrajectoryManagerType::AdvancedTrajectory:
+      type_name = "ADVANCED_TRAJECTORY";
       break;
   }
   std::cout << "[rob::RobotManager::SetTrajectoryManagerType] Set to " << type_name << std::endl;
@@ -400,6 +405,8 @@ std::string rob::RobotManager::GetRobotState() {
       return "CALIBRATING";
     case RobotState::TRAJECTORY_FOLLOWING:
       return "TRAJECTORY_FOLLOWING";
+    case RobotState::REPLANNING_CONTROL:
+      return "REPLANNING_CONTROL";
   }
   return "ERROR";
 }
@@ -441,4 +448,51 @@ bool rob::RobotManager::IsGyroCalibrated() {
     return false;
   }
   return true;
+}
+
+// Replanning controller methods (Sumatra-style)
+void rob::RobotManager::SetReplanningGoal(const Eigen::Vector3d& goal) {
+  std::unique_lock<std::mutex> lock(robot_state_mutex);
+  
+  replanning_controller_.setDestination(goal);
+  
+  // Create movement constraints from system config
+  ctrl::MoveConstraints constraints;
+  constraints.setVelMax(1.0)        // m/s
+             .setAccMax(0.8)        // m/s²
+             .setVelMaxW(3.0)       // rad/s
+             .setAccMaxW(2.5);      // rad/s²
+  
+  replanning_controller_.setMoveConstraints(constraints);
+  
+  robot_state = RobotState::REPLANNING_CONTROL;
+  
+  std::cout << "[rob::RobotManager::SetReplanningGoal] Set replanning goal: " 
+            << goal.transpose() << std::endl;
+}
+
+void rob::RobotManager::SetReplanningEnabled(bool enabled) {
+  replanning_controller_.setReplanningEnabled(enabled);
+  std::cout << "[rob::RobotManager::SetReplanningEnabled] Replanning " 
+            << (enabled ? "enabled" : "disabled") << std::endl;
+}
+
+void rob::RobotManager::AddObstacles(const std::vector<std::shared_ptr<ctrl::IObstacle>>& obstacles) {
+  replanning_controller_.setObstacles(obstacles);
+  std::cout << "[rob::RobotManager::AddObstacles] Added " << obstacles.size() 
+            << " obstacles to replanning controller" << std::endl;
+}
+
+void rob::RobotManager::ClearObstacles() {
+  std::vector<std::shared_ptr<ctrl::IObstacle>> empty_obstacles;
+  replanning_controller_.setObstacles(empty_obstacles);
+  std::cout << "[rob::RobotManager::ClearObstacles] Cleared all obstacles" << std::endl;
+}
+
+ctrl::ReplanningController::ReplanningStats rob::RobotManager::GetReplanningStats() const {
+  return replanning_controller_.getStats();
+}
+
+int rob::RobotManager::GetReplanCount() const {
+  return replanning_controller_.getStats().total_replans;
 }

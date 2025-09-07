@@ -46,7 +46,11 @@
 =======
 #include "AdvancedMotionPlanner.h"
 #include "TrajectoryTracker.h"
+<<<<<<< HEAD
 >>>>>>> 5eb85243 (Tiger Manim BangBang2D Trajectory Planner)
+=======
+#include "ReplanningController.h"
+>>>>>>> 469d71a6 (Add Obstacle Avoidance in Path-Finder)
 
 // Forward declarations
 namespace state {
@@ -62,11 +66,12 @@ enum class RobotState {
   MANUAL_DRIVING,
   AUTONOMOUS_DRIVING,
   CALIBRATING,
-  TRAJECTORY_FOLLOWING   // TIGERs-style trajectory following
+  TRAJECTORY_FOLLOWING,   // Advanced trajectory following
+  REPLANNING_CONTROL      // Using replanning controller
 };
 
 enum class TrajectoryManagerType {
-  TIGERsTrajectory // Use TIGERs-style AdvancedMotionPlanner + TrajectoryTracker
+  AdvancedTrajectory // Use advanced AdvancedMotionPlanner + TrajectoryTracker
 };
 
 enum class RobotAction {
@@ -98,7 +103,7 @@ class RobotManager {
   void SetBezierTrajectoryPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Bezier trajectory path
   void SetBangBangPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Bang-bang trajectory path
   void SetSmoothPathTrackerPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Smooth path tracker with Pure Pursuit
-  void SetSumatraTrajectory(const ctrl::AdvancedMotionPlanner& sumatra_planner); // Direct Sumatra trajectory
+  void SetAdvancedTrajectory(const ctrl::AdvancedMotionPlanner& advanced_planner); // Direct advanced trajectory
   void SetDBRRTGoal(const Eigen::Vector3d& goal); // DB-RRT goal-based planning
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
@@ -107,9 +112,16 @@ class RobotManager {
   void SetTrajectoryManagerType(TrajectoryManagerType type);
   TrajectoryManagerType GetTrajectoryManagerType() const { return trajectory_manager_type_; }
   
-  // Get access to TIGERs trajectory system components
+  // Get access to advanced trajectory system components
   ctrl::AdvancedMotionPlanner& GetAdvancedMotionPlanner() { return advanced_motion_planner; }
   ctrl::TrajectoryTracker& GetTrajectoryTracker() { return trajectory_tracker; }
+  
+  // Replanning controller methods (Sumatra-style)
+  void SetReplanningGoal(const Eigen::Vector3d& goal);
+  void SetReplanningEnabled(bool enabled);
+  void AddObstacles(const std::vector<std::shared_ptr<ctrl::IObstacle>>& obstacles);
+  void ClearObstacles();
+  ctrl::ReplanningController::ReplanningStats GetReplanningStats() const;
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
 
@@ -146,8 +158,9 @@ class RobotManager {
 
   est::StateEstimator state_estimator;
   hw::HardwareManager hardware_manager;
-  ctrl::AdvancedMotionPlanner advanced_motion_planner;  // TIGERs-style advanced motion planner
-  ctrl::TrajectoryTracker trajectory_tracker;  // TIGERs-style PID trajectory tracker
+  ctrl::AdvancedMotionPlanner advanced_motion_planner;  // Advanced motion planner
+  ctrl::TrajectoryTracker trajectory_tracker;  // Advanced PID trajectory tracker
+  ctrl::ReplanningController replanning_controller_;  // Sumatra-style replanning system
   
   TrajectoryManagerType trajectory_manager_type_;
 

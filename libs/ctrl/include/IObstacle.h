@@ -20,7 +20,11 @@ public:
     virtual double distanceTo(const Eigen::Vector2d& point) const = 0;
     virtual Eigen::Vector2d nearestPointOutside(const Eigen::Vector2d& point, double margin = 0.0) const = 0;
     
-    // For collision checking
+    // EXACT copy of Sumatra's collision checking interface
+    virtual bool canCollide(const Eigen::Vector2d& robotPos, double timeOffset, const Eigen::Vector2d& robotVel) const = 0;
+    virtual double getMaxSpeed() const = 0;
+    
+    // For collision checking (deprecated - use canCollide instead)
     virtual bool collidesWith(const Eigen::Vector2d& pos, const Eigen::Vector2d& vel, double robotRadius, double timeHorizon) const = 0;
     
     // For visualization (simplified)

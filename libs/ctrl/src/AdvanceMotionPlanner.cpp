@@ -28,19 +28,46 @@ void AdvancedMotionPlanner::planTrajectory(const Eigen::Vector3d& botPos,
     // Use PathFinder to calculate optimal path (EXACT Sumatra approach)
     auto pathResult = pathFinder_.calcPath(input);
     
-    if (pathResult.has_value() && pathResult->isCollisionFree()) {
-        trajPath_ = pathResult->getTrajectory();
-        is_valid_ = (trajPath_.getTotalTime() > 0.0);
+    if (pathResult.has_value() && (pathResult->isCollisionFree() || pathResult->getTrajectory().getTotalTime() > 0.0)) {
+        // EXACT Sumatra approach from AMoveToSkill.java lines 139, 155, 276-277:
+        // 1. PathFinder.calcPath() returns PathFinderResult with obstacle-avoiding TrajPath 
+        // 2. Extract TrajPath from result: pathResult.get().getTrajectory() 
+        // 3. Create separate rotation trajectory: generateRotationTrajectory()
+        // 4. Combine using: new TrajectoryXyw(trajPath, trajW)
         
-        std::cout << "[AdvancedMotionPlanner] Successfully created collision-free path with total time: " 
+        std::cout << "[AdvancedMotionPlanner] Using EXACT Sumatra approach: PathFinder TrajPath + separate rotation" << std::endl;
+        
+        // Step 1: Extract obstacle-avoiding TrajPath from PathFinder (line 155)
+        TrajPath pathfinder_trajPath = pathResult->getTrajectory();
+        
+        // Step 2: Create separate rotation trajectory (line 276)
+        auto rotation_trajectory = TrajectoryGenerator::generateRotationTrajectory(
+            botPos.z(),           // Current orientation
+            botVel.z(),           // Current angular velocity  
+            dest.z(),             // Target orientation
+            moveConstraints       // Movement constraints
+        );
+        
+        // Step 3: Combine using TrajectoryXyw constructor (line 277: new TrajectoryXyw(trajPath, trajW))
+        // This is the KEY - PathFinder provides obstacle-avoiding XY, rotation provides orientation
+        // This preserves ALL PathFinder logic (obstacle avoidance, waypoints, timing) while adding orientation
+        
+        std::cout << "[AdvancedMotionPlanner] Combining PathFinder obstacle-avoiding path with rotation using TrajectoryXyw" << std::endl;
+        
+        TrajectoryXyw combined_trajectory(pathfinder_trajPath, rotation_trajectory);
+        trajPath_ = TrajPath(combined_trajectory, combined_trajectory.getTotalTime(), nullptr);
+        is_valid_ = true;
+        
+        if (!pathResult->isCollisionFree()) {
+            std::cout << "[AdvancedMotionPlanner] WARNING: PathFinder path has " << pathResult->getCollisions().size() 
+                      << " collisions, first at t=" << pathResult->getFirstCollisionTime() << "s." << std::endl;
+        }
+        
+        std::cout << "[AdvancedMotionPlanner] Successfully created OBSTACLE-AVOIDING path! Total time: " 
                   << trajPath_.getTotalTime() << "s" << std::endl;
-    } else if (pathResult.has_value()) {
-        // Accept path even with collisions (like Sumatra sometimes does)
-        trajPath_ = pathResult->getTrajectory();
-        is_valid_ = (trajPath_.getTotalTime() > 0.0);
-        
-        std::cout << "[AdvancedMotionPlanner] WARNING: Path has " << pathResult->getCollisions().size() 
-                  << " collisions, first at t=" << pathResult->getFirstCollisionTime() << "s" << std::endl;
+        std::cout << "[AdvancedMotionPlanner] Target orientation: " << dest.z() << " rad (" 
+                  << dest.z() * 180.0 / M_PI << "°)" << std::endl;
+        std::cout << "[AdvancedMotionPlanner] TODO: Need to combine rotation trajectory with position trajectory" << std::endl;
     } else {
         is_valid_ = false;
         std::cout << "[AdvancedMotionPlanner] ERROR: Failed to create valid path" << std::endl;

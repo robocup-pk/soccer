@@ -7,6 +7,9 @@ set(SOURCES
     src/TrajectoryTracker.cpp
     src/TrajPath.cpp
     src/PathFinder.cpp
+    src/PathCollisionChecker.cpp
+    src/ObstacleCollisionChecker.cpp
+    src/PathResultAcceptor.cpp
     src/TrajectoryGenerator.cpp
     src/BangBangTrajectory1D.cpp
     src/BangBangTrajectory2D.cpp
@@ -14,6 +17,7 @@ set(SOURCES
     src/BangBangTrajectory2DAsync.cpp
     src/BangBangTrajectoryFactory.cpp
     src/TrajectoryXyw.cpp
+    src/ReplanningController.cpp
 )
 
 file(GLOB_RECURSE HEADERS "include/*.h")

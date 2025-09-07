@@ -72,6 +72,7 @@ public:
     
     // For Sumatra compatibility
     Eigen::Vector3d getPositionMM(double t) const { return getPosition(t) * 1000.0; } // Convert m to mm
+    double getMaxSpeed() const;  // Get maximum speed along path
     
 private:
     /**

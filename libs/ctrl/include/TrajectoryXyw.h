@@ -9,6 +9,9 @@
 
 namespace ctrl {
 
+// Forward declaration
+class TrajPath;
+
 /**
  * @brief 3D trajectory combining 2D position and 1D orientation trajectories.
  * 
@@ -26,6 +29,13 @@ public:
      * @param w_traj 1D orientation trajectory
      */
     TrajectoryXyw(const BangBangTrajectory2D& xy_traj, const BangBangTrajectory1DOrient& w_traj);
+    
+    /**
+     * @brief Constructor with TrajPath (XY) and orientation trajectory (EXACT copy of Sumatra's constructor)
+     * @param trajPath TrajPath for XY position (from PathFinder with obstacle avoidance)
+     * @param w_traj 1D orientation trajectory
+     */
+    TrajectoryXyw(const TrajPath& trajPath, const BangBangTrajectory1DOrient& w_traj);
     
     // --- ITrajectory Interface ---
     Eigen::Vector3d getPositionMM(double t) const override;
@@ -55,8 +65,10 @@ public:
     bool isValid() const;
 
 private:
-    BangBangTrajectory2D xy_trajectory_;      ///< XY position trajectory
+    BangBangTrajectory2D xy_trajectory_;      ///< XY position trajectory (when using BangBang)
     BangBangTrajectory1DOrient w_trajectory_; ///< Orientation trajectory
+    std::shared_ptr<TrajPath> xy_trajpath_;   ///< XY position trajectory (when using TrajPath from PathFinder)
+    bool using_trajpath_;                     ///< Flag indicating which XY trajectory type is active
 };
 
 } // namespace ctrl

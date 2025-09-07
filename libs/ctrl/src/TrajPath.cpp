@@ -153,4 +153,24 @@ double TrajPath::getTotalTime() const {
     return tEnd_;
 }
 
+double TrajPath::getMaxSpeed() const {
+    // Sample the trajectory to find maximum velocity
+    double maxSpeed = 0.0;
+    double totalTime = getTotalTime();
+    
+    if (totalTime <= 0) {
+        return 0.0;
+    }
+    
+    int numSamples = std::max(10, (int)(totalTime * 20)); // Sample every 50ms or at least 10 points
+    for (int i = 0; i <= numSamples; ++i) {
+        double t = (i * totalTime) / numSamples;
+        Eigen::Vector3d vel = getVelocity(t);
+        double speed = vel.head<2>().norm(); // Only XY velocity
+        maxSpeed = std::max(maxSpeed, speed);
+    }
+    
+    return maxSpeed;
+}
+
 } // namespace ctrl
