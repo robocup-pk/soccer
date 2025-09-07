@@ -11,7 +11,7 @@ namespace ctrl {
 /**
  * @brief Bang Bang Trajectory for two dimensions.
  * 
- * Direct C++ port of BangBangTrajectory2D.java from TIGERs Mannheim
+ * Direct C++ port of BangBangTrajectory2D.java from Team Mannheim
  */
 class BangBangTrajectory2D : public ITrajectory<Eigen::Vector2d> {
 public:
@@ -49,7 +49,7 @@ public:
         const std::function<float(float)>& alphaFn
     );
 
-    // Public for friend access (like Sumatra package-private)
+    // Public for friend access (like Advanced package-private)
     BangBangTrajectory1D x;
     BangBangTrajectory1D y;
 };

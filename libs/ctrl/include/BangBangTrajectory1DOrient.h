@@ -10,7 +10,7 @@ namespace ctrl {
 /**
  * @brief Bang Bang Trajectory for one dimension for orientation.
  * 
- * Direct C++ port of BangBangTrajectory1DOrient.java from TIGERs Mannheim
+ * Direct C++ port of BangBangTrajectory1DOrient.java from Team Mannheim
  */
 class BangBangTrajectory1DOrient : public ITrajectory<double> {
 public:

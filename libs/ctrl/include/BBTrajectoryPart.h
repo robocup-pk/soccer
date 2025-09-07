@@ -5,7 +5,7 @@ namespace ctrl {
 /**
  * @brief Part of a bang-bang trajectory with kinematic calculations
  * 
- * Direct C++ port of BBTrajectoryPart.java from TIGERs Mannheim
+ * Direct C++ port of BBTrajectoryPart.java from Team Mannheim
  * This class represents a single segment of a bang-bang trajectory with constant acceleration.
  */
 class BBTrajectoryPart {

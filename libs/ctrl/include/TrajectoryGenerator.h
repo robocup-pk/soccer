@@ -11,8 +11,8 @@
 namespace ctrl {
 
 /**
- * @brief EXACT copy of Sumatra's TrajectoryGenerator.java
- * Generate BangBang trajectories (THE MAIN ENTRY POINT for Sumatra trajectory system)
+ * @brief EXACT copy of Advanced's TrajectoryGenerator.java
+ * Generate BangBang trajectories (THE MAIN ENTRY POINT for Advanced trajectory system)
  */
 class TrajectoryGenerator {
 private:
@@ -34,10 +34,10 @@ private:
                                                        const Eigen::Vector2d& v0);
 
 public:
-    TrajectoryGenerator() = delete; // Static class like Sumatra
+    TrajectoryGenerator() = delete; // Static class like Advanced
     
     //************************************************************************
-    // Position Trajectory (EXACT copy of Sumatra methods)
+    // Position Trajectory (EXACT copy of Advanced methods)
     //************************************************************************
     
     /**
@@ -53,7 +53,7 @@ public:
                                                            const Eigen::Vector2d& dest);
     
     //************************************************************************
-    // Rotation Trajectory (EXACT copy of Sumatra methods)
+    // Rotation Trajectory (EXACT copy of Advanced methods)
     //************************************************************************
     
     static BangBangTrajectory1DOrient generateRotationTrajectory(double curOrientation,
@@ -62,7 +62,7 @@ public:
                                                                 const MoveConstraints& mc);
     
     //************************************************************************
-    // Overshoot Trajectory (EXACT copy of Sumatra methods)
+    // Overshoot Trajectory (EXACT copy of Advanced methods)
     //************************************************************************
     
     /**

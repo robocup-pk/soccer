@@ -7,7 +7,7 @@
 namespace ctrl {
 
 /**
- * @brief Simple circular obstacle for testing Sumatra PathFinder system
+ * @brief Simple circular obstacle for testing Advanced PathFinder system
  */
 class CircularObstacle : public IObstacle {
 private:
@@ -47,7 +47,7 @@ public:
         return center_ + direction * (radius_ + margin);
     }
     
-    // EXACT copy of Sumatra's collision checking interface
+    // EXACT copy of Advanced's collision checking interface
     bool canCollide(const Eigen::Vector2d& robotPos, double timeOffset, const Eigen::Vector2d& robotVel) const override {
         // Smart optimization: skip collision check if obstacle is very far
         double distance = distanceTo(robotPos);

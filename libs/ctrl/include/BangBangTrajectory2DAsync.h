@@ -14,7 +14,7 @@ namespace ctrl {
  * X and Y are not synchronized in this version. The trajectory tries
  * to get on the line defined by target position and primary direction first.
  * 
- * Direct C++ port of BangBangTrajectory2DAsync.java from TIGERs Mannheim
+ * Direct C++ port of BangBangTrajectory2DAsync.java from Team Mannheim
  */
 class BangBangTrajectory2DAsync : public ITrajectory<Eigen::Vector2d> {
 public:
@@ -38,7 +38,7 @@ public:
     std::vector<double> getTimeSections() const override;
     double getMaxSpeed() const override;
 
-    // Getters (like Sumatra Lombok @Getter)
+    // Getters (like Advanced Lombok @Getter)
     const BangBangTrajectory2D& getChild() const { return child_; }
     const Eigen::Vector2d& getInitialPos() const { return initialPos_; }
     double getRotation() const { return rotation_; }

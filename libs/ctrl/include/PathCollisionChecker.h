@@ -9,7 +9,7 @@
 namespace ctrl {
 
 /**
- * @brief EXACT copy of Sumatra's PathCollisionChecker
+ * @brief EXACT copy of Advanced's PathCollisionChecker
  * Check for collisions on a specific path for multiple obstacles.
  */
 class PathCollisionChecker {
@@ -23,19 +23,19 @@ public:
                         const std::vector<std::shared_ptr<IObstacle>>& obstacles,
                         double initialTimeOffset);
     
-    // EXACT copy of Sumatra's factory method
+    // EXACT copy of Advanced's factory method
     static PathCollisionChecker ofPath(const TrajPath& path,
                                       const std::vector<std::shared_ptr<IObstacle>>& obstacles,
                                       double initialTimeOffset);
     
-    // Core collision checking methods (EXACT copy of Sumatra)
+    // Core collision checking methods (EXACT copy of Advanced)
     PathFinderResult checkForCollisions(double maxTime);
     
     // Getters
     const TrajPath& getPath() const { return path_; }
     
 private:
-    // EXACT copy of Sumatra's collision detection logic
+    // EXACT copy of Advanced's collision detection logic
     void updateTimeOffset(double maxTime);
     std::vector<PathFinderCollision> getCollisions() const;
 };

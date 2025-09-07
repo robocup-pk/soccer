@@ -116,7 +116,7 @@ class RobotManager {
   ctrl::AdvancedMotionPlanner& GetAdvancedMotionPlanner() { return advanced_motion_planner; }
   ctrl::TrajectoryTracker& GetTrajectoryTracker() { return trajectory_tracker; }
   
-  // Replanning controller methods (Sumatra-style)
+  // Replanning controller methods (Advanced-style)
   void SetReplanningGoal(const Eigen::Vector3d& goal);
   void SetReplanningEnabled(bool enabled);
   void AddObstacles(const std::vector<std::shared_ptr<ctrl::IObstacle>>& obstacles);
@@ -160,7 +160,7 @@ class RobotManager {
   hw::HardwareManager hardware_manager;
   ctrl::AdvancedMotionPlanner advanced_motion_planner;  // Advanced motion planner
   ctrl::TrajectoryTracker trajectory_tracker;  // Advanced PID trajectory tracker
-  ctrl::ReplanningController replanning_controller_;  // Sumatra-style replanning system
+  ctrl::ReplanningController replanning_controller_;  // Advanced-style replanning system
   
   TrajectoryManagerType trajectory_manager_type_;
 

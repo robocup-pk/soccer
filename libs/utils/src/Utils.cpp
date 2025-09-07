@@ -63,7 +63,7 @@ double util::WrapAngle(double angle_rad) {
 }
 
 double util::MirrorAngle(double angle_rad) {
-  // Mirror angle by negating it (Sumatra AngleMath.mirror functionality)
+  // Mirror angle by negating it (Advanced AngleMath.mirror functionality)
   return -angle_rad;
 }
 

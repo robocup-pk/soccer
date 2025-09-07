@@ -11,27 +11,27 @@
 namespace ctrl {
 
 /**
- * @brief EXACT copy of Sumatra's trajectory planning system using PathFinder.
+ * @brief EXACT copy of Advanced's trajectory planning system using PathFinder.
  *
- * This class implements the COMPLETE Sumatra approach:
+ * This class implements the COMPLETE Advanced approach:
  * 1. Uses PathFinderInput with MoveConstraints for proper input handling
  * 2. Uses PathFinder for obstacle avoidance and path generation
  * 3. Uses TrajPath for smooth multi-waypoint motion
- * 4. Integrates complete TIGERs Mannheim trajectory planning pipeline
+ * 4. Integrates complete Team Mannheim trajectory planning pipeline
  * 
- * Direct port of Sumatra's complete trajectory planning system.
+ * Direct port of Advanced's complete trajectory planning system.
  */
 class AdvancedMotionPlanner {
 public:
     AdvancedMotionPlanner() = default;
 
     /**
-     * @brief Plan trajectory using COMPLETE Sumatra PathFinder system.
+     * @brief Plan trajectory using COMPLETE Advanced PathFinder system.
      * @param botPos Current robot position (x, y, theta)
      * @param botVel Current robot velocity (vx, vy, omega)
      * @param dest Destination position (x, y, theta)
      * @param obstacles List of obstacles for avoidance
-     * @param moveConstraints Movement constraints (EXACT Sumatra format)
+     * @param moveConstraints Movement constraints (EXACT Advanced format)
      */
     void planTrajectory(const Eigen::Vector3d& botPos,
                        const Eigen::Vector3d& botVel,
@@ -51,11 +51,11 @@ public:
     double getTotalTime() const;
     bool isValid() const { return is_valid_; }
     
-    // --- Sumatra-style TrajPath Access ---
+    // --- Advanced-style TrajPath Access ---
     TrajPath getTrajPath() const { return trajPath_; }
 
 private:
-    // --- Complete Sumatra system components ---
+    // --- Complete Advanced system components ---
     TrajPath trajPath_;
     PathFinder pathFinder_;
     bool is_valid_{false};

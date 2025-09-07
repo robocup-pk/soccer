@@ -33,7 +33,7 @@ PathFinderResult PathCollisionChecker::checkForCollisions(double maxTime) {
     
     double totalTime = std::min(maxTime, path_.getTotalTime());
     
-    // EXACT copy of Sumatra's collision detection loop
+    // EXACT copy of Advanced's collision detection loop
     while (timeOffset_ < totalTime) {
         // Get robot position and velocity at current time
         Eigen::Vector3d pos3d = path_.getPosition(timeOffset_);
@@ -64,7 +64,7 @@ PathFinderResult PathCollisionChecker::checkForCollisions(double maxTime) {
             return PathFinderResult::withCollision(path_, collisions);
         }
         
-        // Update time offset using Sumatra's adaptive approach
+        // Update time offset using Advanced's adaptive approach
         if (std::isfinite(minNextTimeOffset) && minNextTimeOffset > timeOffset_) {
             timeOffset_ = minNextTimeOffset;
         } else {

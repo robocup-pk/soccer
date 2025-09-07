@@ -5,14 +5,14 @@
 namespace ctrl {
 
 bool PathResultAcceptor::acceptPath(const PathFinderResult& result) {
-    // ACTUAL Sumatra logic for smart path acceptance
+    // ACTUAL Advanced logic for smart path acceptance
     
     if (result.isCollisionFree()) {
         std::cout << "[PathResultAcceptor] Accepting collision-free path" << std::endl;
         return true; // Always accept collision-free paths
     }
     
-    // Use Sumatra's smart acceptance criteria
+    // Use Advanced's smart acceptance criteria
     double firstCollisionTime = result.getFirstCollisionTime();
     double totalTime = result.getTrajectory().getTotalTime();
     

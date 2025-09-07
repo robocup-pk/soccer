@@ -28,41 +28,43 @@ std::vector<std::shared_ptr<ctrl::IObstacle>> CreatePhaseObstacles(DemoPhase pha
         case DemoPhase::PHASE1_CROSS_PATTERN:
             // Basic obstacles for cross pattern
             obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
-                Eigen::Vector2d(0.0, 0.0), 0.3, "CenterObstacle"));
+                Eigen::Vector2d(0.0, 0.0), 0.3, "obstacle0"));
             obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
-                Eigen::Vector2d(0.5, 0.5), 0.15, "QuadrantObstacle1"));
+                Eigen::Vector2d(0.5, 0.5), 0.15, "obstacle1"));
             obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
-                Eigen::Vector2d(-0.5, -0.5), 0.15, "QuadrantObstacle2"));
+                Eigen::Vector2d(-0.5, -0.5), 0.15, "obstacle2"));
             break;
             
         case DemoPhase::PHASE2_MIXED_MOVEMENT:
-            // More obstacles for mixed movement
+            // Strategic obstacles that block robot paths - force obstacle avoidance
             obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
-                Eigen::Vector2d(0.3, 0.0), 0.2, "RightObstacle"));
+                Eigen::Vector2d(0.5, -0.6), 0.2, "obstacle0"));  // Blocks Robot 0's path down
             obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
-                Eigen::Vector2d(-0.3, 0.0), 0.2, "LeftObstacle"));
+                Eigen::Vector2d(-0.5, 0.6), 0.2, "obstacle1"));  // Blocks Robot 1's path up
             obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
-                Eigen::Vector2d(0.0, 0.8), 0.15, "TopObstacle"));
+                Eigen::Vector2d(-0.6, -0.5), 0.2, "obstacle2")); // Blocks Robot 2's path left
             obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
-                Eigen::Vector2d(0.0, -0.8), 0.15, "BottomObstacle"));
+                Eigen::Vector2d(0.6, 0.5), 0.2, "obstacle3"));   // Blocks Robot 3's path right
+            obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
+                Eigen::Vector2d(0.0, 0.0), 0.15, "obstacle4"));  // Center obstacle
             break;
             
         case DemoPhase::PHASE3_SEQUENTIAL_WITH_OBSTACLES:
             // Dense obstacle field for sequential movement
             obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
-                Eigen::Vector2d(0.0, 0.0), 0.25, "CenterMajor"));
+                Eigen::Vector2d(0.0, 0.0), 0.25, "obstacle0"));
             obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
-                Eigen::Vector2d(0.6, 0.3), 0.2, "NorthEast"));
+                Eigen::Vector2d(0.6, 0.3), 0.2, "obstacle1"));
             obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
-                Eigen::Vector2d(-0.6, 0.3), 0.2, "NorthWest"));
+                Eigen::Vector2d(-0.6, 0.3), 0.2, "obstacle2"));
             obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
-                Eigen::Vector2d(0.6, -0.3), 0.2, "SouthEast"));
+                Eigen::Vector2d(0.6, -0.3), 0.2, "obstacle3"));
             obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
-                Eigen::Vector2d(-0.6, -0.3), 0.2, "SouthWest"));
+                Eigen::Vector2d(-0.6, -0.3), 0.2, "obstacle4"));
             obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
-                Eigen::Vector2d(0.0, 0.6), 0.15, "North"));
+                Eigen::Vector2d(0.0, 0.6), 0.15, "obstacle5"));
             obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
-                Eigen::Vector2d(0.0, -0.6), 0.15, "South"));
+                Eigen::Vector2d(0.0, -0.6), 0.15, "obstacle6"));
             break;
             
         case DemoPhase::PHASE4_PURE_ROTATION:
@@ -92,7 +94,7 @@ bool PlanRobotTrajectory(int robot_id, rob::RobotManager& robot_manager,
         if (other_id != robot_id) {
             Eigen::Vector3d other_pos = all_robots[other_id].GetPoseInWorldFrame();
             robot_obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(
-                other_pos.head<2>(), 0.12, "Robot" + std::to_string(other_id)));
+                other_pos.head<2>(), 0.12, "robot" + std::to_string(other_id)));
         }
     }
     

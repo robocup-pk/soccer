@@ -16,7 +16,7 @@ ReplanningController::ReplanningController(const ReplanningConfig& config)
       come_to_stop_(false),
       last_replan_time_(std::chrono::steady_clock::now()) {
     
-    std::cout << "[ReplanningController] Initialized with Sumatra-style replanning" << std::endl;
+    std::cout << "[ReplanningController] Initialized with Advanced-style replanning" << std::endl;
     std::cout << "  Replan frequency: " << config_.replan_frequency_hz << " Hz" << std::endl;
     std::cout << "  Collision brake time: " << config_.collision_brake_time_s << " s" << std::endl;
     std::cout << "  Max position error: " << config_.max_position_error_m << " m" << std::endl;
@@ -49,7 +49,7 @@ Eigen::Vector3d ReplanningController::update(const Eigen::Vector3d& current_pose
         return Eigen::Vector3d::Zero();
     }
     
-    // Check replanning frequency (EXACT Sumatra approach - they replan every frame!)
+    // Check replanning frequency (EXACT Advanced approach - they replan every frame!)
     auto current_time = std::chrono::steady_clock::now();
     double dt_since_last_replan = std::chrono::duration<double>(current_time - last_replan_time_).count();
     
@@ -68,7 +68,7 @@ Eigen::Vector3d ReplanningController::update(const Eigen::Vector3d& current_pose
             stats_.emergency_brakes++;
         }
         
-        // === EXACT SUMATRA REPLANNING CYCLE (AMoveToSkill.java lines 138-164) ===
+        // === EXACT ADVANCED REPLANNING CYCLE (AMoveToSkill.java lines 138-164) ===
         
         // Step 1: Create PathFinderInput with current robot state
         PathFinderInput path_input = createPathFinderInput(current_pose, current_velocity);
@@ -95,7 +95,7 @@ Eigen::Vector3d ReplanningController::update(const Eigen::Vector3d& current_pose
                 stats_.collision_avoidances++;
             }
             
-            // Decrease velocity limit (Sumatra's adaptive approach)
+            // Decrease velocity limit (Advanced's adaptive approach)
             updateVelocityLimiter(false, dt_since_last_replan);
             stats_.is_braking = true;
             
@@ -105,7 +105,7 @@ Eigen::Vector3d ReplanningController::update(const Eigen::Vector3d& current_pose
             // Valid collision-free path found - EXECUTE!
             std::cout << "[ReplanningController] Valid path found, executing..." << std::endl;
             
-            // Increase velocity limit (Sumatra's adaptive approach)  
+            // Increase velocity limit (Advanced's adaptive approach)  
             updateVelocityLimiter(true, dt_since_last_replan);
             stats_.is_braking = false;
             
@@ -124,10 +124,10 @@ Eigen::Vector3d ReplanningController::update(const Eigen::Vector3d& current_pose
 PathFinderInput ReplanningController::createPathFinderInput(const Eigen::Vector3d& current_pose,
                                                           const Eigen::Vector3d& current_velocity) {
     
-    // Apply velocity limiting (like Sumatra's limitRobotSpeed)
+    // Apply velocity limiting (like Advanced's limitRobotSpeed)
     MoveConstraints limited_constraints = limitRobotSpeed(move_constraints_);
     
-    // Create PathFinderInput (EXACT copy of Sumatra AMoveToSkill line 217)
+    // Create PathFinderInput (EXACT copy of Advanced AMoveToSkill line 217)
     PathFinderInput input = PathFinderInput::fromBot(current_pose, current_velocity)
         .dest(destination_.head<2>())  // PathFinder only handles 2D destinations
         .obstacles(obstacles_)
@@ -143,20 +143,20 @@ PathFinderInput ReplanningController::createPathFinderInput(const Eigen::Vector3
 }
 
 bool ReplanningController::needToBrake(const PathFinderResult& path_result) const {
-    // EXACT copy of Sumatra AMoveToSkill line 181-183
+    // EXACT copy of Advanced AMoveToSkill line 181-183
     double brake_time = config_.collision_brake_time_s;
     return path_result.getFirstCollisionTime() <= brake_time;
 }
 
 double ReplanningController::calculateBrakeTime(const Eigen::Vector3d& current_velocity) const {
-    // EXACT copy of Sumatra AMoveToSkill line 187-191
+    // EXACT copy of Advanced AMoveToSkill line 187-191
     double vel_magnitude = std::max(0.0, current_velocity.head<2>().norm() - config_.brake_velocity_tolerance);
     double brake_time = vel_magnitude / move_constraints_.getAccMax();
     return brake_time + config_.collision_brake_time_s;  // Add reaction time
 }
 
 Eigen::Vector3d ReplanningController::performBrake(const Eigen::Vector3d& current_velocity) {
-    // EXACT copy of Sumatra's braking behavior
+    // EXACT copy of Advanced's braking behavior
     std::cout << "[ReplanningController] EMERGENCY BRAKE! Current vel: " 
               << current_velocity.head<2>().norm() << "m/s" << std::endl;
     
@@ -202,7 +202,7 @@ Eigen::Vector3d ReplanningController::executePath(const PathFinderResult& path_r
 }
 
 void ReplanningController::updateVelocityLimiter(bool path_is_good, double dt) {
-    // EXACT copy of Sumatra's velocity limiter logic (maxRobotSpeedLimiter)
+    // EXACT copy of Advanced's velocity limiter logic (maxRobotSpeedLimiter)
     
     if (path_is_good) {
         // Increase velocity limit
@@ -221,7 +221,7 @@ void ReplanningController::updateVelocityLimiter(bool path_is_good, double dt) {
 }
 
 MoveConstraints ReplanningController::limitRobotSpeed(const MoveConstraints& base_constraints) const {
-    // EXACT copy of Sumatra AMoveToSkill line 254-265
+    // EXACT copy of Advanced AMoveToSkill line 254-265
     MoveConstraints limited = base_constraints;
     
     // Apply velocity limiter

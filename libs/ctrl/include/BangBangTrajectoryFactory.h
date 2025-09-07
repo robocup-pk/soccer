@@ -16,7 +16,7 @@ namespace ctrl {
 /**
  * @brief Factory for creating Bang Bang trajectories.
  * 
- * Direct C++ port of BangBangTrajectoryFactory.java from TIGERs Mannheim
+ * Direct C++ port of BangBangTrajectoryFactory.java from Team Mannheim
  */
 class BangBangTrajectoryFactory {
 public:
@@ -111,7 +111,7 @@ public:
         double maxAcc
     );
     
-    // --- PlanarCurve Integration Methods (Sumatra approach) ---
+    // --- PlanarCurve Integration Methods (Advanced approach) ---
     
     /**
      * @brief Create PlanarCurve from 2D BangBang trajectory

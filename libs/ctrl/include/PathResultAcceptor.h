@@ -5,13 +5,13 @@
 namespace ctrl {
 
 /**
- * @brief EXACT copy of Sumatra's path acceptance logic
+ * @brief EXACT copy of Advanced's path acceptance logic
  * Determines whether a path with collisions is acceptable
  */
 class PathResultAcceptor {
 public:
     /**
-     * Accept paths based on Sumatra's MotionLessObstacleResultAcceptor logic
+     * Accept paths based on Advanced's MotionLessObstacleResultAcceptor logic
      * @param result PathFinder result to evaluate
      * @return true if path is acceptable despite collisions
      */

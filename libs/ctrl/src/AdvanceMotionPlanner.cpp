@@ -12,12 +12,12 @@ void AdvancedMotionPlanner::planTrajectory(const Eigen::Vector3d& botPos,
                                           const std::vector<std::shared_ptr<IObstacle>>& obstacles,
                                           const MoveConstraints& moveConstraints) {
     
-    std::cout << "[AdvancedMotionPlanner] Using COMPLETE Sumatra PathFinder system" << std::endl;
+    std::cout << "[AdvancedMotionPlanner] Using COMPLETE Advanced PathFinder system" << std::endl;
     std::cout << "  From: (" << botPos.x() << ", " << botPos.y() << ", " << botPos.z() << ")" << std::endl;
     std::cout << "  To: (" << dest.x() << ", " << dest.y() << ", " << dest.z() << ")" << std::endl;
     std::cout << "  Obstacles: " << obstacles.size() << std::endl;
     
-    // Create PathFinderInput using EXACT Sumatra approach
+    // Create PathFinderInput using EXACT Advanced approach
     PathFinderInput input = PathFinderInput::fromBot(botPos, botVel)
         .dest(dest.head<2>())
         .obstacles(obstacles)
@@ -25,17 +25,17 @@ void AdvancedMotionPlanner::planTrajectory(const Eigen::Vector3d& botPos,
         .timestamp(0) // Can be enhanced with actual timestamp
         .build();
     
-    // Use PathFinder to calculate optimal path (EXACT Sumatra approach)
+    // Use PathFinder to calculate optimal path (EXACT Advanced approach)
     auto pathResult = pathFinder_.calcPath(input);
     
     if (pathResult.has_value() && (pathResult->isCollisionFree() || pathResult->getTrajectory().getTotalTime() > 0.0)) {
-        // EXACT Sumatra approach from AMoveToSkill.java lines 139, 155, 276-277:
+        // EXACT Advanced approach from AMoveToSkill.java lines 139, 155, 276-277:
         // 1. PathFinder.calcPath() returns PathFinderResult with obstacle-avoiding TrajPath 
         // 2. Extract TrajPath from result: pathResult.get().getTrajectory() 
         // 3. Create separate rotation trajectory: generateRotationTrajectory()
         // 4. Combine using: new TrajectoryXyw(trajPath, trajW)
         
-        std::cout << "[AdvancedMotionPlanner] Using EXACT Sumatra approach: PathFinder TrajPath + separate rotation" << std::endl;
+        std::cout << "[AdvancedMotionPlanner] Using EXACT Advanced approach: PathFinder TrajPath + separate rotation" << std::endl;
         
         // Step 1: Extract obstacle-avoiding TrajPath from PathFinder (line 155)
         TrajPath pathfinder_trajPath = pathResult->getTrajectory();
@@ -82,23 +82,23 @@ void AdvancedMotionPlanner::planSmoothTrajectory(const std::vector<Eigen::Vector
         return;
     }
     
-    std::cout << "[AdvancedMotionPlanner] DEPRECATED: Multiple waypoints not supported by pure Sumatra!" << std::endl;
-    std::cout << "[AdvancedMotionPlanner] Sumatra expects: SINGLE destination + obstacles, not multiple waypoints" << std::endl;
+    std::cout << "[AdvancedMotionPlanner] DEPRECATED: Multiple waypoints not supported by pure Advanced!" << std::endl;
+    std::cout << "[AdvancedMotionPlanner] Advanced expects: SINGLE destination + obstacles, not multiple waypoints" << std::endl;
     std::cout << "[AdvancedMotionPlanner] Creating fallback trajectory to final destination only" << std::endl;
     
-    // PURE SUMATRA APPROACH: Only use start and final destination
-    // Ignore intermediate waypoints - Sumatra doesn't use them!
+    // PURE ADVANCED APPROACH: Only use start and final destination
+    // Ignore intermediate waypoints - Advanced doesn't use them!
     
     if (waypoints.size() > 2) {
         std::cout << "[AdvancedMotionPlanner] WARNING: Ignoring " << waypoints.size()-2 
-                  << " intermediate waypoints - Sumatra uses PathFinder for obstacle avoidance instead!" << std::endl;
+                  << " intermediate waypoints - Advanced uses PathFinder for obstacle avoidance instead!" << std::endl;
     }
     
-    // Use only start and final destination (EXACT Sumatra approach)
+    // Use only start and final destination (EXACT Advanced approach)
     Eigen::Vector3d start = waypoints[0];
     Eigen::Vector3d destination = waypoints.back();
     
-    // Create MoveConstraints (EXACT Sumatra format)
+    // Create MoveConstraints (EXACT Advanced format)
     MoveConstraints mc;
     mc.setVelMax(maxVel).setAccMax(maxAcc).setVelMaxW(maxOmega).setAccMaxW(maxOmegaAcc);
     

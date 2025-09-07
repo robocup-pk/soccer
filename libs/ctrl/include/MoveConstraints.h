@@ -5,7 +5,7 @@
 namespace ctrl {
 
 /**
- * @brief EXACT copy of Sumatra's MoveConstraints.java
+ * @brief EXACT copy of Advanced's MoveConstraints.java
  * Movement constraints for robot motion planning
  */
 class MoveConstraints {
@@ -30,7 +30,7 @@ public:
     MoveConstraints(const MoveConstraints& other) = default;
     MoveConstraints& operator=(const MoveConstraints& other) = default;
     
-    // Getters (EXACT copy of Sumatra interface)
+    // Getters (EXACT copy of Advanced interface)
     double getVelMax() const { return velMax_; }
     double getVelMaxFast() const { return velMaxFast_; }
     double getAccMax() const { return accMax_; }
@@ -43,7 +43,7 @@ public:
     const Eigen::Vector2d& getPrimaryDirection() const { return primaryDirection_; }
     bool isFastMove() const { return fastMove_; }
     
-    // Setters (EXACT copy of Sumatra interface)
+    // Setters (EXACT copy of Advanced interface)
     MoveConstraints& setVelMax(double vel) { velMax_ = vel; return *this; }
     MoveConstraints& setVelMaxFast(double vel) { velMaxFast_ = vel; return *this; }
     MoveConstraints& setAccMax(double acc) { accMax_ = acc; accMaxDerived_ = acc; return *this; }
@@ -55,7 +55,7 @@ public:
     MoveConstraints& setPrimaryDirection(const Eigen::Vector2d& dir) { primaryDirection_ = dir; return *this; }
     MoveConstraints& setFastMove(bool fast) { fastMove_ = fast; return *this; }
     
-    // Utility methods (EXACT copy of Sumatra)
+    // Utility methods (EXACT copy of Advanced)
     MoveConstraints limit(const MoveConstraints& limits) const {
         MoveConstraints result = *this;
         result.velMax_ = std::min(velMax_, limits.velMax_);

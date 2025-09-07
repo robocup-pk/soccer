@@ -7,7 +7,7 @@
 namespace ctrl {
 
 /**
- * @brief EXACT copy of Sumatra's ITrajectory.java interface
+ * @brief EXACT copy of Advanced's ITrajectory.java interface
  * Generic trajectory with position, velocity and acceleration.
  */
 template<typename T>
@@ -18,7 +18,7 @@ public:
     /**
      * Get position at time t.
      * @param t time
-     * @return position [mm] (Sumatra uses mm)
+     * @return position [mm] (Advanced uses mm)
      */
     virtual T getPositionMM(double t) const = 0;
     
@@ -92,7 +92,7 @@ public:
     }
     
     /**
-     * Mirror this trajectory (EXACT copy of Sumatra's IMirrorable interface)
+     * Mirror this trajectory (EXACT copy of Advanced's IMirrorable interface)
      * @return mirrored trajectory
      */
     virtual std::unique_ptr<ITrajectory<T>> mirrored() const {

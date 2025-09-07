@@ -13,7 +13,7 @@ namespace ctrl {
 /**
  * @brief Factory for converting between BangBang trajectories and PlanarCurve segments
  * 
- * Direct C++ port of PlanarCurveFactory.java from TIGERs Mannheim.
+ * Direct C++ port of PlanarCurveFactory.java from Team Mannheim.
  * This class provides methods to convert bang-bang trajectories into planar curve segments
  * and vice versa, enabling integration between the two trajectory representations.
  */

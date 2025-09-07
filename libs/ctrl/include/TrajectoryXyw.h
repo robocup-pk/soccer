@@ -15,7 +15,7 @@ class TrajPath;
 /**
  * @brief 3D trajectory combining 2D position and 1D orientation trajectories.
  * 
- * Direct C++ port of TrajectoryXyw.java from TIGERs Mannheim.
+ * Direct C++ port of TrajectoryXyw.java from Team Mannheim.
  * This class coordinates XY translation and W (orientation) rotation,
  * allowing them to have different durations and timing.
  */
@@ -31,7 +31,7 @@ public:
     TrajectoryXyw(const BangBangTrajectory2D& xy_traj, const BangBangTrajectory1DOrient& w_traj);
     
     /**
-     * @brief Constructor with TrajPath (XY) and orientation trajectory (EXACT copy of Sumatra's constructor)
+     * @brief Constructor with TrajPath (XY) and orientation trajectory (EXACT copy of Advanced's constructor)
      * @param trajPath TrajPath for XY position (from PathFinder with obstacle avoidance)
      * @param w_traj 1D orientation trajectory
      */

@@ -12,7 +12,7 @@
 namespace ctrl {
 
 /**
- * @brief EXACT copy of Sumatra's PathFinder.java
+ * @brief EXACT copy of Advanced's PathFinder.java
  * Main pathfinding class that generates smooth trajectories through obstacles
  */
 class PathFinder {
@@ -30,8 +30,8 @@ public:
     const PathfindingConfig& getConfig() const { return config_; }
     
     /**
-     * Calculate path from input (EXACT copy of Sumatra's calcPath method)
-     * @return Optional PathFinderResult (like Sumatra's Optional<PathFinderResult>)
+     * Calculate path from input (EXACT copy of Advanced's calcPath method)
+     * @return Optional PathFinderResult (like Advanced's Optional<PathFinderResult>)
      */
     std::optional<PathFinderResult> calcPath(const PathFinderInput& input);
     
@@ -55,7 +55,7 @@ public:
     std::vector<Eigen::Vector2d> generateWaypoints(const PathFinderInput& input);
     
     /**
-     * Create path to destination (EXACT copy of Sumatra)
+     * Create path to destination (EXACT copy of Advanced)
      */
     TrajPath createPath(const PathFinderInput& input, const Eigen::Vector2d& dest);
     

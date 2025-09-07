@@ -15,9 +15,9 @@
 namespace ctrl {
 
 /**
- * @brief EXACT copy of Sumatra's replanning system from AMoveToSkill.java
+ * @brief EXACT copy of Advanced's replanning system from AMoveToSkill.java
  * 
- * This implements Sumatra's aggressive replanning approach:
+ * This implements Advanced's aggressive replanning approach:
  * 1. Recalculates path EVERY control loop iteration
  * 2. Dynamic obstacle detection and avoidance
  * 3. Collision prediction with automatic braking
@@ -32,13 +32,13 @@ public:
      */
     struct ReplanningConfig {
         bool enable_replanning = true;
-        double replan_frequency_hz = 50.0;  // How often to replan (50Hz like Sumatra)
+        double replan_frequency_hz = 50.0;  // How often to replan (50Hz like Advanced)
         double collision_brake_time_s = 0.05;  // Time horizon for collision detection
         double brake_velocity_tolerance = 0.6;  // Velocity buffer for braking calculations
         double max_position_error_m = 0.3;  // Position error threshold for emergency replanning
         double min_replanning_interval_s = 0.02;  // Minimum time between replans (50Hz)
         
-        // Velocity limiting (like Sumatra's maxRobotSpeedLimiter)
+        // Velocity limiting (like Advanced's maxRobotSpeedLimiter)
         double velocity_limiter_min = 0.5;  // Minimum allowed velocity when problems detected
         double velocity_increase_rate = 5.0;  // Rate to increase velocity when clear
         double velocity_decrease_rate = -5.0;  // Rate to decrease velocity when problems
@@ -65,9 +65,9 @@ public:
     void setObstacles(const std::vector<std::shared_ptr<IObstacle>>& obstacles);
     
     /**
-     * @brief Main update loop - EXACT copy of Sumatra's AMoveToSkill logic
+     * @brief Main update loop - EXACT copy of Advanced's AMoveToSkill logic
      * 
-     * This method implements the complete Sumatra replanning cycle:
+     * This method implements the complete Advanced replanning cycle:
      * 1. Generate obstacles for current world state
      * 2. Create PathFinderInput with current robot state
      * 3. Calculate path using PathFinder
@@ -111,7 +111,7 @@ public:
     void setReplanningEnabled(bool enabled) { config_.enable_replanning = enabled; }
 
 private:
-    // Core components (like Sumatra's AMoveToSkill)
+    // Core components (like Advanced's AMoveToSkill)
     PathFinder path_finder_;
     std::shared_ptr<TrajectoryTracker> trajectory_tracker_;
     std::shared_ptr<AdvancedMotionPlanner> current_planner_;
@@ -128,42 +128,42 @@ private:
     double velocity_limiter_value_;
     bool come_to_stop_;
     
-    // Helper methods (exact copies from Sumatra)
+    // Helper methods (exact copies from Advanced)
     
     /**
-     * @brief Create PathFinderInput from current robot state (Sumatra AMoveToSkill line 212)
+     * @brief Create PathFinderInput from current robot state (Advanced AMoveToSkill line 212)
      */
     PathFinderInput createPathFinderInput(const Eigen::Vector3d& current_pose,
                                         const Eigen::Vector3d& current_velocity);
     
     /**
-     * @brief Check if robot needs to brake due to collision (Sumatra AMoveToSkill line 181)
+     * @brief Check if robot needs to brake due to collision (Advanced AMoveToSkill line 181)
      */
     bool needToBrake(const PathFinderResult& path_result) const;
     
     /**
-     * @brief Calculate brake time based on current velocity (Sumatra AMoveToSkill line 187)
+     * @brief Calculate brake time based on current velocity (Advanced AMoveToSkill line 187)
      */
     double calculateBrakeTime(const Eigen::Vector3d& current_velocity) const;
     
     /**
-     * @brief Perform emergency braking (Sumatra AMoveToSkill line 142)
+     * @brief Perform emergency braking (Advanced AMoveToSkill line 142)
      */
     Eigen::Vector3d performBrake(const Eigen::Vector3d& current_velocity);
     
     /**
-     * @brief Execute path with trajectory tracker (Sumatra AMoveToSkill line 268)
+     * @brief Execute path with trajectory tracker (Advanced AMoveToSkill line 268)
      */
     Eigen::Vector3d executePath(const PathFinderResult& path_result,
                                const Eigen::Vector3d& current_pose);
     
     /**
-     * @brief Update velocity limiter (adaptive speed control like Sumatra)
+     * @brief Update velocity limiter (adaptive speed control like Advanced)
      */
     void updateVelocityLimiter(bool path_is_good, double dt);
     
     /**
-     * @brief Limit robot speed based on current conditions (Sumatra AMoveToSkill line 254)
+     * @brief Limit robot speed based on current conditions (Advanced AMoveToSkill line 254)
      */
     MoveConstraints limitRobotSpeed(const MoveConstraints& base_constraints) const;
 };

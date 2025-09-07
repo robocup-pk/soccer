@@ -11,7 +11,7 @@ namespace ctrl {
 /**
  * @brief Bang Bang Trajectory for one dimension.
  * 
- * Direct C++ port of BangBangTrajectory1D.java from TIGERs Mannheim
+ * Direct C++ port of BangBangTrajectory1D.java from Team Mannheim
  */
 class BangBangTrajectory1D : public ITrajectory<double> {
 public:
@@ -42,7 +42,7 @@ public:
     BangBangTrajectory1D& generate(float initialPos, float finalPos, float initialVel, 
                                    float maxVel, float maxAcc);
 
-    // Public for friend access (like Sumatra package-private)
+    // Public for friend access (like Advanced package-private)
     BBTrajectoryPart parts[MAX_PARTS];
     int numParts{0};
 
@@ -50,7 +50,7 @@ private:
     int findPartIdx(double t) const;
     BBTrajectoryPart findPart(double t) const;
     
-    // Trajectory calculation methods (direct port from Sumatra)
+    // Trajectory calculation methods (direct port from Advanced)
     float velChangeToZero(float s0, float v0, float aMax) const;
     float velTriToZero(float s0, float v0, float v1, float aMax) const;
     void calcTri(float s0, float v0, float s2, float a);

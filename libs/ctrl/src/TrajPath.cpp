@@ -9,10 +9,10 @@ namespace ctrl {
 TrajPath TrajPath::with(const MoveConstraints& mc, const Eigen::Vector2d& curPos, 
                        const Eigen::Vector2d& curVel, const Eigen::Vector2d& dest) {
     
-    // EXACT copy of Sumatra's with() method using TrajectoryGenerator
+    // EXACT copy of Advanced's with() method using TrajectoryGenerator
     std::cout << "[TrajPath] Using TrajectoryGenerator for trajectory creation" << std::endl;
     
-    // Generate position trajectory using TrajectoryGenerator (EXACT Sumatra approach)
+    // Generate position trajectory using TrajectoryGenerator (EXACT Advanced approach)
     BangBangTrajectory2D trajXY = TrajectoryGenerator::generatePositionTrajectory(mc, curPos, curVel, dest);
     
     // Generate orientation trajectory using TrajectoryGenerator
@@ -29,7 +29,7 @@ TrajPath TrajPath::with(const Eigen::Vector2d& curPos, const Eigen::Vector2d& cu
                        const Eigen::Vector2d& dest, double destTheta,
                        double maxVel, double maxAcc, double maxOmega, double maxOmegaAcc) {
     
-    // EXACT copy of Sumatra's with() method using TrajectoryGenerator
+    // EXACT copy of Advanced's with() method using TrajectoryGenerator
     std::cout << "[TrajPath] Using TrajectoryGenerator for full state trajectory" << std::endl;
     
     // Create MoveConstraints for TrajectoryGenerator
@@ -51,7 +51,7 @@ TrajPath TrajPath::with(const Eigen::Vector2d& curPos, const Eigen::Vector2d& cu
 TrajPath TrajPath::append(double connectionTime, const Eigen::Vector2d& dest, double destTheta,
                          double maxVel, double maxAcc, double maxOmega, double maxOmegaAcc) {
     
-    // EXACT copy of Sumatra's append() method (lines 85-88)
+    // EXACT copy of Advanced's append() method (lines 85-88)
     
     // Get current position and velocity at connection time (this is the KEY for smooth motion!)
     Eigen::Vector3d curPos3d = this->getPosition(connectionTime);
@@ -75,7 +75,7 @@ TrajPath TrajPath::append(double connectionTime, const Eigen::Vector2d& dest, do
 }
 
 TrajPath TrajPath::connect(const TrajPath& path, double tConnect) {
-    // EXACT copy of Sumatra's connect() method (lines 149-156)
+    // EXACT copy of Advanced's connect() method (lines 149-156)
     
     if (child_ != nullptr && tConnect > tEnd_) {
         auto newChild = std::make_shared<TrajPath>(child_->connect(path, tConnect - tEnd_));
@@ -87,12 +87,12 @@ TrajPath TrajPath::connect(const TrajPath& path, double tConnect) {
 }
 
 Eigen::Vector2d TrajPath::getNextDestination(double t) const {
-    // This is used by Sumatra's executePath method
+    // This is used by Advanced's executePath method
     return getPosition(t).head<2>();
 }
 
 Eigen::Vector3d TrajPath::getPosition(double t) const {
-    // EXACT copy of Sumatra's getPosition() method (lines 186-197)
+    // EXACT copy of Advanced's getPosition() method (lines 186-197)
     
     if (t <= tEnd_) {
         return trajectory_.getPosition(t);
@@ -106,7 +106,7 @@ Eigen::Vector3d TrajPath::getPosition(double t) const {
 }
 
 Eigen::Vector3d TrajPath::getVelocity(double t) const {
-    // EXACT copy of Sumatra's getVelocity() method (lines 201-212)
+    // EXACT copy of Advanced's getVelocity() method (lines 201-212)
     
     if (t <= tEnd_) {
         return trajectory_.getVelocity(t);
@@ -120,7 +120,7 @@ Eigen::Vector3d TrajPath::getVelocity(double t) const {
 }
 
 Eigen::Vector3d TrajPath::getAcceleration(double t) const {
-    // EXACT copy of Sumatra's getAcceleration() method (lines 216-227)
+    // EXACT copy of Advanced's getAcceleration() method (lines 216-227)
     
     if (t <= tEnd_) {
         return trajectory_.getAcceleration(t);
@@ -134,7 +134,7 @@ Eigen::Vector3d TrajPath::getAcceleration(double t) const {
 }
 
 Eigen::Vector3d TrajPath::getFinalDestination() const {
-    // EXACT copy of Sumatra's getFinalDestination() method (lines 160-167)
+    // EXACT copy of Advanced's getFinalDestination() method (lines 160-167)
     
     if (child_ != nullptr) {
         return child_->getFinalDestination();
@@ -144,7 +144,7 @@ Eigen::Vector3d TrajPath::getFinalDestination() const {
 }
 
 double TrajPath::getTotalTime() const {
-    // EXACT copy of Sumatra's getTotalTime() method (lines 231-238)
+    // EXACT copy of Advanced's getTotalTime() method (lines 231-238)
     
     if (child_ != nullptr) {
         return tEnd_ + child_->getTotalTime();

@@ -131,7 +131,7 @@ void demonstrateScenarioConfigurations() {
     // ============ SCENARIO 4: SOCCER MATCH ============
     std::cout << "\nScenario 4: Soccer Match" << std::endl;
     ctrl::GlobalConfig().usePreset(ctrl::ConfigManager::Preset::BALANCED);
-    ctrl::GlobalConfig().setReplanningFrequency(50); // Standard 50Hz like real Sumatra
+    ctrl::GlobalConfig().setReplanningFrequency(50); // Standard 50Hz like real Advanced
     ctrl::GlobalConfig().setObstacleAvoidanceLevel(0.6); // Balanced aggressiveness
     ctrl::GlobalConfig().enablePerformanceOptimizations(); // Need performance in real-time
     std::cout << "   Configured for soccer match conditions" << std::endl;

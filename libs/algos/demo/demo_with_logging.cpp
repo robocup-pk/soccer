@@ -11,7 +11,7 @@
 #include "Utils.h"
 #include "RRTX.h"
 #include "Kick.h"
-// Pure Sumatra system includes
+// Pure Advanced system includes
 #include "CircularObstacle.h"
 #include "AdvancedMotionPlanner.h"
 #include "MoveConstraints.h"
@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     robot_manager.InitializePose(robot_start_pose);
     vector<Eigen::Vector3d> waypoints;
     
-    std::cout << "[Demo] Using TIGERs trajectory planning system" << std::endl;
+    std::cout << "[Demo] Using Team trajectory planning system" << std::endl;
     
     // Choose a test case based on command line argument
     int test_case = 1;
@@ -205,47 +205,47 @@ int main(int argc, char* argv[]) {
             break;
         }
         case 11: {
-            // Test 11: PURE Sumatra PathFinder - Direct path (no obstacles)
+            // Test 11: PURE Advanced PathFinder - Direct path (no obstacles)
             std::cout << "========================================" << std::endl;
-            std::cout << "Test 11: PURE Sumatra PathFinder System" << std::endl;
+            std::cout << "Test 11: PURE Advanced PathFinder System" << std::endl;
             std::cout << "========================================" << std::endl;
-            std::cout << "[SUMATRA] Direct path with no obstacles" << std::endl;
+            std::cout << "[ADVANCED] Direct path with no obstacles" << std::endl;
             
-            // Don't use waypoints! Use pure Sumatra planTrajectory approach
-            waypoints.clear(); // Clear waypoints - we don't use them in pure Sumatra!
+            // Don't use waypoints! Use pure Advanced planTrajectory approach
+            waypoints.clear(); // Clear waypoints - we don't use them in pure Advanced!
             
             // Instead, we'll directly call planTrajectory in the execution loop
-            std::cout << "[SUMATRA] Will call: planTrajectory(start, vel, destination, obstacles, constraints)" << std::endl;
-            std::cout << "[SUMATRA] Start: (0,0,0) -> Destination: (1.2, 0.8, π/4)" << std::endl;
-            std::cout << "[SUMATRA] Obstacles: None (direct path)" << std::endl;
+            std::cout << "[ADVANCED] Will call: planTrajectory(start, vel, destination, obstacles, constraints)" << std::endl;
+            std::cout << "[ADVANCED] Start: (0,0,0) -> Destination: (1.2, 0.8, π/4)" << std::endl;
+            std::cout << "[ADVANCED] Obstacles: None (direct path)" << std::endl;
             break;
         }
         case 12: {
-            // Test 12: PURE Sumatra PathFinder - With circular obstacles
+            // Test 12: PURE Advanced PathFinder - With circular obstacles
             std::cout << "========================================" << std::endl;
-            std::cout << "Test 12: Sumatra PathFinder + Obstacles" << std::endl;
+            std::cout << "Test 12: Advanced PathFinder + Obstacles" << std::endl;
             std::cout << "========================================" << std::endl;
-            std::cout << "[SUMATRA] Path with circular obstacles blocking direct route" << std::endl;
+            std::cout << "[ADVANCED] Path with circular obstacles blocking direct route" << std::endl;
             
-            waypoints.clear(); // No waypoints in pure Sumatra!
+            waypoints.clear(); // No waypoints in pure Advanced!
             
-            std::cout << "[SUMATRA] Will create circular obstacles at strategic positions" << std::endl;
-            std::cout << "[SUMATRA] Start: (0,0,0) -> Destination: (2.0, 1.0, π/2)" << std::endl;
-            std::cout << "[SUMATRA] PathFinder will automatically generate waypoints around obstacles!" << std::endl;
+            std::cout << "[ADVANCED] Will create circular obstacles at strategic positions" << std::endl;
+            std::cout << "[ADVANCED] Start: (0,0,0) -> Destination: (2.0, 1.0, π/2)" << std::endl;
+            std::cout << "[ADVANCED] PathFinder will automatically generate waypoints around obstacles!" << std::endl;
             break;
         }
         case 13: {
-            // Test 13: PURE Sumatra PathFinder - Complex obstacle field
+            // Test 13: PURE Advanced PathFinder - Complex obstacle field
             std::cout << "========================================" << std::endl;
             std::cout << "Test 13: Complex Obstacle Navigation" << std::endl;
             std::cout << "========================================" << std::endl;
-            std::cout << "[SUMATRA] Complex obstacle field with multiple barriers" << std::endl;
+            std::cout << "[ADVANCED] Complex obstacle field with multiple barriers" << std::endl;
             
-            waypoints.clear(); // Pure Sumatra approach!
+            waypoints.clear(); // Pure Advanced approach!
             
-            std::cout << "[SUMATRA] Will create multiple obstacles forming a complex field" << std::endl;
-            std::cout << "[SUMATRA] Start: (0,0,0) -> Destination: (1.5, 1.5, π)" << std::endl;
-            std::cout << "[SUMATRA] Testing advanced obstacle avoidance capabilities!" << std::endl;
+            std::cout << "[ADVANCED] Will create multiple obstacles forming a complex field" << std::endl;
+            std::cout << "[ADVANCED] Start: (0,0,0) -> Destination: (1.5, 1.5, π)" << std::endl;
+            std::cout << "[ADVANCED] Testing advanced obstacle avoidance capabilities!" << std::endl;
             break;
         }
         case 14: {
@@ -253,14 +253,14 @@ int main(int argc, char* argv[]) {
             std::cout << "========================================" << std::endl;
             std::cout << "Test 14: Simple Obstacle Avoidance Test" << std::endl;  
             std::cout << "========================================" << std::endl;
-            std::cout << "[SUMATRA] SIMPLE TEST: Two obstacles blocking direct path" << std::endl;
+            std::cout << "[ADVANCED] SIMPLE TEST: Two obstacles blocking direct path" << std::endl;
             
-            waypoints.clear(); // Pure Sumatra approach!
+            waypoints.clear(); // Pure Advanced approach!
             
-            std::cout << "[SUMATRA] Start: (0, 0, 0) -> Destination: (1.0, 0, 0)" << std::endl;
-            std::cout << "[SUMATRA] Obstacle 1: (0.5, 0, 0) - DIRECTLY in path!" << std::endl;
-            std::cout << "[SUMATRA] Obstacle 2: (0.5, 0.5, 0) - offset from path" << std::endl;
-            std::cout << "[SUMATRA] Robot should go around both obstacles!" << std::endl;
+            std::cout << "[ADVANCED] Start: (0, 0, 0) -> Destination: (1.0, 0, 0)" << std::endl;
+            std::cout << "[ADVANCED] Obstacle 1: (0.5, 0, 0) - DIRECTLY in path!" << std::endl;
+            std::cout << "[ADVANCED] Obstacle 2: (0.5, 0.5, 0) - offset from path" << std::endl;
+            std::cout << "[ADVANCED] Robot should go around both obstacles!" << std::endl;
             break;
         }
         default: {
@@ -287,15 +287,15 @@ int main(int argc, char* argv[]) {
                   << waypoints[i][1] << ", " << waypoints[i][2] << ")" << std::endl;
     }
     
-    // Use TIGERs trajectory system (type 4 = TIGERs BangBang)
+    // Use Team trajectory system (type 4 = Team BangBang)
     trajectory_log << "# TRAJECTORY_TYPE 4" << std::endl;
     
-    std::cout << "Using TIGERs-style Advanced Motion Planning + Trajectory Tracking" << std::endl;
+    std::cout << "Using Team-style Advanced Motion Planning + Trajectory Tracking" << std::endl;
     robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::AdvancedTrajectory);
     
-    // PURE SUMATRA TEST: Handle empty waypoints (cases 11-13)
+    // PURE ADVANCED TEST: Handle empty waypoints (cases 11-13)
     if (waypoints.empty()) {
-        std::cout << "\n=== PURE SUMATRA PATHFINDER TEST ===" << std::endl;
+        std::cout << "\n=== PURE ADVANCED PATHFINDER TEST ===" << std::endl;
         std::cout << "No waypoints provided - using direct planTrajectory() call!" << std::endl;
         
         // We'll call planTrajectory directly in the simulation loop based on test case
@@ -332,9 +332,9 @@ int main(int argc, char* argv[]) {
         // Sense logic for RobotManager
         robot_manager.SenseLogic();
         
-        // PURE SUMATRA PATHFINDER TEST: Call planTrajectory directly for cases 11-13
+        // PURE ADVANCED PATHFINDER TEST: Call planTrajectory directly for cases 11-13
         if (waypoints.empty() && frame_count == 10) { // Call once after initial settling
-            std::cout << "\n=== CALLING PURE SUMATRA PATHFINDER ===" << std::endl;
+            std::cout << "\n=== CALLING PURE ADVANCED PATHFINDER ===" << std::endl;
             
             // Create AdvancedMotionPlanner directly (bypass RobotManager waypoint system)
             ctrl::AdvancedMotionPlanner pure_sumatra_planner;
@@ -343,7 +343,7 @@ int main(int argc, char* argv[]) {
             std::vector<std::shared_ptr<ctrl::IObstacle>> obstacles;
             ctrl::MoveConstraints constraints;
             
-            // Configure constraints (EXACT Sumatra defaults)
+            // Configure constraints (EXACT Advanced defaults)
             constraints.setVelMax(1.2)      // m/s
                       .setAccMax(2.0)      // m/s²  
                       .setVelMaxW(6.0)     // rad/s
@@ -356,13 +356,13 @@ int main(int argc, char* argv[]) {
             if (test_case == 11) {
                 // Test 11: Direct path (no obstacles)
                 destination = Eigen::Vector3d(1.2, 0.8, M_PI/4);
-                std::cout << "[SUMATRA] Test 11: Direct path to (1.2, 0.8, π/4)" << std::endl;
+                std::cout << "[ADVANCED] Test 11: Direct path to (1.2, 0.8, π/4)" << std::endl;
                 
             } else if (test_case == 12) {
                 // Test 12: Single obstacle blocking direct path
                 destination = Eigen::Vector3d(2.0, 1.0, M_PI/2);
                 obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(Eigen::Vector2d(1.0, 0.5), 0.3, "Obstacle1"));
-                std::cout << "[SUMATRA] Test 12: Path to (2.0, 1.0, π/2) with 1 circular obstacle" << std::endl;
+                std::cout << "[ADVANCED] Test 12: Path to (2.0, 1.0, π/2) with 1 circular obstacle" << std::endl;
                 
             } else if (test_case == 13) {
                 // Test 13: Complex obstacle field
@@ -370,40 +370,40 @@ int main(int argc, char* argv[]) {
                 obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(Eigen::Vector2d(0.5, 0.5), 0.2, "Wall1"));
                 obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(Eigen::Vector2d(1.0, 0.8), 0.15, "Wall2"));
                 obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(Eigen::Vector2d(0.8, 1.2), 0.25, "Wall3"));
-                std::cout << "[SUMATRA] Test 13: Path to (1.5, 1.5, π) with 3 obstacles" << std::endl;
+                std::cout << "[ADVANCED] Test 13: Path to (1.5, 1.5, π) with 3 obstacles" << std::endl;
                 
             } else if (test_case == 14) {
                 // Test 14: SIMPLE obstacle avoidance test
                 destination = Eigen::Vector3d(1.0, 0.0, 0.0);
                 obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(Eigen::Vector2d(0.5, 0.0), 0.1, "DirectBlock"));
                 obstacles.push_back(std::make_shared<ctrl::CircularObstacle>(Eigen::Vector2d(0.5, 0.5), 0.1, "SideBlock"));
-                std::cout << "[SUMATRA] Test 14: SIMPLE path from (0,0,0) to (1,0,0)" << std::endl;
-                std::cout << "[SUMATRA] Obstacle 1 'DirectBlock': (0.5, 0.0) radius=0.1 - BLOCKS direct path" << std::endl;
-                std::cout << "[SUMATRA] Obstacle 2 'SideBlock': (0.5, 0.5) radius=0.1 - Forces detour" << std::endl;
+                std::cout << "[ADVANCED] Test 14: SIMPLE path from (0,0,0) to (1,0,0)" << std::endl;
+                std::cout << "[ADVANCED] Obstacle 1 'DirectBlock': (0.5, 0.0) radius=0.1 - BLOCKS direct path" << std::endl;
+                std::cout << "[ADVANCED] Obstacle 2 'SideBlock': (0.5, 0.5) radius=0.1 - Forces detour" << std::endl;
             }
             
-            std::cout << "[SUMATRA] Calling: planTrajectory(pos, vel, dest, " << obstacles.size() << " obstacles, constraints)" << std::endl;
+            std::cout << "[ADVANCED] Calling: planTrajectory(pos, vel, dest, " << obstacles.size() << " obstacles, constraints)" << std::endl;
             
-            // THIS IS THE PURE SUMATRA CALL!
+            // THIS IS THE PURE ADVANCED CALL!
             pure_sumatra_planner.planTrajectory(
                 start_pos,      // Current robot position
                 start_vel,      // Current robot velocity  
                 destination,    // Final destination
                 obstacles,      // Obstacles for avoidance
-                constraints     // Sumatra-style constraints
+                constraints     // Advanced-style constraints
             );
             
             if (pure_sumatra_planner.isValid()) {
-                std::cout << "[SUMATRA] SUCCESS! Generated trajectory with duration: " 
+                std::cout << "[ADVANCED] SUCCESS! Generated trajectory with duration: " 
                           << pure_sumatra_planner.getTotalTime() << "s" << std::endl;
                 
-                // CLEAN SOLUTION: Use RobotManager's direct Sumatra trajectory method
-                std::cout << "[SUMATRA] Setting Sumatra trajectory directly via RobotManager..." << std::endl;
+                // CLEAN SOLUTION: Use RobotManager's direct Advanced trajectory method
+                std::cout << "[ADVANCED] Setting Advanced trajectory directly via RobotManager..." << std::endl;
                 robot_manager.SetAdvancedTrajectory(pure_sumatra_planner);
-                std::cout << "[SUMATRA] Robot should now follow obstacle-aware trajectory!" << std::endl;
+                std::cout << "[ADVANCED] Robot should now follow obstacle-aware trajectory!" << std::endl;
                 
             } else {
-                std::cout << "[SUMATRA] FAILED! Could not generate valid trajectory" << std::endl;
+                std::cout << "[ADVANCED] FAILED! Could not generate valid trajectory" << std::endl;
             }
         }
         
@@ -444,7 +444,7 @@ int main(int argc, char* argv[]) {
             last_vision_pose = noisy_vision_pose;
         }
         
-        // The TIGERs system uses robust PID feedback control that automatically 
+        // The Team system uses robust PID feedback control that automatically 
         // handles tracking errors without needing explicit replanning
         
         // Calculate timestamp
@@ -473,7 +473,7 @@ int main(int argc, char* argv[]) {
     std::cout << "[Demo] Trajectory data saved to trajectory_log.txt" << std::endl;
     std::cout << "[Demo] Recorded " << frame_count << " frames" << std::endl;
     
-    std::cout << "[Demo] TIGERs trajectory execution completed" << std::endl;
+    std::cout << "[Demo] Team trajectory execution completed" << std::endl;
     
     return 0;
 }

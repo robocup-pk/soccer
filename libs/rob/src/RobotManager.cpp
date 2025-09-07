@@ -134,7 +134,7 @@ void rob::RobotManager::ControlLogic() {
 >>>>>>> 5eb85243 (Tiger Manim BangBang2D Trajectory Planner)
       break;
     case RobotState::REPLANNING_CONTROL:
-      // Sumatra-style replanning with dynamic obstacle avoidance
+      // Advanced-style replanning with dynamic obstacle avoidance
       velocity_fBody_ = replanning_controller_.update(pose_fWorld, this->GetVelocityInWorldFrame());
       finished_motion = replanning_controller_.isDestinationReached();
       break;
@@ -210,15 +210,15 @@ void rob::RobotManager::SetSmoothPathTrackerPath(std::vector<Eigen::Vector3d> pa
     return;
   }
   
-  std::cout << "[rob::RobotManager::SetSmoothPathTrackerPath] Creating REAL TIGERs smooth trajectory using TrajPath with " 
+  std::cout << "[rob::RobotManager::SetSmoothPathTrackerPath] Creating REAL Team smooth trajectory using TrajPath with " 
             << path_fWorld.size() << " waypoints" << std::endl;
   
-  // EXACT Sumatra approach: Use complete PathFinder system with MoveConstraints
+  // EXACT Advanced approach: Use complete PathFinder system with MoveConstraints
   ctrl::MoveConstraints moveConstraints;
-  moveConstraints.setVelMax(1.0)        // m/s - matches Sumatra's default
-                 .setAccMax(0.8)        // m/s² - matches Sumatra's default  
-                 .setVelMaxW(3.0)       // rad/s - matches Sumatra's default
-                 .setAccMaxW(2.5);      // rad/s² - matches Sumatra's default
+  moveConstraints.setVelMax(1.0)        // m/s - matches Advanced's default
+                 .setAccMax(0.8)        // m/s² - matches Advanced's default  
+                 .setVelMaxW(3.0)       // rad/s - matches Advanced's default
+                 .setAccMaxW(2.5);      // rad/s² - matches Advanced's default
   
   if (path_fWorld.size() == 2) {
     // Single destination: Use PathFinder system
@@ -229,7 +229,7 @@ void rob::RobotManager::SetSmoothPathTrackerPath(std::vector<Eigen::Vector3d> pa
       this->GetVelocityInWorldFrame(),  // Current robot velocity
       path_fWorld.back(),               // Final destination
       obstacles,                        // Obstacles (empty for now)
-      moveConstraints                   // Sumatra-style constraints
+      moveConstraints                   // Advanced-style constraints
     );
   } else {
     // Multiple waypoints: Use backward-compatible method
@@ -450,7 +450,7 @@ bool rob::RobotManager::IsGyroCalibrated() {
   return true;
 }
 
-// Replanning controller methods (Sumatra-style)
+// Replanning controller methods (Advanced-style)
 void rob::RobotManager::SetReplanningGoal(const Eigen::Vector3d& goal) {
   std::unique_lock<std::mutex> lock(robot_state_mutex);
   

@@ -11,12 +11,12 @@ namespace ctrl {
 class IObstacle;
 
 /**
- * @brief EXACT copy of Sumatra's PathFinderInput.java
+ * @brief EXACT copy of Advanced's PathFinderInput.java
  * Input data for path finding operations
  */
 class PathFinderInput {
 public:
-    // Builder pattern like Sumatra (forward declaration)
+    // Builder pattern like Advanced (forward declaration)
     class PathFinderInputBuilder;
     
 private:
@@ -33,10 +33,10 @@ private:
 
 public:
     
-    // Static factory methods (EXACT copy of Sumatra)
+    // Static factory methods (EXACT copy of Advanced)
     static PathFinderInputBuilder fromBot(const Eigen::Vector3d& botState, const Eigen::Vector3d& botVel);
     
-    // Getters (EXACT copy of Sumatra interface)
+    // Getters (EXACT copy of Advanced interface)
     const Eigen::Vector2d& getPos() const { return pos_; }
     const Eigen::Vector2d& getVel() const { return vel_; }
     const Eigen::Vector2d& getDest() const { return dest_; }
