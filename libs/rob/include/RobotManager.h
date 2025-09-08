@@ -9,48 +9,9 @@
 
 #include "StateEstimator.h"
 #include "HardwareManager.h"
-<<<<<<< HEAD
-#include "MotionController.h"
-<<<<<<< HEAD
-#include "TrajectoryManager.h"
-<<<<<<< HEAD
-#include "RobotPositions.h"
-=======
-#include "M_TrajectoryController.h"
-<<<<<<< HEAD
->>>>>>> 47173921 (New Trajactory Planner Manager with BangBang Trajactory Planner)
-=======
-#include "PurePursuitTrajectoryManager.h"
-#include "HermiteSplineTrajectoryManager.h"
-<<<<<<< HEAD
->>>>>>> 9a94022d (Add Sline Trajactory for RRTX WayPoints)
-=======
-#include "BSplineTrajectoryManager.h"
->>>>>>> 924fc1b6 (BSpline Trajactory for Path Planning)
-=======
-#include "BSplineTrajectoryManager.h"
-#include "UniformBSplineTrajectoryPlanner.h"
-<<<<<<< HEAD
->>>>>>> 97084d4f (Added Smooth uniform BSpline Trajectory Planner)
-=======
-#include "BezierTrajectoryPlanner.h"
-<<<<<<< HEAD
->>>>>>> 05fb426c (Addded Bizzare Trjactory Planner)
-=======
-#include "DBRRTTrajectoryPlanner.h"
-<<<<<<< HEAD
->>>>>>> 35d39075 (Added DBRT Planner)
-=======
-#include "BangBangTrajectoryPlanner.h"
->>>>>>> 08bf10ed (Fix Ideal position in Kalman Filter Logging)
-=======
 #include "AdvancedMotionPlanner.h"
 #include "TrajectoryTracker.h"
-<<<<<<< HEAD
->>>>>>> 5eb85243 (Tiger Manim BangBang2D Trajectory Planner)
-=======
 #include "ReplanningController.h"
->>>>>>> 469d71a6 (Add Obstacle Avoidance in Path-Finder)
 
 // Forward declarations
 namespace state {
@@ -98,13 +59,8 @@ class RobotManager {
   void AddGoal(const Eigen::Vector3d& goal);
   void GoHome();
   void InitializeHome(Eigen::Vector3d pose_home);
-  void SetBSplinePath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // B-spline path
-  void SetUniformBSplinePath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Uniform B-spline path
-  void SetBezierTrajectoryPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Bezier trajectory path
   void SetBangBangPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Bang-bang trajectory path
-  void SetSmoothPathTrackerPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Smooth path tracker with Pure Pursuit
   void SetAdvancedTrajectory(const ctrl::AdvancedMotionPlanner& advanced_planner); // Direct advanced trajectory
-  void SetDBRRTGoal(const Eigen::Vector3d& goal); // DB-RRT goal-based planning
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
   
