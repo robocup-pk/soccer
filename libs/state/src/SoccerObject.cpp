@@ -64,29 +64,16 @@ bool state::SoccerObject::IsPointInFrontSector(Eigen::Vector2d point) {
   return dot_product > ANGLE_THRESHOLD;
 }
 
-bool state::SoccerObject::IsAttachedToBall() const {
-  return is_attached;
-}
-
-void state::SoccerObject::AttachToBall(SoccerObject* ball_obj) {
-  if (!ball_obj || ball_obj->name != "ball") return;
-  
-  is_attached = true;
-  attached_to = ball_obj;
-  ball_obj->is_attached = true;
-  ball_obj->attached_to = this;
-}
-
-void state::SoccerObject::DetachFromBall() {
-  if (is_attached && attached_to && attached_to->name == "ball") {
-    attached_to->is_attached = false;
-    attached_to->attached_to = nullptr;
-  }
-  
-  is_attached = false;
-  attached_to = nullptr;
-}
-
-Eigen::Vector3d state::SoccerObject::GetCenterPosition() const {
+Eigen::Vector3d state::SoccerObject::GetCenterPosition() {
   return position;
+}
+
+void state::SoccerObject::SetRobotRole(state::SoccerObject::Role r) {
+  role = r;
+}
+
+void state::SoccerObject::Move(float dt) {
+  // Basic kinematic update
+  velocity += acceleration * dt;
+  position += velocity * dt;
 }
