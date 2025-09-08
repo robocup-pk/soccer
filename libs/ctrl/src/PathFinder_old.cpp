@@ -4,11 +4,13 @@
 #include "TrajectoryGenerator.h"
 #include "CircularObstacle.h"
 #include "PathfindingConfig.h"
+#include "SubDestinationGenerator.h"
 #include <iostream>
+#include <algorithm>
 
 namespace ctrl {
 
-// PathFinder configuration
+// Implementation of PathFinder configuration
 static constexpr double TIME_CORRECTION_RANGE = 0.02;
 static constexpr double INITIAL_TIME_OFFSET = 0.5; // Start checking collision after 0.5s to avoid immediate false collisions
 
@@ -268,7 +270,7 @@ std::vector<Eigen::Vector2d> PathFinder::generateWaypoints(const PathFinderInput
 }
 
 TrajPath PathFinder::createPath(const PathFinderInput& input, const Eigen::Vector2d& dest) {
-    // Create path method
+    // Implementation of createPath method
     return TrajPath::with(
         input.getMoveConstraints(),
         input.getPos(),
@@ -280,7 +282,7 @@ TrajPath PathFinder::createPath(const PathFinderInput& input, const Eigen::Vecto
 TrajPath PathFinder::createSmoothPath(const std::vector<Eigen::Vector2d>& waypoints,
                                      const Eigen::Vector2d& startVel,
                                      const MoveConstraints& mc) {
-    // Smooth path creation using TrajPath chaining
+    // Implementation of smooth path creation using TrajPath chaining
     
     if (waypoints.size() < 2) {
         std::cerr << "[PathFinder] ERROR: Need at least 2 waypoints for path creation" << std::endl;
@@ -297,7 +299,7 @@ TrajPath PathFinder::createSmoothPath(const std::vector<Eigen::Vector2d>& waypoi
     TrajectoryXyw trajectory(posTrajectory, rotTrajectory);
     TrajPath path(trajectory, trajectory.getTotalTime(), nullptr);
     
-    // Chain additional segments using connection approach
+    // Chain additional segments using the connection approach
     for (size_t i = 1; i < waypoints.size() - 1; ++i) {
         std::cout << "[PathFinder] Adding waypoint " << i+1 << ": (" 
                   << waypoints[i+1].x() << "," << waypoints[i+1].y() << ")" << std::endl;

@@ -337,7 +337,7 @@ int main(int argc, char* argv[]) {
             std::cout << "\n=== CALLING PURE ADVANCED PATHFINDER ===" << std::endl;
             
             // Create AdvancedMotionPlanner directly (bypass RobotManager waypoint system)
-            ctrl::AdvancedMotionPlanner pure_sumatra_planner;
+            ctrl::AdvancedMotionPlanner advanced_planner;
             
             // Create obstacles and constraints based on test case
             std::vector<std::shared_ptr<ctrl::IObstacle>> obstacles;
@@ -385,7 +385,7 @@ int main(int argc, char* argv[]) {
             std::cout << "[ADVANCED] Calling: planTrajectory(pos, vel, dest, " << obstacles.size() << " obstacles, constraints)" << std::endl;
             
             // THIS IS THE PURE ADVANCED CALL!
-            pure_sumatra_planner.planTrajectory(
+            advanced_planner.planTrajectory(
                 start_pos,      // Current robot position
                 start_vel,      // Current robot velocity  
                 destination,    // Final destination
@@ -393,13 +393,13 @@ int main(int argc, char* argv[]) {
                 constraints     // Advanced-style constraints
             );
             
-            if (pure_sumatra_planner.isValid()) {
+            if (advanced_planner.isValid()) {
                 std::cout << "[ADVANCED] SUCCESS! Generated trajectory with duration: " 
-                          << pure_sumatra_planner.getTotalTime() << "s" << std::endl;
+                          << advanced_planner.getTotalTime() << "s" << std::endl;
                 
                 // CLEAN SOLUTION: Use RobotManager's direct Advanced trajectory method
                 std::cout << "[ADVANCED] Setting Advanced trajectory directly via RobotManager..." << std::endl;
-                robot_manager.SetAdvancedTrajectory(pure_sumatra_planner);
+                robot_manager.SetAdvancedTrajectory(advanced_planner);
                 std::cout << "[ADVANCED] Robot should now follow obstacle-aware trajectory!" << std::endl;
                 
             } else {

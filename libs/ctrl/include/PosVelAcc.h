@@ -3,7 +3,7 @@
 namespace ctrl {
 
 /**
- * @brief EXACT copy of Advanced's PosVelAcc.java
+ * @brief Implementation of PosVelAcc.java
  * State class containing position, velocity and acceleration.
  */
 template<typename T>
@@ -15,7 +15,7 @@ struct PosVelAcc {
     PosVelAcc() = default;
     PosVelAcc(const T& p, const T& v, const T& a) : pos(p), vel(v), acc(a) {}
     
-    // Getter methods (like Advanced)
+    // Getter methods (as needed)
     const T& getPos() const { return pos; }
     const T& getVel() const { return vel; }
     const T& getAcc() const { return acc; }

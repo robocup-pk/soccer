@@ -56,7 +56,7 @@ Eigen::Vector3d TrajectoryTracker::update(const Eigen::Vector3d& current_pose) {
     if (dt < 1e-6 || dt > 0.1) dt = 0.02; // Default 50Hz, clamp large dt
     
     // --- Step 1: Get feedforward commands from AdvancedMotionPlanner ---
-    // This matches exactly how Advanced's MoveBangBangSkill works (lines 92, 111)
+    // This matches exactly how the MoveBangBangSkill works (lines 92, 111)
     Eigen::Vector3d desired_position = motion_planner_->getPosition(elapsed_time);
     Eigen::Vector3d desired_velocity = motion_planner_->getVelocity(elapsed_time);
     

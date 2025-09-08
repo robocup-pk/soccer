@@ -5,7 +5,7 @@
 namespace ctrl {
 
 /**
- * @brief EXACT copy of Advanced's MoveConstraints.java
+ * @brief Implementation of MoveConstraints.java
  * Movement constraints for robot motion planning
  */
 class MoveConstraints {
@@ -30,7 +30,7 @@ public:
     MoveConstraints(const MoveConstraints& other) = default;
     MoveConstraints& operator=(const MoveConstraints& other) = default;
     
-    // Getters (EXACT copy of Advanced interface)
+    // Getters (Based on standard interface)
     double getVelMax() const { return velMax_; }
     double getVelMaxFast() const { return velMaxFast_; }
     double getAccMax() const { return accMax_; }
@@ -43,7 +43,7 @@ public:
     const Eigen::Vector2d& getPrimaryDirection() const { return primaryDirection_; }
     bool isFastMove() const { return fastMove_; }
     
-    // Setters (EXACT copy of Advanced interface)
+    // Setters (Based on standard interface)
     MoveConstraints& setVelMax(double vel) { velMax_ = vel; return *this; }
     MoveConstraints& setVelMaxFast(double vel) { velMaxFast_ = vel; return *this; }
     MoveConstraints& setAccMax(double acc) { accMax_ = acc; accMaxDerived_ = acc; return *this; }
@@ -55,7 +55,7 @@ public:
     MoveConstraints& setPrimaryDirection(const Eigen::Vector2d& dir) { primaryDirection_ = dir; return *this; }
     MoveConstraints& setFastMove(bool fast) { fastMove_ = fast; return *this; }
     
-    // Utility methods (EXACT copy of Advanced)
+    // Utility methods (Based on Advanced)
     MoveConstraints limit(const MoveConstraints& limits) const {
         MoveConstraints result = *this;
         result.velMax_ = std::min(velMax_, limits.velMax_);

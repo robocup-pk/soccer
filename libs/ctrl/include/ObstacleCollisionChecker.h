@@ -7,7 +7,7 @@
 namespace ctrl {
 
 /**
- * @brief EXACT copy of Advanced's ObstacleCollisionChecker
+ * @brief Implementation of ObstacleCollisionChecker
  * Check for collisions for one obstacle, beginning at the front and tracking the front collision duration.
  */
 class ObstacleCollisionChecker {
@@ -25,17 +25,17 @@ public:
     // Copy constructor for cloning
     ObstacleCollisionChecker copy() const;
     
-    // Core collision checking (EXACT copy of Advanced's stepFront)
+    // Core collision checking (Implementation of stepFront)
     void stepFront(const Eigen::Vector2d& robotPos, const Eigen::Vector2d& robotVel, double timeOffset);
     
-    // Getters (EXACT copy of Advanced)
+    // Getters (Based on Advanced)
     std::shared_ptr<IObstacle> getObstacle() const { return obstacle_; }
     double getFirstCollision() const { return firstCollision_; }
     double getNextFrontTimeOffset() const { return nextFrontTimeOffset_; }
     bool hasCollision() const { return std::isfinite(firstCollision_); }
     
 private:
-    // EXACT copy of Advanced's collision logic
+    // Implementation of collision logic
     bool skipCheck(const Eigen::Vector2d& robotPos, const Eigen::Vector2d& robotVel, double timeOffset) const;
     double distanceToObstacle(const Eigen::Vector2d& robotPos) const;
     double getTimeToNextCheck(double distance) const;

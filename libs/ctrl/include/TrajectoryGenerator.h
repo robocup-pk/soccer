@@ -11,8 +11,8 @@
 namespace ctrl {
 
 /**
- * @brief EXACT copy of Advanced's TrajectoryGenerator.java
- * Generate BangBang trajectories (THE MAIN ENTRY POINT for Advanced trajectory system)
+ * @brief Implementation of TrajectoryGenerator.java
+ * Generate BangBang trajectories (THE MAIN ENTRY POINT for standard trajectory system)
  */
 class TrajectoryGenerator {
 private:
@@ -34,10 +34,10 @@ private:
                                                        const Eigen::Vector2d& v0);
 
 public:
-    TrajectoryGenerator() = delete; // Static class like Advanced
+    TrajectoryGenerator() = delete; // Static class as needed
     
     //************************************************************************
-    // Position Trajectory (EXACT copy of Advanced methods)
+    // Position Trajectory (Based on standard methods)
     //************************************************************************
     
     /**
@@ -53,7 +53,7 @@ public:
                                                            const Eigen::Vector2d& dest);
     
     //************************************************************************
-    // Rotation Trajectory (EXACT copy of Advanced methods)
+    // Rotation Trajectory (Based on standard methods)
     //************************************************************************
     
     static BangBangTrajectory1DOrient generateRotationTrajectory(double curOrientation,
@@ -62,7 +62,7 @@ public:
                                                                 const MoveConstraints& mc);
     
     //************************************************************************
-    // Overshoot Trajectory (EXACT copy of Advanced methods)
+    // Overshoot Trajectory (Based on standard methods)
     //************************************************************************
     
     /**

@@ -11,27 +11,27 @@
 namespace ctrl {
 
 /**
- * @brief EXACT copy of Advanced's trajectory planning system using PathFinder.
+ * @brief Implementation of trajectory planning system using PathFinder.
  *
- * This class implements the COMPLETE Advanced approach:
+ * This class implements the COMPLETE approach:
  * 1. Uses PathFinderInput with MoveConstraints for proper input handling
  * 2. Uses PathFinder for obstacle avoidance and path generation
  * 3. Uses TrajPath for smooth multi-waypoint motion
  * 4. Integrates complete Team Mannheim trajectory planning pipeline
  * 
- * Direct port of Advanced's complete trajectory planning system.
+ * Implementation
  */
 class AdvancedMotionPlanner {
 public:
     AdvancedMotionPlanner() = default;
 
     /**
-     * @brief Plan trajectory using COMPLETE Advanced PathFinder system.
+     * @brief Plan trajectory using COMPLETE standard PathFinder system.
      * @param botPos Current robot position (x, y, theta)
      * @param botVel Current robot velocity (vx, vy, omega)
      * @param dest Destination position (x, y, theta)
      * @param obstacles List of obstacles for avoidance
-     * @param moveConstraints Movement constraints (EXACT Advanced format)
+     * @param moveConstraints Movement constraints (standard format)
      */
     void planTrajectory(const Eigen::Vector3d& botPos,
                        const Eigen::Vector3d& botVel,
@@ -55,7 +55,7 @@ public:
     TrajPath getTrajPath() const { return trajPath_; }
 
 private:
-    // --- Complete Advanced system components ---
+    // --- Complete standard system components ---
     TrajPath trajPath_;
     PathFinder pathFinder_;
     bool is_valid_{false};

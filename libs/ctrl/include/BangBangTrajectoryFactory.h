@@ -111,7 +111,7 @@ public:
         double maxAcc
     );
     
-    // --- PlanarCurve Integration Methods (Advanced approach) ---
+    // --- PlanarCurve Integration Methods (approach) ---
     
     /**
      * @brief Create PlanarCurve from 2D BangBang trajectory

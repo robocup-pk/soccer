@@ -40,7 +40,7 @@ void ObstacleCollisionChecker::stepFront(const Eigen::Vector2d& robotPos, const 
 }
 
 bool ObstacleCollisionChecker::skipCheck(const Eigen::Vector2d& robotPos, const Eigen::Vector2d& robotVel, double timeOffset) const {
-    // EXACT copy of Advanced's skipCheck logic
+    // Skip check logic
     if (timeOffset < nextFrontTimeOffset_) {
         return true; // Not time to check yet
     }
@@ -49,7 +49,7 @@ bool ObstacleCollisionChecker::skipCheck(const Eigen::Vector2d& robotPos, const 
         return true; // Already found collision
     }
     
-    // Use Advanced's canCollide method for smart skipping
+    // Use canCollide method for smart skipping
     if (!obstacle_->canCollide(robotPos, timeOffset, robotVel)) {
         return true; // Obstacle says it can't collide (e.g., too far away)
     }
@@ -69,7 +69,7 @@ double ObstacleCollisionChecker::distanceToObstacle(const Eigen::Vector2d& robot
 }
 
 double ObstacleCollisionChecker::getTimeToNextCheck(double distance) const {
-    // EXACT copy of Advanced's adaptive time calculation
+    // Adaptive time calculation
     double dist = std::max(0.0, distance / 1000.0); // Convert mm to m
     double combinedSpeed = maxSpeed_ + obstacle_->getMaxSpeed();
     

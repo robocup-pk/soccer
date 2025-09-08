@@ -13,12 +13,12 @@ BangBangTrajectory2D TrajectoryGenerator::generatePositionTrajectory(const MoveC
                                                                      const Eigen::Vector2d& curVel, 
                                                                      const Eigen::Vector2d& dest) {
     
-    std::cout << "[TrajectoryGenerator] Generating position trajectory (EXACT Advanced approach)" << std::endl;
+    std::cout << "[TrajectoryGenerator] Generating position trajectory" << std::endl;
     std::cout << "  From: (" << curPos.x() << ", " << curPos.y() << ")" << std::endl;
     std::cout << "  To: (" << dest.x() << ", " << dest.y() << ")" << std::endl;
     std::cout << "  Vel: (" << curVel.x() << ", " << curVel.y() << ")" << std::endl;
     
-    // EXACT copy of Advanced's logic (TrajectoryGenerator.java lines 64-81)
+    // Trajectory generation logic
     if (mc.getPrimaryDirection().norm() < 1e-6) {
         // Use synchronous trajectory (no primary direction)
         std::cout << "  Using sync trajectory (no primary direction)" << std::endl;
@@ -45,7 +45,7 @@ BangBangTrajectory1DOrient TrajectoryGenerator::generateRotationTrajectory(doubl
     std::cout << "  To: " << targetAngle << " rad" << std::endl;
     std::cout << "  Angular vel: " << curAVel << " rad/s" << std::endl;
     
-    // EXACT copy of Advanced's logic (TrajectoryGenerator.java lines 115-118)
+    // Generate synchronized trajectory
     return trajectoryFactory_.orientation(curOrientation, targetAngle, curAVel,
                                          mc.getVelMaxW(), mc.getAccMaxW());
 }
@@ -59,7 +59,7 @@ Eigen::Vector2d TrajectoryGenerator::generateVirtualPositionToReachPointInTime(c
     std::cout << "[TrajectoryGenerator] Generating virtual position for timed arrival" << std::endl;
     std::cout << "  Target time: " << targetTime << "s" << std::endl;
     
-    // EXACT copy of Advanced's logic (TrajectoryGenerator.java lines 178-201)
+    // Orientation trajectory generation
     if (mc.getPrimaryDirection().norm() < 1e-6) {
         // Use synchronous calculation
         return offsetCalc_.destinationForBangBang2dSync(curPos, dest, curVel,
@@ -80,7 +80,7 @@ BangBangTrajectory2D TrajectoryGenerator::generatePositionTrajectoryToReachPoint
     
     std::cout << "[TrajectoryGenerator] Generating timed trajectory" << std::endl;
     
-    // EXACT copy of Advanced's logic (TrajectoryGenerator.java lines 226-232)
+    // Generate orientation trajectory
     // This can get optimized as an addition to the generateVirtualPositionToReachPointInTime could directly create
     // full trajectories and not only a position.
     Eigen::Vector2d virtualDest = generateVirtualPositionToReachPointInTime(mc, curPos, curVel, dest, targetTime);
@@ -94,7 +94,7 @@ bool TrajectoryGenerator::isComeToAStopFaster(const MoveConstraints& mc,
     
     std::cout << "[TrajectoryGenerator] Checking if come-to-stop is faster" << std::endl;
     
-    // EXACT copy of Advanced's logic (TrajectoryGenerator.java lines 121-141)
+    // Time-based position calculation
     auto trajWithoutComeToAStop = generatePositionTrajectory(mc, curPos, curVel, dest);
     
     auto stateAfterStop = stateAfterComeToAStop(mc, 
@@ -114,7 +114,7 @@ TrajectoryGenerator::StateAfterComeToAStop TrajectoryGenerator::stateAfterComeTo
                                                                                       const Eigen::Vector2d& s0, 
                                                                                       const Eigen::Vector2d& v0) {
     
-    // EXACT copy of Advanced's logic (TrajectoryGenerator.java lines 262-274)
+    // Calculate destination for timed position
     double lookAhead = 0.05; // 5 AI iterations
     double acc = mc.getBrkMax() * 0.9;
     

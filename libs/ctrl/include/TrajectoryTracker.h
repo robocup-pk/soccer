@@ -9,7 +9,7 @@ namespace ctrl {
 class AdvancedMotionPlanner;
 
 /**
- * @brief Advanced trajectory tracker with PID feedback control.
+ * @brief standard trajectory tracker with PID feedback control.
  *
  * This class implements the complete advanced pipeline:
  * 1. Receives a time-parameterized trajectory from AdvancedMotionPlanner

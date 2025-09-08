@@ -42,7 +42,7 @@ public:
     BangBangTrajectory1D& generate(float initialPos, float finalPos, float initialVel, 
                                    float maxVel, float maxAcc);
 
-    // Public for friend access (like Advanced package-private)
+    // Public for friend access (as needed package-private)
     BBTrajectoryPart parts[MAX_PARTS];
     int numParts{0};
 

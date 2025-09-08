@@ -9,10 +9,10 @@ namespace ctrl {
 TrajPath TrajPath::with(const MoveConstraints& mc, const Eigen::Vector2d& curPos, 
                        const Eigen::Vector2d& curVel, const Eigen::Vector2d& dest) {
     
-    // EXACT copy of Advanced's with() method using TrajectoryGenerator
+    // Create trajectory using TrajectoryGenerator
     std::cout << "[TrajPath] Using TrajectoryGenerator for trajectory creation" << std::endl;
     
-    // Generate position trajectory using TrajectoryGenerator (EXACT Advanced approach)
+    // Generate position trajectory using TrajectoryGenerator
     BangBangTrajectory2D trajXY = TrajectoryGenerator::generatePositionTrajectory(mc, curPos, curVel, dest);
     
     // Generate orientation trajectory using TrajectoryGenerator
@@ -29,7 +29,7 @@ TrajPath TrajPath::with(const Eigen::Vector2d& curPos, const Eigen::Vector2d& cu
                        const Eigen::Vector2d& dest, double destTheta,
                        double maxVel, double maxAcc, double maxOmega, double maxOmegaAcc) {
     
-    // EXACT copy of Advanced's with() method using TrajectoryGenerator
+    // Create trajectory using TrajectoryGenerator
     std::cout << "[TrajPath] Using TrajectoryGenerator for full state trajectory" << std::endl;
     
     // Create MoveConstraints for TrajectoryGenerator
@@ -51,7 +51,7 @@ TrajPath TrajPath::with(const Eigen::Vector2d& curPos, const Eigen::Vector2d& cu
 TrajPath TrajPath::append(double connectionTime, const Eigen::Vector2d& dest, double destTheta,
                          double maxVel, double maxAcc, double maxOmega, double maxOmegaAcc) {
     
-    // EXACT copy of Advanced's append() method (lines 85-88)
+    // Append new segment to path
     
     // Get current position and velocity at connection time (this is the KEY for smooth motion!)
     Eigen::Vector3d curPos3d = this->getPosition(connectionTime);
@@ -75,7 +75,7 @@ TrajPath TrajPath::append(double connectionTime, const Eigen::Vector2d& dest, do
 }
 
 TrajPath TrajPath::connect(const TrajPath& path, double tConnect) {
-    // EXACT copy of Advanced's connect() method (lines 149-156)
+    // Connect paths at specified time
     
     if (child_ != nullptr && tConnect > tEnd_) {
         auto newChild = std::make_shared<TrajPath>(child_->connect(path, tConnect - tEnd_));
@@ -87,12 +87,12 @@ TrajPath TrajPath::connect(const TrajPath& path, double tConnect) {
 }
 
 Eigen::Vector2d TrajPath::getNextDestination(double t) const {
-    // This is used by Advanced's executePath method
+    // Get next destination for execution
     return getPosition(t).head<2>();
 }
 
 Eigen::Vector3d TrajPath::getPosition(double t) const {
-    // EXACT copy of Advanced's getPosition() method (lines 186-197)
+    // Get position at specified time
     
     if (t <= tEnd_) {
         return trajectory_.getPosition(t);
@@ -106,7 +106,7 @@ Eigen::Vector3d TrajPath::getPosition(double t) const {
 }
 
 Eigen::Vector3d TrajPath::getVelocity(double t) const {
-    // EXACT copy of Advanced's getVelocity() method (lines 201-212)
+    // Get velocity at specified time
     
     if (t <= tEnd_) {
         return trajectory_.getVelocity(t);
@@ -120,7 +120,7 @@ Eigen::Vector3d TrajPath::getVelocity(double t) const {
 }
 
 Eigen::Vector3d TrajPath::getAcceleration(double t) const {
-    // EXACT copy of Advanced's getAcceleration() method (lines 216-227)
+    // Get acceleration at specified time
     
     if (t <= tEnd_) {
         return trajectory_.getAcceleration(t);
@@ -134,7 +134,7 @@ Eigen::Vector3d TrajPath::getAcceleration(double t) const {
 }
 
 Eigen::Vector3d TrajPath::getFinalDestination() const {
-    // EXACT copy of Advanced's getFinalDestination() method (lines 160-167)
+    // Get final destination of path
     
     if (child_ != nullptr) {
         return child_->getFinalDestination();
@@ -144,7 +144,7 @@ Eigen::Vector3d TrajPath::getFinalDestination() const {
 }
 
 double TrajPath::getTotalTime() const {
-    // EXACT copy of Advanced's getTotalTime() method (lines 231-238)
+    // Get total time of path
     
     if (child_ != nullptr) {
         return tEnd_ + child_->getTotalTime();

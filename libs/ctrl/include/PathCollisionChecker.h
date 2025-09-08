@@ -9,7 +9,7 @@
 namespace ctrl {
 
 /**
- * @brief EXACT copy of Advanced's PathCollisionChecker
+ * @brief Implementation of PathCollisionChecker
  * Check for collisions on a specific path for multiple obstacles.
  */
 class PathCollisionChecker {
@@ -23,19 +23,19 @@ public:
                         const std::vector<std::shared_ptr<IObstacle>>& obstacles,
                         double initialTimeOffset);
     
-    // EXACT copy of Advanced's factory method
+    // Implementation of factory method
     static PathCollisionChecker ofPath(const TrajPath& path,
                                       const std::vector<std::shared_ptr<IObstacle>>& obstacles,
                                       double initialTimeOffset);
     
-    // Core collision checking methods (EXACT copy of Advanced)
+    // Core collision checking methods (Based on Advanced)
     PathFinderResult checkForCollisions(double maxTime);
     
     // Getters
     const TrajPath& getPath() const { return path_; }
     
 private:
-    // EXACT copy of Advanced's collision detection logic
+    // Implementation of collision detection logic
     void updateTimeOffset(double maxTime);
     std::vector<PathFinderCollision> getCollisions() const;
 };

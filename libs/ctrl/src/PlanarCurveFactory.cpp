@@ -69,7 +69,7 @@ PlanarCurveSegment PlanarCurveFactory::createSegmentFromTimeInterval(
     Eigen::Vector2d v0 = extractVelocity2D(trajectory, tStart);
     
     // For BangBang trajectories, use SECOND_ORDER segments (position + velocity + acceleration)
-    // This matches the Advanced approach where segments can represent constant acceleration phases
+    // This matches the approach where segments can represent constant acceleration phases
     Eigen::Vector2d acc = Eigen::Vector2d::Zero();
     
     // Extract acceleration from trajectory if available
@@ -83,7 +83,7 @@ PlanarCurveSegment PlanarCurveFactory::createSegmentFromTimeInterval(
         acc = trajectory.getAcceleration(tStart);
     }
     
-    // Create SECOND_ORDER segment (matches Advanced's approach for BangBang trajectories)
+    // Create SECOND_ORDER segment (matches the approach for BangBang trajectories)
     return PlanarCurveSegment::fromSecondOrder(p0, v0, acc, tStart, tEnd);
 }
 

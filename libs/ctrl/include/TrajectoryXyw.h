@@ -31,7 +31,7 @@ public:
     TrajectoryXyw(const BangBangTrajectory2D& xy_traj, const BangBangTrajectory1DOrient& w_traj);
     
     /**
-     * @brief Constructor with TrajPath (XY) and orientation trajectory (EXACT copy of Advanced's constructor)
+     * @brief Constructor with TrajPath (XY) and orientation trajectory (Implementation of constructor)
      * @param trajPath TrajPath for XY position (from PathFinder with obstacle avoidance)
      * @param w_traj 1D orientation trajectory
      */

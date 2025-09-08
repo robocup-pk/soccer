@@ -19,7 +19,7 @@ struct PathFinderCollision {
 };
 
 /**
- * @brief EXACT copy of Advanced's PathFinderResult.java
+ * @brief Implementation of PathFinderResult.java
  * Result wrapper for path finding operations
  */
 class PathFinderResult {
@@ -31,7 +31,7 @@ public:
     PathFinderResult(const TrajPath& trajectory, const std::vector<PathFinderCollision>& collisions)
         : trajectory_(trajectory), collisions_(collisions) {}
     
-    // Static factory methods (EXACT copy of Advanced)
+    // Static factory methods (Based on Advanced)
     static PathFinderResult success(const TrajPath& trajectory) {
         return PathFinderResult(trajectory, {});
     }
@@ -41,7 +41,7 @@ public:
         return PathFinderResult(trajectory, collisions);
     }
     
-    // Getters (EXACT copy of Advanced interface)
+    // Getters (Based on standard interface)
     const TrajPath& getTrajectory() const { return trajectory_; }
     const std::vector<PathFinderCollision>& getCollisions() const { return collisions_; }
     

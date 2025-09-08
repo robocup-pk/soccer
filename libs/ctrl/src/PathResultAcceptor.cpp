@@ -5,14 +5,14 @@
 namespace ctrl {
 
 bool PathResultAcceptor::acceptPath(const PathFinderResult& result) {
-    // ACTUAL Advanced logic for smart path acceptance
+    // ACTUAL standard logic for smart path acceptance
     
     if (result.isCollisionFree()) {
         std::cout << "[PathResultAcceptor] Accepting collision-free path" << std::endl;
         return true; // Always accept collision-free paths
     }
     
-    // Use Advanced's smart acceptance criteria
+    // Use the smart acceptance criteria
     double firstCollisionTime = result.getFirstCollisionTime();
     double totalTime = result.getTrajectory().getTotalTime();
     

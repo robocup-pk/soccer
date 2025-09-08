@@ -38,7 +38,7 @@ public:
     std::vector<double> getTimeSections() const override;
     double getMaxSpeed() const override;
 
-    // Getters (like Advanced Lombok @Getter)
+    // Getters (as needed Lombok @Getter)
     const BangBangTrajectory2D& getChild() const { return child_; }
     const Eigen::Vector2d& getInitialPos() const { return initialPos_; }
     double getRotation() const { return rotation_; }
