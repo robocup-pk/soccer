@@ -676,7 +676,6 @@ void vis::MouseButtonCallback(GLFWwindow* window, int button, int action, int mo
     vis::g_mouse_clicked = true;
   }
 }
-<<<<<<< HEAD
 
 void vis::ProcessInput(GLFWwindow* gl_window, std::vector<rob::RobotManager>& robot_managers) {
   Eigen::Vector3d velocity_fBody_rob1(0, 0, 0);
@@ -765,5 +764,3 @@ void vis::ProcessInputMultipleObjects(GLFWwindow* gl_window,
     }
   }
 }
-=======
->>>>>>> a6cc2553 (Fix textures and increase max_velocity to 1.5 m/s)

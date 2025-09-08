@@ -106,10 +106,6 @@ vis::Texture2D vis::ResourceManager::loadTextureFromFile(const char* file, bool 
     texture.Internal_Format = GL_RGBA;
     texture.Image_Format = GL_RGBA;
   }
-<<<<<<< HEAD
-
-=======
->>>>>>> a6cc2553 (Fix textures and increase max_velocity to 1.5 m/s)
   // now generate texture
   texture.Generate(width, height, data);
   // and finally free image data

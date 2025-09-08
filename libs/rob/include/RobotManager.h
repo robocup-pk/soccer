@@ -12,6 +12,7 @@
 #include "AdvancedMotionPlanner.h"
 #include "TrajectoryTracker.h"
 #include "ReplanningController.h"
+#include "RobotPositions.h"
 
 // Forward declarations
 namespace state {
