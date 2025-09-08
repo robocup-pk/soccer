@@ -51,16 +51,4 @@ endif()
 add_subdirectory(libs)
 
 # Applications
-<<<<<<< HEAD
 add_subdirectory(apps)
-=======
-add_subdirectory(apps)
-
-# SSL Software - Remote Control
-# docker pull robocupssl/ssl-remote-control
-# docker run -p 8084:8084 robocupssl/ssl-remote-control
-#
-# 
-#
-#
->>>>>>> 19ac42f6 (BSpline Debugging & Testing)
