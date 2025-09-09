@@ -11,12 +11,9 @@ namespace algos {
 enum class AlgoName { RRTX, ASTAR };
 
 state::Waypoint FindDirectionVector(const state::Waypoint& start, const state::Waypoint& goal);
-<<<<<<< HEAD
-=======
 state::Path Astar(const state::Waypoint& start, const state::Waypoint& goal);
 state::Waypoint SelectGoal(std::vector<state::SoccerObject>& soccer_objects);
 state::Path PlanPath(AlgoName algo_name, std::vector<state::SoccerObject>& soccer_objects);
->>>>>>> da9e9f5e (Algos)
 
 }  // namespace algos
 #endif  // ALGOS_H

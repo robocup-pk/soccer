@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #ifndef RRTX_H
 #define RRTX_H
 

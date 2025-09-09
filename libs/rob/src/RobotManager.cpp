@@ -77,10 +77,12 @@ void rob::RobotManager::ControlLogic() {
       velocity_fBody_ = velocity_fBody;
       break;
     case RobotState::TRAJECTORY_FOLLOWING:
-      std::tie(finished_motion, velocity_fBody_) = trajectory_tracker.Update(pose_fWorld);
+      velocity_fBody_ = trajectory_tracker.update(pose_fWorld);
+      finished_motion = trajectory_tracker.isFinished();
       break;
     case RobotState::REPLANNING_CONTROL:
-      std::tie(finished_motion, velocity_fBody_) = replanning_controller_.Update(pose_fWorld);
+      velocity_fBody_ = replanning_controller_.update(pose_fWorld, GetBodyVelocity());
+      finished_motion = replanning_controller_.isDestinationReached();
       break;
     default:
       velocity_fBody_ = Eigen::Vector3d::Zero();
@@ -102,7 +104,7 @@ void rob::RobotManager::SenseLogic() {
 
 void rob::RobotManager::SetBodyVelocity(Eigen::Vector3d& velocity_fBody_) {
   velocity_fBody = velocity_fBody_;
-  hardware_manager.SetVelocity(velocity_fBody_);
+  hardware_manager.SetBodyVelocity(velocity_fBody_);
 }
 
 void rob::RobotManager::AddGoal(const Eigen::Vector3d& goal) {
@@ -111,15 +113,16 @@ void rob::RobotManager::AddGoal(const Eigen::Vector3d& goal) {
 }
 
 void rob::RobotManager::SetBangBangPath(std::vector<Eigen::Vector3d> path, double t_start_s) {
-  advanced_motion_planner.SetBangBangPath(path, t_start_s);
-  trajectory_tracker.SetTrajectory(advanced_motion_planner.GetTrajectory());
+  // Use planSmoothTrajectory with default constraints for now
+  advanced_motion_planner.planSmoothTrajectory(path, 1.5, 2.0, 5.0, 10.0);
+  trajectory_tracker.setTrajectory(std::make_shared<ctrl::AdvancedMotionPlanner>(advanced_motion_planner));
   robot_state = RobotState::TRAJECTORY_FOLLOWING;
   finished_motion = false;
 }
 
 void rob::RobotManager::SetAdvancedTrajectory(const ctrl::AdvancedMotionPlanner& advanced_planner) {
   advanced_motion_planner = advanced_planner;
-  trajectory_tracker.SetTrajectory(advanced_motion_planner.GetTrajectory());
+  trajectory_tracker.setTrajectory(std::make_shared<ctrl::AdvancedMotionPlanner>(advanced_motion_planner));
   robot_state = RobotState::TRAJECTORY_FOLLOWING;
   finished_motion = false;
 }
@@ -129,29 +132,30 @@ void rob::RobotManager::SetTrajectoryManagerType(TrajectoryManagerType type) {
 }
 
 void rob::RobotManager::SetReplanningGoal(const Eigen::Vector3d& goal) {
-  replanning_controller_.SetGoal(goal);
+  replanning_controller_.setDestination(goal);
   robot_state = RobotState::REPLANNING_CONTROL;
   finished_motion = false;
 }
 
 void rob::RobotManager::SetReplanningEnabled(bool enabled) {
-  replanning_controller_.SetEnabled(enabled);
+  replanning_controller_.setReplanningEnabled(enabled);
 }
 
 void rob::RobotManager::AddObstacles(const std::vector<std::shared_ptr<ctrl::IObstacle>>& obstacles) {
-  replanning_controller_.AddObstacles(obstacles);
+  replanning_controller_.setObstacles(obstacles);
 }
 
 void rob::RobotManager::ClearObstacles() {
-  replanning_controller_.ClearObstacles();
+  std::vector<std::shared_ptr<ctrl::IObstacle>> empty_obstacles;
+  replanning_controller_.setObstacles(empty_obstacles);
 }
 
 ctrl::ReplanningController::ReplanningStats rob::RobotManager::GetReplanningStats() const {
-  return replanning_controller_.GetStats();
+  return replanning_controller_.getStats();
 }
 
 int rob::RobotManager::GetReplanCount() const {
-  return replanning_controller_.GetReplanCount();
+  return replanning_controller_.getStats().total_replans;
 }
 
 void rob::RobotManager::GoHome() {
@@ -189,7 +193,7 @@ Eigen::Vector3d rob::RobotManager::GetBodyVelocity() const {
 }
 
 Eigen::Vector3d rob::RobotManager::GetStateEstimationPose() const {
-  return state_estimator.GetPose();
+  return pose_fWorld; // Return cached pose since GetPose() is not const
 }
 
 void rob::RobotManager::TryAssignNextGoal() {
