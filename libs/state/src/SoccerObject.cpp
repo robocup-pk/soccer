@@ -77,3 +77,80 @@ void state::SoccerObject::Move(float dt) {
   velocity += acceleration * dt;
   position += velocity * dt;
 }
+
+// Name-only constructor
+state::SoccerObject::SoccerObject(std::string name_) 
+  : name(name_) {
+  // Initialize with defaults
+  acceleration = Eigen::Vector3d::Zero();
+  velocity = Eigen::Vector3d::Zero();
+  position = Eigen::Vector3d::Zero();
+  size = Eigen::Vector2d::Zero();
+  radius_m = 0.0;
+  mass_kg = 1.0;
+  team_id = 0;
+  is_attached = false;
+  was_given_speeding_foul_in_stop = false;
+  is_selected_player = false;
+  attached_to = nullptr;
+  role = Role::Unassigned;
+  is_dribbling = false;
+}
+
+// Full constructor (version with team_id)
+state::SoccerObject::SoccerObject(std::string name_, Eigen::Vector3d position_, Eigen::Vector2d size_, int team_id_,
+                                  Eigen::Vector3d velocity_, Eigen::Vector3d acceleration_, float mass_kg_)
+  : acceleration(acceleration_),
+    velocity(velocity_),
+    position(position_),
+    size(size_),
+    radius_m(size_.x() / 2.0),
+    mass_kg(mass_kg_),
+    team_id(team_id_),
+    name(name_),
+    is_attached(false),
+    was_given_speeding_foul_in_stop(false),
+    is_selected_player(false),
+    attached_to(nullptr),
+    role(Role::Unassigned),
+    is_dribbling(false) {}
+
+// Constructor without team_id
+state::SoccerObject::SoccerObject(std::string name_, Eigen::Vector3d position_, Eigen::Vector2d size_,
+                                  Eigen::Vector3d velocity_, Eigen::Vector3d acceleration_, float mass_kg_)
+  : acceleration(acceleration_),
+    velocity(velocity_),
+    position(position_),
+    size(size_),
+    radius_m(size_.x() / 2.0),
+    mass_kg(mass_kg_),
+    team_id(0),
+    name(name_),
+    is_attached(false),
+    was_given_speeding_foul_in_stop(false),
+    is_selected_player(false),
+    attached_to(nullptr),
+    role(Role::Unassigned),
+    is_dribbling(false) {}
+
+// RobotManager constructor
+state::SoccerObject::SoccerObject(const rob::RobotManager& robot_manager)
+  : name("robot"),
+    team_id(1),
+    mass_kg(3.0) {
+  // Initialize with robot manager data
+  position = robot_manager.GetPoseInWorldFrame();
+  velocity = robot_manager.GetBodyVelocity();
+  acceleration = Eigen::Vector3d::Zero();
+  size = Eigen::Vector2d(0.18, 0.18); // Standard robot size
+  radius_m = 0.09;
+  is_attached = false;
+  was_given_speeding_foul_in_stop = false;
+  is_selected_player = false;
+  attached_to = nullptr;
+  role = Role::Unassigned;
+  is_dribbling = false;
+}
+
+// Virtual destructor
+state::SoccerObject::~SoccerObject() = default;
