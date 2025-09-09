@@ -111,7 +111,7 @@ void vis::PathRenderer::ClearPath() {
 void vis::PathRenderer::SetPathVisible(bool visible) { pathVisible = visible; }
 
 vis::PathRenderer::~PathRenderer() {
-  if (initialized) {
+  if (initialized && glfwGetCurrentContext() != nullptr) {
     glDeleteVertexArrays(1, &pathVAO);
     glDeleteBuffers(1, &pathVBO);
   }

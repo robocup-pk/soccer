@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #include "RRTX.h"
 #include "SoccerField.h"
 #include "SoccerObject.h"
@@ -28,7 +27,9 @@ static FieldCache g_field;  // constructed once, never changes
 std::uniform_real_distribution<double> prob_dist(0.0, 1.0);
 }  // namespace
 
-algos::RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal)
+namespace algos {
+
+RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal)
     : epsilon(cfg::RRTXConstants::epsilon),
       delta(cfg::RRTXConstants::delta),
       gamma(cfg::RRTXConstants::gamma),
@@ -64,7 +65,7 @@ algos::RRTX::RRTX(const state::Waypoint& x_start, const state::Waypoint& x_goal)
   this->r = ShrinkingBallRadius();
 }
 
-void algos::RRTX::PlanStep() {
+void RRTX::PlanStep() {
   this->r = ShrinkingBallRadius();
 
   // Sample random node
@@ -91,7 +92,7 @@ void algos::RRTX::PlanStep() {
   }
 }
 
-int algos::RRTX::Extend(state::Waypoint v_new_wp, double r) {
+int RRTX::Extend(state::Waypoint v_new_wp, double r) {
   std::vector<int> v_near = Near(v_new_wp, r);
 
   if (IsInVertices(v_new_wp)) {
@@ -130,7 +131,7 @@ int algos::RRTX::Extend(state::Waypoint v_new_wp, double r) {
   return v_new_idx;
 }
 
-void algos::RRTX::CullNeighbors(int v_idx, double r) {
+void RRTX::CullNeighbors(int v_idx, double r) {
   auto& N_plus_r = Vertices[v_idx].N_plus_r;
   std::vector<int> to_remove;
   for (int u_idx : N_plus_r) {
@@ -144,7 +145,7 @@ void algos::RRTX::CullNeighbors(int v_idx, double r) {
   }
 }
 
-void algos::RRTX::RewireNeighbors(int v_idx) {
+void RRTX::RewireNeighbors(int v_idx) {
   Vertex& v = Vertices[v_idx];
 
   // Line 1: Check ε-consistency condition
@@ -196,7 +197,7 @@ void algos::RRTX::RewireNeighbors(int v_idx) {
   }
 }
 
-void algos::RRTX::ReduceInconsistency() {
+void RRTX::ReduceInconsistency() {
   while (!Q.Empty()) {
     auto bot_key = getKey(v_bot_idx);
     auto top_entry = Q.Top();
@@ -232,7 +233,7 @@ void algos::RRTX::ReduceInconsistency() {
   }
 }
 
-void algos::RRTX::FindParent(Vertex& v_new, const std::vector<int>& U) {
+void RRTX::FindParent(Vertex& v_new, const std::vector<int>& U) {
   for (int u_idx : U) {
     double dist = d_pi(v_new.wp, Vertices[u_idx].wp);
 
@@ -246,7 +247,7 @@ void algos::RRTX::FindParent(Vertex& v_new, const std::vector<int>& U) {
   }
 }
 
-void algos::RRTX::UpdateObstacles(std::vector<state::SoccerObject>& new_obstacles) {
+void RRTX::UpdateObstacles(std::vector<state::SoccerObject>& new_obstacles) {
   std::vector<state::SoccerObject> vanished = FindVanishedObstacles(new_obstacles);
   std::vector<state::SoccerObject> appeared = FindAppearedObstacles(new_obstacles);
 
@@ -268,7 +269,7 @@ void algos::RRTX::UpdateObstacles(std::vector<state::SoccerObject>& new_obstacle
   ValidateRobotPath();
 }
 
-void algos::RRTX::ValidateRobotPath() {
+void RRTX::ValidateRobotPath() {
   if (Vertices[v_bot_idx].g < std::numeric_limits<double>::infinity()) {
     // Robot thinks it has a path - validate it
     if (!IsPathToGoalValid()) {
@@ -278,7 +279,7 @@ void algos::RRTX::ValidateRobotPath() {
   }
 }
 
-void algos::RRTX::PropogateDescendants() {
+void RRTX::PropogateDescendants() {
   std::unordered_set<int> to_add;
   for (int v_idx : V_c_T) {
     if (!Vertices[v_idx].alive) continue;
@@ -316,12 +317,12 @@ void algos::RRTX::PropogateDescendants() {
   V_c_T.clear();
 }
 
-void algos::RRTX::VerifyOrphan(int v_idx) {
+void RRTX::VerifyOrphan(int v_idx) {
   Q.Remove(v_idx);
   V_c_T.insert(v_idx);
 }
 
-void algos::RRTX::RemoveObstacle(state::SoccerObject& obstacle) {
+void RRTX::RemoveObstacle(state::SoccerObject& obstacle) {
   std::set<std::pair<int, int>> EO = GetEdgesIntersectingObstacle(obstacle);
 
   // Keep only edges not blocked by any remaining obstacle (truly free now)
@@ -372,7 +373,7 @@ void algos::RRTX::RemoveObstacle(state::SoccerObject& obstacle) {
   }
 }
 
-std::set<std::pair<int, int>> algos::RRTX::GetEdgesIntersectingObstacle(
+std::set<std::pair<int, int>> RRTX::GetEdgesIntersectingObstacle(
     state::SoccerObject& obstacle) {
   std::set<std::pair<int, int>> intersecting_edges;
 
@@ -413,7 +414,7 @@ std::set<std::pair<int, int>> algos::RRTX::GetEdgesIntersectingObstacle(
   return intersecting_edges;
 }
 
-bool algos::RRTX::IsTrajectoryBlockedByObstacle(state::Waypoint& from, state::Waypoint& to,
+bool RRTX::IsTrajectoryBlockedByObstacle(state::Waypoint& from, state::Waypoint& to,
                                                 state::SoccerObject& obstacle) {
   // Calculate path length
   double total_radius = (2 * obstacle.radius_m);  // Robot Radius + Obstacle(i-e Robot) Radius
@@ -425,7 +426,7 @@ bool algos::RRTX::IsTrajectoryBlockedByObstacle(state::Waypoint& from, state::Wa
   return distance <= total_radius;
 }
 
-void algos::RRTX::AddNewObstacle(state::SoccerObject& new_obstacle) {
+void RRTX::AddNewObstacle(state::SoccerObject& new_obstacle) {
   // Line 2: EO ← {(v, u) ∈ E : π(v, u) ∩ O ≠ ∅} (Find intersecting edges)
   std::set<std::pair<int, int>> EO = GetEdgesIntersectingObstacle(new_obstacle);
 
@@ -453,7 +454,7 @@ void algos::RRTX::AddNewObstacle(state::SoccerObject& new_obstacle) {
   }
 }
 
-double algos::RRTX::PerpendicularDistanceToLineSegment(state::Waypoint& point,
+double RRTX::PerpendicularDistanceToLineSegment(state::Waypoint& point,
                                                        state::Waypoint& line_start,
                                                        state::Waypoint& line_end) {
   // Vector from line_start to line_end
@@ -483,7 +484,7 @@ double algos::RRTX::PerpendicularDistanceToLineSegment(state::Waypoint& point,
 
 inline void eraseNeighbor(std::unordered_set<int>& neighbors, int idx) { neighbors.erase(idx); }
 
-void algos::RRTX::RemoveEdgeConnection(int v_idx, int u_idx) {
+void RRTX::RemoveEdgeConnection(int v_idx, int u_idx) {
   auto& v = Vertices[v_idx];
   auto& u = Vertices[u_idx];
 
@@ -521,7 +522,7 @@ void algos::RRTX::RemoveEdgeConnection(int v_idx, int u_idx) {
   }
 }
 
-bool algos::RRTX::IsRobotOnEdge(int v_idx, int u_idx) {
+bool RRTX::IsRobotOnEdge(int v_idx, int u_idx) {
   auto& robot_pos = Vertices[v_bot_idx].wp;
   auto& v_pos = Vertices[v_idx].wp;
   auto& u_pos = Vertices[u_idx].wp;
@@ -532,7 +533,7 @@ bool algos::RRTX::IsRobotOnEdge(int v_idx, int u_idx) {
   return distance <= robot_radius;  // Robot body intersects edge
 }
 
-void algos::RRTX::ClearRobotPath() {
+void RRTX::ClearRobotPath() {
   // Mark robot as needing replanning
   Vertices[v_bot_idx].g = std::numeric_limits<double>::infinity();
   Vertices[v_bot_idx].lmc = std::numeric_limits<double>::infinity();
@@ -542,7 +543,7 @@ void algos::RRTX::ClearRobotPath() {
   VerifyQueue(v_bot_idx);
 }
 
-void algos::RRTX::UpdateLMC(int v_idx) {
+void RRTX::UpdateLMC(int v_idx) {
   Vertex& v = Vertices[v_idx];
   if (v_idx == v_goal_idx) {
     v.lmc = 0;
@@ -601,12 +602,12 @@ void algos::RRTX::UpdateLMC(int v_idx) {
   }
 }
 
-bool algos::RRTX::KeyLess(const std::pair<double, double>& key1,
+bool RRTX::KeyLess(const std::pair<double, double>& key1,
                           const std::pair<double, double>& key2) {
   return (key1.first < key2.first) || (key1.first == key2.first && key1.second < key2.second);
 }
 
-void algos::RRTX::VerifyQueue(int v_idx) {
+void RRTX::VerifyQueue(int v_idx) {
   if (v_idx < 0 || v_idx >= static_cast<int>(Vertices.size()) || !Vertices[v_idx].alive) return;
 
   // Check if vertex needs to be in queue
@@ -618,7 +619,7 @@ void algos::RRTX::VerifyQueue(int v_idx) {
   }
 }
 
-void algos::RRTX::LimitTreeSize() {
+void RRTX::LimitTreeSize() {
   if (Vertices.size() <= cfg::RRTXConstants::max_vertices_size) return;
 
   // Find vertices to remove (farthest from goal with no children)
@@ -643,11 +644,11 @@ void algos::RRTX::LimitTreeSize() {
   }
 }
 
-std::pair<double, double> algos::RRTX::getKey(int v_idx) {
+std::pair<double, double> RRTX::getKey(int v_idx) {
   return {std::min(Vertices[v_idx].g, Vertices[v_idx].lmc), Vertices[v_idx].g};
 }
 
-void algos::RRTX::MakeParentOf(int parent_idx, int child_idx) {
+void RRTX::MakeParentOf(int parent_idx, int child_idx) {
   for (int idx = parent_idx; idx != -1; idx = Vertices[idx].parent_idx) {
     if (idx == child_idx) return;  // Cycle
   }
@@ -663,7 +664,7 @@ void algos::RRTX::MakeParentOf(int parent_idx, int child_idx) {
   Vertices[parent_idx].C_minus_T.insert(child_idx);
 }
 
-std::vector<int> algos::RRTX::getOutNeighbors(int v_idx) {
+std::vector<int> RRTX::getOutNeighbors(int v_idx) {
   std::vector<int> neighbors;
   neighbors.reserve(Vertices[v_idx].N_plus_0.size() + Vertices[v_idx].N_plus_r.size());
   for (int u : Vertices[v_idx].N_plus_0) {
@@ -677,7 +678,7 @@ std::vector<int> algos::RRTX::getOutNeighbors(int v_idx) {
   return neighbors;
 }
 
-void algos::RRTX::PruneInvalidNeighbors(int v_idx) {
+void RRTX::PruneInvalidNeighbors(int v_idx) {
   if (v_idx < 0 || v_idx >= static_cast<int>(Vertices.size()) || !Vertices[v_idx].alive) return;
   auto& v = Vertices[v_idx];
   std::vector<int> rm0;
@@ -706,7 +707,7 @@ void algos::RRTX::PruneInvalidNeighbors(int v_idx) {
   }
 }
 
-bool algos::RRTX::TrajectoryValid(state::Waypoint& a, state::Waypoint& b) {
+bool RRTX::TrajectoryValid(state::Waypoint& a, state::Waypoint& b) {
   // Check endpoints first
   if (IsInObstacle(a) || IsInObstacle(b)) {
     return false;
@@ -723,7 +724,7 @@ bool algos::RRTX::TrajectoryValid(state::Waypoint& a, state::Waypoint& b) {
   return true;
 }
 
-bool algos::RRTX::IsInObstacle(state::Waypoint& wp) {
+bool RRTX::IsInObstacle(state::Waypoint& wp) {
   state::SoccerObject temp_robot("temp_check", Eigen::Vector3d(wp.x, wp.y, wp.angle),
                                  cfg::SystemConfig::robot_size_m,  // Use robot size
                                  Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), 1.0);
@@ -740,24 +741,24 @@ bool algos::RRTX::IsInObstacle(state::Waypoint& wp) {
   return false;
 }
 
-double algos::RRTX::ShrinkingBallRadius() {
+double RRTX::ShrinkingBallRadius() {
   double x_range = vis::SoccerField::GetInstance().playing_area_width_mm / 1000.0 * 2;   // 4.07568
   double y_range = vis::SoccerField::GetInstance().playing_area_height_mm / 1000.0 * 2;  // 2.9
   double area = x_range * y_range;  // state space volume
   return gamma * std::pow(std::log(n_samples + 1) / (n_samples + 1), 1.0 / 2.0) * std::sqrt(area);
 }
 
-std::vector<int> algos::RRTX::Near(state::Waypoint& wp, double r) {
+std::vector<int> RRTX::Near(state::Waypoint& wp, double r) {
   return spatial_grid->FindNear(wp, r, Vertices);
 }
 
-int algos::RRTX::Nearest(state::Waypoint& wp) { return spatial_grid->FindNearest(wp, Vertices); }
+int RRTX::Nearest(state::Waypoint& wp) { return spatial_grid->FindNearest(wp, Vertices); }
 
-double algos::RRTX::d_pi(const state::Waypoint& a, const state::Waypoint& b) {
+double RRTX::d_pi(const state::Waypoint& a, const state::Waypoint& b) {
   return (a - b).Norm();
 }
 
-state::Waypoint algos::RRTX::Saturate(const state::Waypoint& v, const state::Waypoint& v_nearest) {
+state::Waypoint RRTX::Saturate(const state::Waypoint& v, const state::Waypoint& v_nearest) {
   state::Waypoint diff = v - v_nearest;
   double dist = diff.Norm();
 
@@ -769,7 +770,7 @@ state::Waypoint algos::RRTX::Saturate(const state::Waypoint& v, const state::Way
   return v;
 }
 
-state::Waypoint algos::RRTX::RandomNode() {
+state::Waypoint RRTX::RandomNode() {
   if (prob_dist(rng) < cfg::RRTXConstants::goal_bias) {
     return Vertices[v_goal_idx].wp;
   }
@@ -786,7 +787,7 @@ state::Waypoint algos::RRTX::RandomNode() {
   return Vertices[v_goal_idx].wp;
 }
 
-state::Path algos::RRTX::ReconstructPath() {
+state::Path RRTX::ReconstructPath() {
   state::Path path;
 
   // Check if robot has finite cost-to-goal (solution exists)
@@ -830,7 +831,7 @@ state::Path algos::RRTX::ReconstructPath() {
   return path;
 }
 
-bool algos::RRTX::IsPathValid(state::Path& path) {
+bool RRTX::IsPathValid(state::Path& path) {
   if (path.empty()) return false;  // No path to validate
 
   // Check if path starts from robot pose
@@ -855,11 +856,11 @@ bool algos::RRTX::IsPathValid(state::Path& path) {
   return true;  // All segments are valid
 }
 
-bool algos::RRTX::SolutionExists() {
+bool RRTX::SolutionExists() {
   return Vertices[v_bot_idx].g < std::numeric_limits<double>::infinity();
 }
 
-bool algos::RRTX::IsPathToGoalValid() {
+bool RRTX::IsPathToGoalValid() {
   int current_idx = v_bot_idx;
 
   // Trace path and validate key edges
@@ -879,7 +880,7 @@ bool algos::RRTX::IsPathToGoalValid() {
   return current_idx == v_goal_idx;  // Reached goal successfully
 }
 
-void algos::RRTX::UpdateRobotPosition(state::Waypoint& new_pos) {
+void RRTX::UpdateRobotPosition(state::Waypoint& new_pos) {
   double movement = (robot_pos - new_pos).Norm();
 
   if (movement < cfg::RRTXConstants::movement_threshold) {
@@ -917,7 +918,7 @@ void algos::RRTX::UpdateRobotPosition(state::Waypoint& new_pos) {
   }
 }
 
-bool algos::RRTX::HasObstaclesChanged(const std::vector<state::SoccerObject>& new_obstacles) {
+bool RRTX::HasObstaclesChanged(const std::vector<state::SoccerObject>& new_obstacles) {
   if (new_obstacles.size() != current_obstacles.size()) {
     // Update hashes if sizes differ
     obstacle_hash_values.clear();
@@ -949,7 +950,7 @@ bool algos::RRTX::HasObstaclesChanged(const std::vector<state::SoccerObject>& ne
   return has_changed;
 }
 
-bool algos::RRTX::IsInVertices(state::Waypoint v_new_wp) {
+bool RRTX::IsInVertices(state::Waypoint v_new_wp) {
   const double EPSILON = 1e-2;  // Small threshold for position equality
   std::vector<int> nearby_indices = spatial_grid->FindNear(v_new_wp, EPSILON, Vertices);
 
@@ -962,7 +963,7 @@ bool algos::RRTX::IsInVertices(state::Waypoint v_new_wp) {
   return false;
 }
 
-std::vector<state::SoccerObject> algos::RRTX::FindVanishedObstacles(
+std::vector<state::SoccerObject> RRTX::FindVanishedObstacles(
     std::vector<state::SoccerObject>& new_obstacles) {
   std::vector<state::SoccerObject> vanished;
 
@@ -988,7 +989,7 @@ std::vector<state::SoccerObject> algos::RRTX::FindVanishedObstacles(
   return vanished;
 }
 
-std::vector<state::SoccerObject> algos::RRTX::FindAppearedObstacles(
+std::vector<state::SoccerObject> RRTX::FindAppearedObstacles(
     std::vector<state::SoccerObject>& new_obstacles) {
   std::vector<state::SoccerObject> appeared;
 
@@ -1012,13 +1013,13 @@ std::vector<state::SoccerObject> algos::RRTX::FindAppearedObstacles(
   return appeared;
 }
 
-bool algos::RRTX::ObstaclesEqual(state::SoccerObject& obs1, state::SoccerObject& obs2) {
+bool RRTX::ObstaclesEqual(state::SoccerObject& obs1, state::SoccerObject& obs2) {
   // Use name comparison or position threshold
   return (obs1.name == obs2.name) && ((obs1.position - obs2.position).norm() <
                                       cfg::RRTXConstants::movement_threshold);  // 1cm threshold
 }
 
-int algos::RRTX::AddVertex(state::Waypoint& wp) {
+int RRTX::AddVertex(state::Waypoint& wp) {
   int idx;
   if (!free_list.empty()) {
     idx = free_list.back();
@@ -1045,7 +1046,7 @@ int algos::RRTX::AddVertex(state::Waypoint& wp) {
   return idx;
 }
 
-void algos::RRTX::RemoveVertex(int idx) {
+void RRTX::RemoveVertex(int idx) {
   if (idx < 0 || idx >= static_cast<int>(Vertices.size())) return;
   Vertex& v = Vertices[idx];
   if (!v.alive) return;
@@ -1091,7 +1092,7 @@ void algos::RRTX::RemoveVertex(int idx) {
   free_list.push_back(idx);
 }
 
-size_t algos::RRTX::ComputeObstacleHash(state::SoccerObject obstacle) {
+size_t RRTX::ComputeObstacleHash(state::SoccerObject obstacle) {
   size_t seed = 0;
   auto hasher = std::hash<std::string>();
   seed ^= hasher(obstacle.name) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
@@ -1105,328 +1106,19 @@ size_t algos::RRTX::ComputeObstacleHash(state::SoccerObject obstacle) {
   seed ^= std::hash<int>()(z) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 
   return seed;
-=======
-#include <random>
-#include <algorithm>
-#include "RRTX.h"
-#include <limits>
-#include <vector>
-#include <iostream>
-#include "SoccerField.h"
-
-
-namespace {
-    std::mt19937 rng(std::random_device{}());
-    std::uniform_real_distribution<float> x_dist(-2.03784f, 2.03784f);
-    std::uniform_real_distribution<float> y_dist(-1.45f, 1.45f);
-    std::uniform_real_distribution<double> prob_dist(0.0, 1.0);
-}
-namespace algos {
-  
-  RRTX::RRTX(const state::Waypoint& start_, const state::Waypoint& goal_)
-    : start(start_), goal(goal_) {
-    AddNode(start);
-    start_idx = 0;
-
-    nodes[start_idx].rhs = 0;  
-    pq.push({0, start_idx});  
-
-    AddNode(goal);
-    goal_idx = 1;
 }
 
+}  // namespace algos
 
-// ----- Helper Functions -----
-
-// Private functions for RRTX algorithm
-state::Waypoint RRTX::Sample(const state::Waypoint& goal, double angle) {
-    // Goal biasing
-    
-    std::uniform_real_distribution<double> prob_dist(0.0, 1.0);
-    if (prob_dist(rng) < goal_sample_rate){
-        return state::Waypoint{goal.x, goal.y, angle};}
-
-    // Define field bounds
-    float x_min = -2.03784f, x_max =  2.03784f;
-    float y_min = -1.45f,    y_max =  1.45f;
-
-    // Sample uniformly in range
-    std::uniform_real_distribution<float> x_dist(x_min, x_max);
-    std::uniform_real_distribution<float> y_dist(y_min, y_max);
-
-    float x = x_dist(rng);
-    float y = y_dist(rng);
-
-    return state::Waypoint{x, y, angle};
-}
-
-
-
- int RRTX::Nearest(const std::vector<NodeRRTX>& tree, const state::Waypoint& wp) {
-    int nearest_idx = 0;
-    double min_dist = Distance(tree[0].wp, wp);
-    for (int i = 1; i < tree.size(); ++i) {
-      double dist = Distance(tree[i].wp, wp);
-      if (dist < min_dist) {
-        min_dist = dist;
-        nearest_idx = i;
-      }
-    }
-    return nearest_idx;
-  }
-
-  
-  state::Waypoint RRTX::Extend(const state::Waypoint& from, const state::Waypoint& to) {
-    state::Waypoint dir = to - from;
-    double dist = dir.Norm();
-    if (dist <= step_size) return to;
-    dir.Normalize();
-    state::Waypoint new_wp;
-    new_wp.x = from.x + dir.x * step_size;
-    new_wp.y = from.y + dir.y * step_size;
-    new_wp.angle = from.angle; // or whatever makes sense
-    new_wp.angle = from.angle; // Ensure angle matches
-    return new_wp;
-  }
-  
-   double RRTX::Distance(const state::Waypoint& a, const state::Waypoint& b) {
-    return (a - b).Norm();
-  }
-
-
-   std::vector<int> RRTX::Near(const std::vector<NodeRRTX>& tree, const state::Waypoint& wp) {
-    std::vector<int> near;
-    for (int i = 0; i < tree.size(); ++i) {
-      if (Distance(tree[i].wp, wp) <= radius)
-        near.push_back(i);
-    }
-    return near;
-  }
-  void RRTX::AddNode(const state::Waypoint& wp) {
-      NodeRRTX node;
-      node.wp = wp;
-      node.g = std::numeric_limits<double>::infinity();
-      node.rhs = std::numeric_limits<double>::infinity();
-      node.parent_idx = -1;
-
-      nodes.push_back(node);
-      int idx = static_cast<int>(nodes.size() - 1);
-
-      if (node.rhs != std::numeric_limits<double>::infinity()) pq.push({node.rhs, idx});
-
-  }
-
-  // Public function for RRTX algorithm     
-
-void RRTX::SampleAndExpand() {
-    state::Waypoint x_rand = Sample(goal, 0.2); // high goal bias
-
-    int nearest_idx = Nearest(nodes, x_rand);
-    state::Waypoint x_nearest = nodes[nearest_idx].wp;
-
-    state::Waypoint x_new = Extend(x_nearest, x_rand);
-
-    if (Distance(x_nearest, x_new) < 1e-3) return;
-
-    AddNode(x_new);
-    double connect_radius=0.2f;
-    if (Distance(x_new, goal) < connect_radius) {
-    // Add an edge between new node and goal
-    nodes.back().neighbors.push_back(goal_idx);
-    nodes[goal_idx].neighbors.push_back(nodes.size() - 1);
-
-    // Call UpdateVertex to allow path propagation
-    UpdateVertex(goal_idx);
-
-}
-
-    int new_idx = nodes.size() - 1;
-
-    nodes[new_idx].g = std::numeric_limits<double>::infinity();
-    nodes[new_idx].rhs = std::numeric_limits<double>::infinity();
-
-    std::vector<int> near_idxs = Near(nodes, x_new);
-    nodes[new_idx].neighbors = near_idxs;
-
-    for (int near_idx : near_idxs) {
-        double alt = nodes[near_idx].g + Distance(nodes[near_idx].wp, x_new);
-        if (alt < nodes[new_idx].rhs) {
-            nodes[new_idx].rhs = alt;
-            nodes[new_idx].parent_idx = near_idx;
-        }
-    }
-
-    pq.push({nodes[new_idx].rhs, new_idx});
-
-    // Force goal connection
-    if (Distance(x_new, nodes[goal_idx].wp) < radius) {
-        double alt = nodes[new_idx].g + Distance(x_new, nodes[goal_idx].wp);
-        if (alt < nodes[goal_idx].rhs) {
-            nodes[goal_idx].rhs = alt;
-            nodes[goal_idx].parent_idx = new_idx;
-            pq.push({nodes[goal_idx].rhs, goal_idx});
-            std::cout << "Goal connected!" << std::endl;
-            UpdateRRTX();
-        }
-    }
-    // std::cout << "[Sample] Total Nodes: " << nodes.size() << std::endl;
-}
-
-
-
-  void RRTX::UpdateRRTX() {
-      while (!pq.empty()) {
-          auto [rhs_cost, idx] = pq.top();
-          pq.pop();
-
-          NodeRRTX& node = nodes[idx];
-
-          if (node.g > node.rhs) {
-              node.g = node.rhs;
-
-              for (int neighbor_idx : node.neighbors) {
-                  NodeRRTX& neighbor = nodes[neighbor_idx];
-                  double alt = node.g + Distance(node.wp, neighbor.wp);
-
-                  if (alt < neighbor.rhs) {
-                      neighbor.rhs = alt;
-                      neighbor.parent_idx = idx;
-                      pq.push({neighbor.rhs, neighbor_idx});
-                  }
-              }
-          }
-          else if (node.g < node.rhs) {
-              node.g = std::numeric_limits<double>::infinity();
-
-              for (int neighbor_idx : node.neighbors) {
-                  NodeRRTX& neighbor = nodes[neighbor_idx];
-                  double alt = neighbor.g + Distance(neighbor.wp, node.wp);
-
-                  if (alt < node.rhs) {
-                      node.rhs = alt;
-                      node.parent_idx = neighbor_idx;
-                  }
-              }
-
-              pq.push({node.rhs, idx});
-          }
-      }
-  }
-void RRTX::UpdateVertex(int idx) {
-    if (idx == start_idx) return; 
-
-    double min_rhs = std::numeric_limits<double>::infinity();
-    int best_parent = -1;
-
-    for (int neighbor : nodes[idx].neighbors) {
-        double cost = nodes[neighbor].g + Distance(nodes[neighbor].wp, nodes[idx].wp);
-        if (cost < min_rhs) {
-            min_rhs = cost;
-            best_parent = neighbor;
-        }
-    }
-
-    nodes[idx].rhs = min_rhs;
-    nodes[idx].parent_idx = best_parent;
-
-    pq.push({min_rhs, idx}); 
-}
-
-void RRTX::ComputeShortPath() {
-  while (
-    !pq.empty() &&
-    (nodes[start_idx].g != nodes[start_idx].rhs ||
-     pq.top().first < std::min(nodes[start_idx].g, nodes[start_idx].rhs))
-  ) {
-    UpdateRRTX();
-  }
-
-}
-
-
-void RRTX::InvalidateEdges(const state::Waypoint& moved_object_pos) {
-    for (int i = 0; i < nodes.size(); ++i) {
-        auto& node = nodes[i];
-        if (Distance(node.wp, moved_object_pos) < radius) {
-            node.g = std::numeric_limits<double>::infinity();
-            node.rhs = std::numeric_limits<double>::infinity();
-            node.parent_idx = -1;
-            pq.push({node.rhs, i});  
-        }
-    }
-    UpdateRRTX();  
-}
-
-
-state::Path RRTX::ReconstructPath() {
-    state::Path path; 
-
-    int current_idx = goal_idx;
-
-    if (nodes[goal_idx].g == std::numeric_limits<double>::infinity()) {
-        std::cout << "No path found!" << std::endl;
-        return path; 
-    }
-
-    while (current_idx != -1) {
-        path.push_back(nodes[current_idx].wp);
-        current_idx = nodes[current_idx].parent_idx;
-    }
-    std::reverse(path.begin(), path.end());
-    std::cout<<"this is right path"<<path<<std::endl;
-    return path;
-}
-void RRTX::SetStart(const state::Waypoint& new_start) {
-    start = new_start;
-
-    // Reset and reinitialize tree
-    nodes.clear();
-    while (!pq.empty()) pq.pop();
-
-    AddNode(start);
-    start_idx = 0;
-
-    nodes[start_idx].rhs = 0;
-    pq.push({0, start_idx});
-
-    // Re-add goal
-    AddNode(goal);
-    goal_idx = 1;
-}
-void RRTX::SetGoal(const state::Waypoint& new_goal) {
-    goal = new_goal;
-
-    // Optional: update goal node directly or find nearest
-    nodes[goal_idx].wp = goal;
-}
-
-}
-// namespace algos
 namespace algo {
-state::Path FindSinglePath_RRTX(state::Waypoint start,state::Waypoint goal) {
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> f58fc428 (Adding rrtx)
+state::Path FindSinglePath_RRTX(state::Waypoint start, state::Waypoint goal) {
     algos::RRTX rrtx(start, goal);
-  
-    rrtx.InvalidateEdges(goal);
-
-    for (int i = 0; i < 2500; ++i)
-        rrtx.SampleAndExpand();
-
-    rrtx.UpdateRRTX();
-    rrtx.ComputeShortPath();
+    
+    // Run multiple planning steps to build the tree
+    for (int i = 0; i < 2500; ++i) {
+        rrtx.PlanStep();
+    }
 
     return rrtx.ReconstructPath();
 }
-<<<<<<< HEAD
->>>>>>> da9e9f5e (Algos)
-}
-=======
-}  // namespace algos
->>>>>>> 71e078e1 (Temp Changes)
-=======
-}
->>>>>>> f58fc428 (Adding rrtx)
+}  // namespace algo

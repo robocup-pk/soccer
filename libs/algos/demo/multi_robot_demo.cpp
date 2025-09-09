@@ -129,7 +129,7 @@ bool PlanRobotTrajectory(int robot_id, rob::RobotManager& robot_manager,
         std::cout << "[Robot " << robot_id << "] FAILED! Using direct path as fallback" << std::endl;
         // Fallback: direct waypoint path
         std::vector<Eigen::Vector3d> fallback_path = {current_pos, destination};
-        robot_manager.SetSmoothPathTrackerPath(fallback_path, util::GetCurrentTime());
+        robot_manager.SetBangBangPath(fallback_path, util::GetCurrentTime());
         return false;
     }
 }
@@ -203,6 +203,7 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < NUM_ROBOTS; ++i) {
         robot_managers[i].InitializePose(start_positions[i]);
         robot_managers[i].SetTrajectoryManagerType(rob::TrajectoryManagerType::AdvancedTrajectory);
+        std::cout << "[MultiRobot] Robot " << i << " initialized at: " << robot_managers[i].GetPoseInWorldFrame().transpose() << std::endl;
     }
     
     // Demo phase management
@@ -386,8 +387,16 @@ int main(int argc, char* argv[]) {
         
         // Update all robots
         for (int i = 0; i < NUM_ROBOTS; ++i) {
+            Eigen::Vector3d pos_before = robot_managers[i].GetPoseInWorldFrame();
             robot_managers[i].ControlLogic();
             robot_managers[i].SenseLogic();
+            Eigen::Vector3d pos_after = robot_managers[i].GetPoseInWorldFrame();
+            
+            // Debug: Check if position changed unexpectedly
+            if (frame_count < 5 && (pos_before - pos_after).norm() > 0.001) {
+                std::cout << "[MultiRobot] Robot " << i << " position changed from " << pos_before.transpose() 
+                          << " to " << pos_after.transpose() << " during ControlLogic/SenseLogic" << std::endl;
+            }
             
             // Update soccer object positions for visualization
             if (i < soccer_objects.size()) {

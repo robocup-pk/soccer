@@ -18,7 +18,7 @@ TEST(RRTTest, TestRandomWaypointGeneration) {
   state::Waypoint start(0, 0);
   state::Waypoint goal(1, 1);
 
-  state::Waypoint random_wp = algos::FindRandomWaypoint(goal);
+  state::Waypoint random_wp = algos::FindRandomWaypoint(goal, 0.1);
 
   EXPECT_TRUE(random_wp.x >= 0 &&
               abs(random_wp.x) <= vis::SoccerField::GetInstance().width_mm / 2);

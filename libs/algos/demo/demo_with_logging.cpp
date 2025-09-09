@@ -302,7 +302,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Will call planTrajectory with obstacles and constraints in simulation loop" << std::endl;
     } else {
         // Traditional waypoint-based approach
-        robot_manager.SetSmoothPathTrackerPath(waypoints, util::GetCurrentTime());
+        robot_manager.SetBangBangPath(waypoints, util::GetCurrentTime());
     }
     
     trajectory_log << "# DATA_START" << std::endl;

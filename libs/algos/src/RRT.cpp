@@ -7,37 +7,10 @@ std::mt19937 rng(std::random_device{}());
 std::uniform_real_distribution<double> x_distribution =
     std::uniform_real_distribution<double>(0, vis::SoccerField::GetInstance().width_mm/2);
 std::uniform_real_distribution<double> y_distribution =
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-    std::uniform_real_distribution<double>(0, vis::SoccerField::GetInstance().width_mm);
-double step_size = 1;
-=======
     std::uniform_real_distribution<double>(0, vis::SoccerField::GetInstance().height_mm);
-<<<<<<< HEAD
-<<<<<<< HEAD
 double step_size = 100;  // Step size optimized for trajectory feasibility
->>>>>>> 5cc65cf3 (Add Smoothing in RRT and fix Step-Size)
-=======
 
 RRTParams DefaultRRTParams() { return RRTParams(); }
->>>>>>> 68102585 (Improve RRT planner)
-=======
-    std::uniform_real_distribution<double>(0, vis::SoccerField::GetInstance().width_mm);
-double step_size = 1;
->>>>>>> da9e9f5e (Algos)
-=======
-    std::uniform_real_distribution<double>(0, vis::SoccerField::GetInstance().height_mm);
-<<<<<<< HEAD
-double step_size = 300;  // Step size for RRT extension
->>>>>>> f5515b23 (Make a Demo for RRT using new Trapazoid3D Model)
-=======
-double step_size = 100;  // Step size optimized for trajectory feasibility
->>>>>>> fbef120b (Add Smoothing in RRT and fix Step-Size)
-=======
-
-RRTParams DefaultRRTParams() { return RRTParams(); }
->>>>>>> 6d627f55 (Improve RRT planner)
 }  // namespace algos
 
 state::Path algos::FindSinglePath(const state::Waypoint& start, const state::Waypoint& goal,

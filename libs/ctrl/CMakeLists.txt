@@ -18,6 +18,11 @@ set(SOURCES
     src/BangBangTrajectoryFactory.cpp
     src/TrajectoryXyw.cpp
     src/ReplanningController.cpp
+    src/MotionController.cpp
+    src/TrajectoryManager.cpp
+    src/TrajectoryMergerLogic.cpp
+    src/TrapezoidalTrajectoryVi3D.cpp
+    src/Trajectory3D.cpp
 )
 
 file(GLOB_RECURSE HEADERS "include/*.h")

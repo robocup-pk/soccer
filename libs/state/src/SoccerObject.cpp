@@ -4,6 +4,7 @@
 #include "SystemConfig.h"
 #include "Kinematics.h"
 #include "BallModel.h"
+#include "RobotManager.h"
 
 void state::InitSoccerObjects(std::vector<state::SoccerObject>& soccer_objects) {
   // Robots (team one)
@@ -154,3 +155,10 @@ state::SoccerObject::SoccerObject(const rob::RobotManager& robot_manager)
 
 // Virtual destructor
 state::SoccerObject::~SoccerObject() = default;
+
+// Assignment from RobotManager
+state::SoccerObject& state::SoccerObject::operator=(rob::RobotManager& robot_manager) {
+  position = robot_manager.GetPoseInWorldFrame();
+  velocity = robot_manager.GetVelocityInWorldFrame();
+  return *this;
+}

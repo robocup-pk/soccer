@@ -140,4 +140,8 @@ class RRTX {
 };
 }  // namespace algos
 
+namespace algo {
+state::Path FindSinglePath_RRTX(state::Waypoint start, state::Waypoint goal);
+}  // namespace algo
+
 #endif  // RRTX_H

@@ -5,19 +5,15 @@
 #include <mutex>
 #include <atomic>
 #include <vector>
-#include <random>
 
 #include "StateEstimator.h"
 #include "HardwareManager.h"
+#include "MotionController.h"
+#include "RobotPositions.h"
 #include "AdvancedMotionPlanner.h"
 #include "TrajectoryTracker.h"
 #include "ReplanningController.h"
-#include "RobotPositions.h"
-
-// Forward declarations
-namespace state {
-  class SoccerObject;
-}
+#include "TrajectoryManager.h"
 
 namespace rob {
 
@@ -27,21 +23,23 @@ enum class RobotState {
   INTERPOLATING_TO_POINT,
   MANUAL_DRIVING,
   AUTONOMOUS_DRIVING,
+  GOING_HOME,
   CALIBRATING,
-  TRAJECTORY_FOLLOWING,   // Advanced trajectory following
-  REPLANNING_CONTROL      // Using replanning controller
-};
-
-enum class TrajectoryManagerType {
-  AdvancedTrajectory // Use advanced AdvancedMotionPlanner + TrajectoryTracker
+  TRAJECTORY_FOLLOWING,
+  REPLANNING_CONTROL
 };
 
 enum class RobotAction {
   KICK_BALL,
   PASS_BALL,
-  DRIBBLE_BALL,
-  MOVE,  // Default action when no specific action is set
+  MOVE  // Normal Action State
 };
+
+enum class TrajectoryManagerType {
+  StandardTrajectory,
+  AdvancedTrajectory
+};
+
 class RobotManager {
  public:
   RobotManager();
@@ -60,51 +58,31 @@ class RobotManager {
   void AddGoal(const Eigen::Vector3d& goal);
   void GoHome();
   void InitializeHome(Eigen::Vector3d pose_home);
-  void SetBangBangPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime()); // Bang-bang trajectory path
-  void SetAdvancedTrajectory(const ctrl::AdvancedMotionPlanner& advanced_planner); // Direct advanced trajectory
+  void SetPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
-  
-  // Trajectory manager selection
-  void SetTrajectoryManagerType(TrajectoryManagerType type);
-  TrajectoryManagerType GetTrajectoryManagerType() const { return trajectory_manager_type_; }
-  
-  // Get access to advanced trajectory system components
-  ctrl::AdvancedMotionPlanner& GetAdvancedMotionPlanner() { return advanced_motion_planner; }
-  ctrl::TrajectoryTracker& GetTrajectoryTracker() { return trajectory_tracker; }
-  
-  // Replanning controller methods (Advanced-style)
-  void SetReplanningGoal(const Eigen::Vector3d& goal);
-  void SetReplanningEnabled(bool enabled);
-  void AddObstacles(const std::vector<std::shared_ptr<ctrl::IObstacle>>& obstacles);
-  void ClearObstacles();
-  ctrl::ReplanningController::ReplanningStats GetReplanningStats() const;
+  void NewCameraData(Eigen::Vector3d pose_from_camera);
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
 
   Eigen::Vector3d GetPoseInWorldFrame() const;
   void InitializePose(Eigen::Vector3d& pose_fWorld);
   Eigen::Vector3d GetVelocityInWorldFrame() const;
-  Eigen::Vector3d GetBodyVelocity() const;
-  Eigen::Vector3d GetStateEstimationPose() const;
   void TryAssignNextGoal();
-  
-  // Set state estimation noise parameters (for simulation)
-  void SetStateEstimationNoise(double position_noise, double angle_noise);
-  
-  // Get replanning statistics
-  int GetReplanCount() const;
 
   std::string GetRobotState();
   void CalibrateGyro();
   bool IsGyroCalibrated();
-  void NewCameraData(Eigen::Vector3d pose_from_camera);
-  void NewGyroData(double w_radps);
-  void NewMotorsData(const Eigen::Vector4d& motors_rpms);
+  
+  // AdvancedMotionPlanner integration methods
+  void SetAdvancedTrajectory(const ctrl::AdvancedMotionPlanner& advanced_planner);
+  void SetBangBangPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
+  void SetTrajectoryManagerType(TrajectoryManagerType type);
+  Eigen::Vector3d GetBodyVelocity() const;
 
   ~RobotManager();
 
- protected:  // Changed from private to protected for demo inheritance
+ private:
   RobotState previous_robot_state;
   RobotState robot_state;
 
@@ -115,11 +93,14 @@ class RobotManager {
 
   est::StateEstimator state_estimator;
   hw::HardwareManager hardware_manager;
-  ctrl::AdvancedMotionPlanner advanced_motion_planner;  // Advanced motion planner
-  ctrl::TrajectoryTracker trajectory_tracker;  // Advanced PID trajectory tracker
-  ctrl::ReplanningController replanning_controller_;  // Advanced-style replanning system
+  ctrl::MotionController motion_controller;
+  ctrl::TrajectoryManager trajectory_manager;
   
-  TrajectoryManagerType trajectory_manager_type_;
+  // AdvancedMotionPlanner system
+  ctrl::AdvancedMotionPlanner advanced_motion_planner;
+  ctrl::TrajectoryTracker trajectory_tracker;
+  ctrl::ReplanningController replanning_controller_;
+  TrajectoryManagerType trajectory_manager_type;
 
   std::thread control_thread;
   std::thread sense_thread;
@@ -149,14 +130,6 @@ class RobotManager {
 
   // Error cases
   int num_sensor_readings_failed;
-
-  // Flag to disable gyro functionality when not connected (for demo/simulation mode)
-  bool disable_gyro_checks;
-  
-  // State estimation simulation parameters
-  double state_estimation_position_noise_ = 0.02;  // 2cm standard deviation
-  double state_estimation_angle_noise_ = 0.05;     // 0.05 rad standard deviation
-  mutable std::mt19937 rng_{std::random_device{}()};  // Random number generator
 };
 }  // namespace rob
 
