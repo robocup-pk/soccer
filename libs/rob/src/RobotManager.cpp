@@ -21,6 +21,8 @@ rob::RobotManager::RobotManager() {
   home_position = cfg::RobotHomePosition::CENTER_FORWARD;
   InitializeHome(cfg::RightRobotHomeCoordinates.at(home_position));
   start_from_home = false;
+  initialization_complete = false;
+  autonomous_behavior_enabled = true;  // Default to enabled for backward compatibility
   finished_motion = true;
   num_sensor_readings_failed = 0;
   rob_manager_running.store(true);
@@ -140,7 +142,8 @@ void rob::RobotManager::SenseLogic() {
     return;
   }
 
-  if (state_estimator.initialized_pose && initialized_pose_home && !start_from_home) {
+  // Skip "going home" logic during initialization or when autonomous behavior is disabled
+  if (initialization_complete && autonomous_behavior_enabled && state_estimator.initialized_pose && initialized_pose_home && !start_from_home) {
     if ((pose_fWorld - pose_home_fWorld).norm() > 0.05) {
       std::cout
           << "[rob::RobotManager::SenseLogic] Robot is not at home, Going to Home from Pose: "
@@ -295,6 +298,29 @@ void rob::RobotManager::InitializePose(Eigen::Vector3d& pose_fWorld) {
 rob::RobotAction rob::RobotManager::GetRobotAction() { return robot_action; }
 
 void rob::RobotManager::SetRobotAction(RobotAction action) { robot_action = action; }
+
+void rob::RobotManager::InitializeForDemo(const Eigen::Vector3d& start_pose, const Eigen::Vector3d& home_pose, bool enable_autonomous_behavior) {
+  // NEW: Thread-safe initialization for demos - fixes the "on-off" behavior
+  // This replaces the need for separate InitializePose + InitializeHome calls
+  std::unique_lock<std::mutex> lock(robot_state_mutex);
+  
+  // Set poses properly (both pose_init and pose_est)
+  Eigen::Vector3d start_copy = start_pose;
+  InitializePose(start_copy);  // Sets pose_init
+  SetPose(start_pose);         // Sets pose_est directly
+  InitializeHome(home_pose);
+  
+  // NEW: Control flags to prevent race conditions
+  start_from_home = true;  // Skip "going home" logic
+  autonomous_behavior_enabled = enable_autonomous_behavior;  // Control background thread behavior
+  initialization_complete = false;  // Guards against premature autonomous actions
+  
+  // Force robot to controllable state
+  robot_state = RobotState::IDLE;
+  
+  std::cout << "[RobotManager] Demo-safe initialization: pose=" << start_pose.transpose() 
+            << ", autonomous=" << enable_autonomous_behavior << std::endl;
+}
 
 rob::RobotManager::~RobotManager() {
   rob_manager_running.store(false);

@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
+#include <thread>
 #include "GLSimulation.h"
 #include "SoccerObject.h"
 #include "RobotManager.h"
@@ -10,6 +11,7 @@
 #include "CircularObstacle.h"
 #include "AdvancedMotionPlanner.h"
 #include "MoveConstraints.h"
+#include "Kinematics.h"
 
 using namespace std;
 
@@ -146,12 +148,22 @@ bool AllRobotsIdle(std::vector<rob::RobotManager>& robot_managers) {
 int main(int argc, char* argv[]) {
     std::cout << "[MultiRobot Demo] Extended Advanced Motion Planning System - Multi-Phase Test" << std::endl;
     
-    // Initialize random seed
-    srand(static_cast<unsigned int>(time(nullptr)));
+    // Initialize random seed for consistent behavior across runs
+    unsigned int seed = static_cast<unsigned int>(time(nullptr));
+    srand(seed);
+    std::cout << "[MultiRobot] Using random seed: " << seed << std::endl;
 
     // Initialize objects
     vector<state::SoccerObject> soccer_objects;
     state::InitSoccerObjects(soccer_objects);
+    
+    // Debug: Check how many soccer objects were created
+    std::cout << "[MultiRobot] Soccer objects created: " << soccer_objects.size() << std::endl;
+    for (int i = 0; i < soccer_objects.size(); ++i) {
+        std::cout << "  Object " << i << ": " << soccer_objects[i].name 
+                  << " at position (" << soccer_objects[i].position.transpose() << ")" << std::endl;
+    }
+    
     vis::GLSimulation gl_simulation;
     gl_simulation.InitGameObjects(soccer_objects);
     
@@ -199,12 +211,35 @@ int main(int argc, char* argv[]) {
         }
     };
     
-    // Initialize robot poses
+    // Initialize robot poses and override soccer object positions
     for (int i = 0; i < NUM_ROBOTS; ++i) {
-        robot_managers[i].InitializePose(start_positions[i]);
+        // Set both the current pose AND the home position to our starting positions
+        Eigen::Vector3d start_pos = start_positions[i];  // Create non-const copy for non-const reference
+        robot_managers[i].InitializePose(start_pos);  // For home/initialization flags
+        robot_managers[i].SetPose(start_positions[i]); // Actually set the pose in state estimator
+        robot_managers[i].InitializeHome(start_positions[i]);
         robot_managers[i].SetTrajectoryManagerType(rob::TrajectoryManagerType::AdvancedTrajectory);
+        
+        // Mark that robot has started from home to prevent "going home" behavior
+        robot_managers[i].SetStartFromHome(true);
+        
+        // Override the soccer object position to match our starting positions
+        if (i < soccer_objects.size() - 1) { // -1 because last object is the ball
+            soccer_objects[i].position = start_positions[i];
+        }
+        
         std::cout << "[MultiRobot] Robot " << i << " initialized at: " << robot_managers[i].GetPoseInWorldFrame().transpose() << std::endl;
     }
+    
+    // Allow background threads to settle and mark initialization complete to prevent race conditions
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    
+    // Mark all robots as initialization complete to enable normal background thread behavior
+    for (int i = 0; i < NUM_ROBOTS; ++i) {
+        robot_managers[i].SetInitializationComplete(true);
+    }
+    
+    std::cout << "[MultiRobot] Initialization complete - threads settled and race conditions prevented" << std::endl;
     
     // Demo phase management
     DemoPhase current_phase = DemoPhase::PHASE1_CROSS_PATTERN;
@@ -250,11 +285,16 @@ int main(int argc, char* argv[]) {
             switch (current_phase) {
                 case DemoPhase::PHASE1_CROSS_PATTERN:
                     // All robots plan simultaneously (parallel)
+                    std::cout << "\n--- Planning Phase 1: Cross Pattern for all " << NUM_ROBOTS << " robots ---" << std::endl;
                     for (int robot_id = 0; robot_id < NUM_ROBOTS; ++robot_id) {
-                        PlanRobotTrajectory(robot_id, robot_managers[robot_id], 
+                        bool success = PlanRobotTrajectory(robot_id, robot_managers[robot_id], 
                                           destinations[robot_id], phase_obstacles, 
                                           robot_managers, constraints);
+                        if (!success) {
+                            std::cout << "[WARNING] Robot " << robot_id << " failed to plan trajectory!" << std::endl;
+                        }
                     }
+                    std::cout << "--- Phase 1 planning complete ---\n" << std::endl;
                     break;
                     
                 case DemoPhase::PHASE2_MIXED_MOVEMENT:
@@ -300,6 +340,12 @@ int main(int argc, char* argv[]) {
             
             phase_planned = true;
             std::cout << "\n=== PHASE " << (static_cast<int>(current_phase) + 1) << " EXECUTION STARTED ===" << std::endl;
+            
+            // Debug: Check robot states immediately after planning
+            std::cout << "Robot states after planning:" << std::endl;
+            for (int i = 0; i < NUM_ROBOTS; ++i) {
+                std::cout << "  Robot " << i << ": " << robot_managers[i].GetRobotState() << std::endl;
+            }
         }
         
         // Handle sequential planning for Phase 2 and Phase 3
@@ -356,6 +402,12 @@ int main(int argc, char* argv[]) {
         if (phase_planned && AllRobotsIdle(robot_managers)) {
             phase_wait_frames++;
             
+            // Debug: Log when all robots become idle
+            if (phase_wait_frames == 1) {
+                std::cout << "[MultiRobot] All robots IDLE at frame " << frame_count 
+                          << " - waiting " << PHASE_WAIT_TIME << " frames before next phase" << std::endl;
+            }
+            
             if (phase_wait_frames >= PHASE_WAIT_TIME) {
                 // Move to next phase
                 switch (current_phase) {
@@ -389,7 +441,7 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < NUM_ROBOTS; ++i) {
             Eigen::Vector3d pos_before = robot_managers[i].GetPoseInWorldFrame();
             robot_managers[i].ControlLogic();
-            robot_managers[i].SenseLogic();
+            robot_managers[i].SenseLogic();  // This is needed to update pose_fWorld
             Eigen::Vector3d pos_after = robot_managers[i].GetPoseInWorldFrame();
             
             // Debug: Check if position changed unexpectedly
@@ -399,8 +451,10 @@ int main(int argc, char* argv[]) {
             }
             
             // Update soccer object positions for visualization
-            if (i < soccer_objects.size()) {
+            if (i < soccer_objects.size() - 1) { // -1 because last object is the ball
                 soccer_objects[i].position = robot_managers[i].GetPoseInWorldFrame();
+                // Also ensure velocity is zero for controlled robots
+                soccer_objects[i].velocity = Eigen::Vector3d::Zero();
             }
         }
         
@@ -412,6 +466,13 @@ int main(int argc, char* argv[]) {
                 Eigen::Vector3d pos = robot_managers[i].GetPoseInWorldFrame();
                 std::string state = robot_managers[i].GetRobotState();
                 std::cout << "  Robot " << i << ": (" << pos.transpose() << ") State: " << state << std::endl;
+            }
+            
+            // Debug: Verify soccer object positions match
+            std::cout << "  Soccer object positions:" << std::endl;
+            for (int i = 0; i < std::min(NUM_ROBOTS, static_cast<int>(soccer_objects.size() - 1)); ++i) {
+                std::cout << "    Object " << i << " (" << soccer_objects[i].name << "): " 
+                          << soccer_objects[i].position.transpose() << std::endl;
             }
         }
         

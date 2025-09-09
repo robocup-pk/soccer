@@ -61,12 +61,25 @@ class RobotManager {
   void SetPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
   RobotAction GetRobotAction();
   void SetRobotAction(RobotAction action);
+  void SetStartFromHome(bool value) { start_from_home = value; }
+  void SetRobotState(RobotState state) { robot_state = state; }
+  void SetInitializationComplete(bool complete) { initialization_complete = complete; }
+  
+  // NEW: Demo-safe initialization - prevents race conditions with background threads
+  // Use this instead of InitializePose + InitializeHome for demos to avoid "on-off" behavior
+  void InitializeForDemo(const Eigen::Vector3d& start_pose, const Eigen::Vector3d& home_pose, bool enable_autonomous_behavior = false);
+  
+  // NEW: Control whether background threads interfere (going home, etc.)
+  // Set to false for demos, true for normal robot operation
+  void EnableAutonomousBehavior(bool enable = true) { autonomous_behavior_enabled = enable; }
+  
   void NewCameraData(Eigen::Vector3d pose_from_camera);
 
   bool BodyVelocityIsInLimits(Eigen::Vector3d& velocity_fBody);
 
   Eigen::Vector3d GetPoseInWorldFrame() const;
   void InitializePose(Eigen::Vector3d& pose_fWorld);
+  void SetPose(Eigen::Vector3d pose_fWorld) { state_estimator.SetPose(pose_fWorld); }
   Eigen::Vector3d GetVelocityInWorldFrame() const;
   void TryAssignNextGoal();
 
@@ -122,6 +135,8 @@ class RobotManager {
   Eigen::Vector3d pose_home_fWorld;
   cfg::RobotHomePosition home_position;
   bool start_from_home;
+  bool initialization_complete;
+  bool autonomous_behavior_enabled;  // Controls whether background threads interfere
 
   // Idle
   double start_time_idle_s;

@@ -1,4 +1,11 @@
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+# Explicitly list sources to exclude RRT files that have global static state
+set(SOURCES
+    src/AStar.cpp
+    src/Grid.cpp
+    # src/RRT.cpp - EXCLUDED due to global static state causing on-off behavior
+    # src/RRTX.cpp - EXCLUDED due to global static state causing on-off behavior
+)
+
 file(GLOB_RECURSE HEADERS "include/*.h")
 
 add_library(algos_lib ${SOURCES} ${HEADERS})

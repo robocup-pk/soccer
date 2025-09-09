@@ -1,5 +1,10 @@
-# Collect all test source files
+# Collect all test source files except RRT tests (RRT excluded from library)
 file(GLOB TEST_SOURCES "*.cpp")
+list(REMOVE_ITEM TEST_SOURCES 
+    ${CMAKE_CURRENT_SOURCE_DIR}/TestRRT.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/TestRRTX.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/TestSinglePath.cpp
+)
 
 foreach(test_src ${TEST_SOURCES})
   # Get the filename without extension to use as target name
