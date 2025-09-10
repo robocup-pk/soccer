@@ -47,15 +47,13 @@ std::optional<Eigen::Vector4d> hw::HardwareManager::NewMotorsRpms() {
 
 std::optional<double> hw::HardwareManager::NewGyroAngularVelocity() {
   double w_radps = sensor_driver->GetAngularVelocityRadps();
-
-#ifdef BUILD_ON_PI
   std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Data: " << w_radps << std::endl;
+
   if (sensor_driver->IsGyroCalibrated()) {
-    double angle = util::WrapAngle(util::ComputeAnglefromGyroData(w_radps)) * 180.0 / M_PI;  // Convert to degrees
+    double angle = util::ComputeAnglefromGyroData(w_radps) * 180.0 / M_PI;  // Convert to degrees
     std::cout << "[hw::HardwareManager::NewGyroAngularVelocity] Gyro Angle(Degree): " << angle
               << std::endl;
   }
-#endif
   return w_radps;
 }
 

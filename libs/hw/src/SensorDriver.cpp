@@ -1,9 +1,7 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
-#ifndef NO_SERIAL_PORT
 #include <libserial/SerialPort.h>
-#endif
 
 #include "SensorModel.h"
 #include "SensorDriver.h"
@@ -11,13 +9,8 @@
 #include "Kinematics.h"
 #include "RobotDescription.h"
 
-#ifndef NO_SERIAL_PORT
 hw::SensorDriver::SensorDriver(std::shared_ptr<LibSerial::SerialPort> shared_serial_port)
     : shared_serial_port(shared_serial_port) {
-#else
-hw::SensorDriver::SensorDriver(std::shared_ptr<void> dummy_port)
-    : shared_serial_port(dummy_port) {
-#endif
   std::cout << "[hw::SensorDriver::SensorDriver]" << std::endl;
   gyro_wradps = 0;
   motors_rpms << 0, 0, 0, 0;
@@ -34,7 +27,7 @@ void hw::SensorDriver::SetAngularVelocityRadps(double w_radps) {
 
 double hw::SensorDriver::GetAngularVelocityRadps() {
   if (sensor_type == SensorType::MODEL) {
-    return gyro.GetAngularVelocityRadps();
+    return 0.0f;
   }
   return (gyro_mdeg_ps / 1000.0) * M_PI / 180.0;
 }
@@ -79,7 +72,7 @@ std::pair<Eigen::Vector4d, int> hw::SensorDriver::GetSensorsData() {
       motors_rpms[i] = motors[i].GetRpm();
     }
     new_data_available = true;
-    return {motors_rpms, gyro.GetAngularVelocityRadps()};
+    return {motors_rpms, ((gyro_mdeg_ps / 1000.0) * M_PI / 180.0)};
   }
 
   std::vector<int> rpm(4, 0);
@@ -191,13 +184,7 @@ void hw::SensorDriver::CalibrateGyro() {
   }
 }
 
-bool hw::SensorDriver::IsGyroCalibrated() {
-  if (sensor_type == SensorType::MODEL) {
-    return true;  // Always calibrated in MODEL mode
-  }
-
-  return gyro_calibrated;
-}
+bool hw::SensorDriver::IsGyroCalibrated() { return gyro_calibrated; }
 
 void hw::SensorDriver::SetGyroOnCalibration() {
   if (sensor_type == SensorType::MODEL) {
