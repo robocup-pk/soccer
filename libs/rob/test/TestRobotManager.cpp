@@ -52,7 +52,24 @@ TEST_F(RobotManagerTest, TestSetBodyVelocity) {
 
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  EXPECT_EQ(robot_manager->GetVelocityInWorldFrame(), test_velocity);
+  // Test body velocity directly (should be exact)
+  EXPECT_EQ(robot_manager->GetBodyVelocity(), test_velocity);
+  
+  // Test world frame velocity (accounts for robot orientation)
+  // If robot is at 0 orientation, world frame should equal body frame
+  Eigen::Vector3d world_velocity = robot_manager->GetVelocityInWorldFrame();
+  Eigen::Vector3d robot_pose = robot_manager->GetPoseInWorldFrame();
+  
+  // Check if robot orientation is close to 0
+  if (std::abs(robot_pose[2]) < 1e-6) {
+    // At 0 orientation, world velocity should equal body velocity
+    EXPECT_TRUE(world_velocity.isApprox(test_velocity, 1e-6));
+  } else {
+    // Account for rotation transformation
+    Eigen::Vector3d expected_world_velocity = util::RotateAboutZ(test_velocity, -robot_pose[2]);
+    EXPECT_TRUE(world_velocity.isApprox(expected_world_velocity, 1e-6));
+  }
+  
   EXPECT_EQ(robot_manager->GetRobotState(), "IDLE");
 }
 

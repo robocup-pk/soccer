@@ -105,6 +105,10 @@ void rob::RobotManager::ControlLogic() {
       velocity_fBody_ = replanning_controller_.update(pose_fWorld, GetBodyVelocity());
       finished_motion = replanning_controller_.isDestinationReached();
       break;
+    case RobotState::BSPLINE_FOLLOWING:
+      velocity_fBody_ = bspline_planner.Update(pose_fWorld, util::GetCurrentTime());
+      finished_motion = bspline_planner.IsFinished();
+      break;
   }
 
   if (finished_motion) robot_state = RobotState::IDLE;
@@ -277,6 +281,8 @@ std::string rob::RobotManager::GetRobotState() {
       return "TRAJECTORY_FOLLOWING";
     case RobotState::REPLANNING_CONTROL:
       return "REPLANNING_CONTROL";
+    case RobotState::BSPLINE_FOLLOWING:
+      return "BSPLINE_FOLLOWING";
   }
   return "ERROR";
 }
@@ -357,6 +363,17 @@ void rob::RobotManager::SetBangBangPath(std::vector<Eigen::Vector3d> path, doubl
   trajectory_tracker.setTrajectory(std::make_shared<ctrl::AdvancedMotionPlanner>(advanced_motion_planner));
   robot_state = RobotState::TRAJECTORY_FOLLOWING;
   finished_motion = false;
+}
+
+void rob::RobotManager::SetBSplinePath(std::vector<Eigen::Vector3d> path, double t_start_s) {
+  std::unique_lock<std::mutex> lock(robot_state_mutex);
+  if (bspline_planner.SetPath(path, t_start_s)) {
+    robot_state = RobotState::BSPLINE_FOLLOWING;
+    finished_motion = false;
+    std::cout << "[RobotManager] BSpline trajectory set successfully" << std::endl;
+  } else {
+    std::cout << "[RobotManager] Failed to set BSpline trajectory" << std::endl;
+  }
 }
 
 void rob::RobotManager::SetTrajectoryManagerType(TrajectoryManagerType type) {

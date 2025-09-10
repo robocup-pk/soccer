@@ -4,13 +4,13 @@
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
+#include <string>
+#include <random>
 #include "Waypoint.h"
 #include "GLSimulation.h"
 #include "SoccerObject.h"
 #include "RobotManager.h"
 #include "Utils.h"
-#include "RRTX.h"
-#include "Kick.h"
 // Pure Advanced system includes
 #include "CircularObstacle.h"
 #include "AdvancedMotionPlanner.h"
@@ -38,16 +38,51 @@ int main(int argc, char* argv[]) {
     robot_manager.InitializePose(robot_start_pose);
     vector<Eigen::Vector3d> waypoints;
     
-    std::cout << "[Demo] Using Team trajectory planning system" << std::endl;
-    
-    // Choose a test case based on command line argument
+    // Choose trajectory type: 1=Advanced/BangBang, 2=BSpline, 3=Trapezoidal
+    int trajectory_type = 1;
     int test_case = 1;
+    
     if (argc > 1) {
         test_case = std::atoi(argv[1]);
     }
+    if (argc > 2) {
+        trajectory_type = std::atoi(argv[2]);
+    }
     
-    // Open log file for trajectory data
-    std::ofstream trajectory_log("trajectory_log.txt");
+    std::cout << "[Demo] Test case: " << test_case << std::endl;
+    std::cout << "[Demo] Trajectory type: ";
+    switch(trajectory_type) {
+        case 1:
+            std::cout << "Advanced/BangBang" << std::endl;
+            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::AdvancedTrajectory);
+            break;
+        case 2:
+            std::cout << "BSpline" << std::endl;
+            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::BSplineTrajectory);
+            break;
+        case 3:
+            std::cout << "Trapezoidal" << std::endl;
+            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::StandardTrajectory);
+            break;
+        default:
+            std::cout << "Invalid trajectory type, using Advanced/BangBang" << std::endl;
+            trajectory_type = 1;
+            robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::AdvancedTrajectory);
+            break;
+    }
+    
+    // Open log file for trajectory data in the py folder
+    // Use absolute path to ensure it works regardless of where we run from
+    std::string log_path = std::string(getenv("HOME")) + "/my_project/soccer/libs/algos/py/trajectory_log.txt";
+    std::ofstream trajectory_log(log_path);
+    
+    if (!trajectory_log.is_open()) {
+        std::cerr << "ERROR: Could not open log file at: " << log_path << std::endl;
+        std::cerr << "Please ensure the directory exists." << std::endl;
+        return 1;
+    }
+    
+    std::cout << "[Demo] Writing trajectory log to: " << log_path << std::endl;
     trajectory_log << "# Trajectory Log File" << std::endl;
     trajectory_log << "# Format: timestamp(s) x(m) y(m) theta(rad) vx(m/s) vy(m/s) omega(rad/s)" << std::endl;
     
@@ -81,9 +116,9 @@ int main(int argc, char* argv[]) {
             std::cout << "Test 3: Square path" << std::endl;
             waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));
             waypoints.push_back(Eigen::Vector3d(1.0, 0.0, 0.0));
-            waypoints.push_back(Eigen::Vector3d(1.0, 1.0, M_PI/2));
-            waypoints.push_back(Eigen::Vector3d(0.0, 1.0, M_PI));
-            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, -M_PI/2));
+            waypoints.push_back(Eigen::Vector3d(1.0, 1.0, 0.0));//M_PI/2
+            waypoints.push_back(Eigen::Vector3d(0.0, 1.0, 0.0));//M_PI
+            waypoints.push_back(Eigen::Vector3d(0.0, 0.0, 0.0));//-M_PI/2
             break;
         }
         case 4: {
@@ -290,8 +325,7 @@ int main(int argc, char* argv[]) {
     // Use Team trajectory system (type 4 = Team BangBang)
     trajectory_log << "# TRAJECTORY_TYPE 4" << std::endl;
     
-    std::cout << "Using Team-style Advanced Motion Planning + Trajectory Tracking" << std::endl;
-    robot_manager.SetTrajectoryManagerType(rob::TrajectoryManagerType::AdvancedTrajectory);
+    std::cout << "Using configured trajectory system for waypoint following" << std::endl;
     
     // PURE ADVANCED TEST: Handle empty waypoints (cases 11-13)
     if (waypoints.empty()) {
@@ -301,8 +335,18 @@ int main(int argc, char* argv[]) {
         // We'll call planTrajectory directly in the simulation loop based on test case
         std::cout << "Will call planTrajectory with obstacles and constraints in simulation loop" << std::endl;
     } else {
-        // Traditional waypoint-based approach
-        robot_manager.SetBangBangPath(waypoints, util::GetCurrentTime());
+        // Traditional waypoint-based approach - use selected trajectory type
+        switch(trajectory_type) {
+            case 1:  // Advanced/BangBang
+                robot_manager.SetBangBangPath(waypoints, util::GetCurrentTime());
+                break;
+            case 2:  // BSpline
+                robot_manager.SetBSplinePath(waypoints, util::GetCurrentTime());
+                break;
+            case 3:  // Trapezoidal
+                robot_manager.SetPath(waypoints, util::GetCurrentTime());
+                break;
+        }
     }
     
     trajectory_log << "# DATA_START" << std::endl;

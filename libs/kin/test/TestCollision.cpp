@@ -223,17 +223,17 @@ TEST(BallHandlingTest, TestIsBallInFrontOfRobot) {
   state::SoccerObject ball("ball");
   ball.size = Eigen::Vector2d(0.2, 0.2);
 
-  // Place ball directly in front of robot
-  ball.position = Eigen::Vector3d(1.0, 0.0, 0.0);
+  // Place ball directly in front of robot (within 30cm detection range)
+  ball.position = Eigen::Vector3d(0.2, 0.0, 0.0);
   EXPECT_TRUE(kin::IsBallInFrontOfRobot(robot, ball));
 
-  // Place ball behind robot
-  ball.position = Eigen::Vector3d(-1.0, 0.0, 0.0);
+  // Place ball behind robot (within 30cm but behind)
+  ball.position = Eigen::Vector3d(-0.2, 0.0, 0.0);
   EXPECT_FALSE(kin::IsBallInFrontOfRobot(robot, ball));
 
-  // Rotate robot 90 degrees and put ball accordingly
+  // Rotate robot 90 degrees and put ball accordingly (within 30cm detection range)
   robot.position[2] = M_PI / 2.0;  // facing +y
-  ball.position = Eigen::Vector3d(0.0, 1.0, 0.0);
+  ball.position = Eigen::Vector3d(0.0, 0.2, 0.0);
   EXPECT_TRUE(kin::IsBallInFrontOfRobot(robot, ball));
 }
 

@@ -14,6 +14,7 @@
 #include "TrajectoryTracker.h"
 #include "ReplanningController.h"
 #include "TrajectoryManager.h"
+#include "UniformBSplineTrajectoryPlanner.h"
 
 namespace rob {
 
@@ -26,7 +27,8 @@ enum class RobotState {
   GOING_HOME,
   CALIBRATING,
   TRAJECTORY_FOLLOWING,
-  REPLANNING_CONTROL
+  REPLANNING_CONTROL,
+  BSPLINE_FOLLOWING
 };
 
 enum class RobotAction {
@@ -36,8 +38,9 @@ enum class RobotAction {
 };
 
 enum class TrajectoryManagerType {
-  StandardTrajectory,
-  AdvancedTrajectory
+  StandardTrajectory,  // Trapezoidal
+  AdvancedTrajectory,  // BangBang
+  BSplineTrajectory    // B-Spline
 };
 
 class RobotManager {
@@ -90,6 +93,7 @@ class RobotManager {
   // AdvancedMotionPlanner integration methods
   void SetAdvancedTrajectory(const ctrl::AdvancedMotionPlanner& advanced_planner);
   void SetBangBangPath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
+  void SetBSplinePath(std::vector<Eigen::Vector3d> path, double t_start_s = util::GetCurrentTime());
   void SetTrajectoryManagerType(TrajectoryManagerType type);
   Eigen::Vector3d GetBodyVelocity() const;
 
@@ -113,6 +117,10 @@ class RobotManager {
   ctrl::AdvancedMotionPlanner advanced_motion_planner;
   ctrl::TrajectoryTracker trajectory_tracker;
   ctrl::ReplanningController replanning_controller_;
+  
+  // BSpline trajectory system
+  ctrl::UniformBSplineTrajectoryPlanner bspline_planner;
+  
   TrajectoryManagerType trajectory_manager_type;
 
   std::thread control_thread;
