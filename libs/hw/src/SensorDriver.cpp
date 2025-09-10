@@ -1,7 +1,9 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#ifndef NO_SERIAL_PORT
 #include <libserial/SerialPort.h>
+#endif
 
 #include "SensorModel.h"
 #include "SensorDriver.h"
@@ -9,8 +11,13 @@
 #include "Kinematics.h"
 #include "RobotDescription.h"
 
+#ifndef NO_SERIAL_PORT
 hw::SensorDriver::SensorDriver(std::shared_ptr<LibSerial::SerialPort> shared_serial_port)
     : shared_serial_port(shared_serial_port) {
+#else
+hw::SensorDriver::SensorDriver(std::shared_ptr<void> dummy_port)
+    : shared_serial_port(dummy_port) {
+#endif
   std::cout << "[hw::SensorDriver::SensorDriver]" << std::endl;
   gyro_wradps = 0;
   motors_rpms << 0, 0, 0, 0;
