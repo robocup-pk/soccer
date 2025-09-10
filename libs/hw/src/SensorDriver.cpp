@@ -19,6 +19,11 @@ hw::SensorDriver::SensorDriver(std::shared_ptr<LibSerial::SerialPort> shared_ser
   num_of_iterations_for_gyro = 200;
   bias_in_gyro = 0.0;
   reset_gyro_calibration = false;
+  
+  // In MODEL mode, gyro is automatically calibrated
+  if (sensor_type == SensorType::MODEL) {
+    gyro_calibrated = true;
+  }
 }
 
 void hw::SensorDriver::SetAngularVelocityRadps(double w_radps) {
@@ -27,7 +32,7 @@ void hw::SensorDriver::SetAngularVelocityRadps(double w_radps) {
 
 double hw::SensorDriver::GetAngularVelocityRadps() {
   if (sensor_type == SensorType::MODEL) {
-    return 0.0f;
+    return gyro.GetAngularVelocityRadps();
   }
   return (gyro_mdeg_ps / 1000.0) * M_PI / 180.0;
 }
