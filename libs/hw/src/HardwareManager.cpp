@@ -20,12 +20,11 @@ hw::HardwareManager::HardwareManager() {
 void hw::HardwareManager::SetBodyVelocity(Eigen::Vector3d velocity_fBody) {
   Eigen::Vector4d wheel_speeds_rpm = robot_model->RobotVelocityToWheelSpeedsRpm(velocity_fBody);
 
-  // Debug output disabled for cleaner logs
-  // std::cout << "[hw::HardwareManager::SetBodyVelocity] Body Velocity: "
-  //           << velocity_fBody.transpose() << " m/s" << std::endl;
-  // std::cout << "[hw::HardwareManager::SetBodyVelocity] Wheel Speeds RPM: "
-  //           << wheel_speeds_rpm.transpose() << std::endl;
-  
+  std::cout << "[hw::HardwareManager::SetBodyVelocity] Body Velocity: "
+            << velocity_fBody.transpose() << " m/s" << std::endl;
+
+  std::cout << "[hw::HardwareManager::SetBodyVelocity] Wheel Speeds RPM: "
+            << wheel_speeds_rpm.transpose() << std::endl;
   SetWheelSpeedsRpm(wheel_speeds_rpm);
   sensor_driver->SetAngularVelocityRadps(velocity_fBody[2]);
 }
@@ -37,14 +36,10 @@ void hw::HardwareManager::SetWheelSpeedsRpm(Eigen::Vector4d& wheel_speeds_rpm) {
 std::optional<Eigen::Vector4d> hw::HardwareManager::NewMotorsRpms() {
   auto [motor_rpms, gyro_data] = sensor_driver->GetSensorsData();
 
-  //sensor_driver->SetAngularVelocityRadps(gyro_data);
+  sensor_driver->SetAngularVelocityRadps(gyro_data);
 
   if (sensor_driver->NewDataAvailable()) {
-    // In MODEL mode, sensor driver always has data available, so we shouldn't reset the flag
-    // Only reset for real hardware
-    if (sensor_driver->GetSensorType() != hw::SensorType::MODEL) {
-      sensor_driver->new_data_available = false;
-    }
+    sensor_driver->new_data_available = false;
     return motor_rpms;
   }
   return std::nullopt;

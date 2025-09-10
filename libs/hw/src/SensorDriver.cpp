@@ -37,8 +37,6 @@ void hw::SensorDriver::SendWheelSpeedRpm(Eigen::Vector4d& wheel_speeds_rpm) {
     for (int i = 0; i < kin::RobotDescription::num_wheels; ++i) {
       motors[i].SetWheelSpeedRpm(wheel_speeds_rpm[i]);
     }
-    // Debug: Verify what was set
-    // std::cout << "[SensorDriver] Set wheel speeds: " << wheel_speeds_rpm.transpose() << std::endl;
     return;
   }
 
@@ -74,9 +72,7 @@ std::pair<Eigen::Vector4d, int> hw::SensorDriver::GetSensorsData() {
       motors_rpms[i] = motors[i].GetRpm();
     }
     new_data_available = true;
-    // Debug: Check what we're returning
-    // std::cout << "[SensorDriver] Returning RPMs: " << motors_rpms.transpose() << std::endl;
-    return {motors_rpms, static_cast<int>(gyro.GetAngularVelocityRadps())};
+    return {motors_rpms, gyro.GetAngularVelocityRadps()};
   }
 
   std::vector<int> rpm(4, 0);

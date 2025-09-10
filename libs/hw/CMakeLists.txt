@@ -6,8 +6,8 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 add_library(hw_lib ${HEADERS} ${SOURCES})
 
 # Specify the include directory for the hw_lib target
-target_include_directories(hw_lib PUBLIC include ../kin/include ../state/include)
-target_link_libraries(hw_lib PUBLIC cfg_lib Eigen3::Eigen kin_lib utils_lib libserial_static state_lib)
+target_include_directories(hw_lib PUBLIC include)
+target_link_libraries(hw_lib PUBLIC cfg_lib Eigen3::Eigen kin_lib utils_lib libserial_static)
 
 # Add test subdirectory
 add_subdirectory(test)

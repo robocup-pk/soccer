@@ -19,7 +19,6 @@ class SensorDriver {
   void SetAngularVelocityRadps(double w_radps);
   double GetAngularVelocityRadps();
   bool NewDataAvailable();
-  SensorType GetSensorType() const { return sensor_type; }
 
   void SendWheelSpeedRpm(Eigen::Vector4d& wheel_speeds_rpm);
   std::pair<Eigen::Vector4d, int> GetSensorsData();
